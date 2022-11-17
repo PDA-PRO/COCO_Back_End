@@ -1,4 +1,5 @@
 from fastapi import FastAPI, File, UploadFile
+from celery_worker import divide
 import os
 
 app = FastAPI()
@@ -8,7 +9,7 @@ app = FastAPI()
 async def root():
     return {"message": "Hello World"}
 
-@app.post("/submission")
+@app.post("/submission_test")
 async def root(code:UploadFile,box_id:int,stdin:str):
     f=open("/var/local/lib/isolate/"+str(box_id)+"/box/2temp.py",'wb+')
     content = await code.read()
@@ -29,4 +30,14 @@ async def root(code:UploadFile,box_id:int,stdin:str):
 async def root(num:int):
     temp=os.popen('isolate --cg -b '+str(num)+' --init').read()
     return {"message": temp}
+
+@app.get("/work")
+async def work(task_id: str, input_a: int, input_b: int):
+    divide.apply_async([input_a, input_b], task_id=task_id)
+    return {"message": "celery start"}
+    
+@app.get("/work_result")
+async def work_result(task_id: str):
+    result = divide.AsyncResult(task_id)
+    return {"message": result.info}
 
