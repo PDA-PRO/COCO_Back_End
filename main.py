@@ -1,7 +1,7 @@
 from fastapi import FastAPI, File, UploadFile
 from celery_worker import divide
 import os
-
+import redis
 app = FastAPI()
 
 
@@ -34,10 +34,16 @@ async def root(num:int):
 @app.get("/work")
 async def work(task_id: str, input_a: int, input_b: int):
     divide.apply_async([input_a, input_b], task_id=task_id)
+
     return {"message": "celery start"}
     
-@app.get("/work_result")
-async def work_result(task_id: str):
-    result = divide.AsyncResult(task_id)
-    return {"message": result.info}
+@app.get("/running_stat")
+async def work_result():
+    i=1
+    temp=[]
+    with redis.StrictRedis(host='127.0.0.1', port=6379, db=0) as conn:
+        while i<9:
+            temp.append(int(conn.get(str(i))))
+            i+=1
+    return {"message": (temp)}
 
