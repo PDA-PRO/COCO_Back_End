@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from fastapi import APIRouter
-import db
+from db import login
 # import pymysql
 
 router = APIRouter()
@@ -25,12 +25,12 @@ class Login(BaseModel):
 
 @router.post('/login/', tags=["login"])
 async def login(user:Login):
-    return {'code': db.check_db(user)}
+    return {'code': login.check_db(user)}
 
 @router.post("/signup/", tags=["login"])
 async def create_user(user: SignUp):
-    return {"code":db.insert_db(user)}
+    return {"code": login.insert_db(user)}
 
 @router.post("/checkids/", tags=["login"])
 async def check_ids(id: ID):
-    return {"code": db.find_ids(id.id)} 
+    return {"code": login.find_ids(id.id)} 
