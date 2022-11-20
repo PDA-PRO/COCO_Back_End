@@ -1,4 +1,4 @@
-from celery_app import celery_task
+from core.celery_app import celery_task
 import time
 import redis
 import subprocess
@@ -19,18 +19,29 @@ def process_sub(taskid,stdid,subtime,sourcecode,callbackurl,token ):
         # callback url 활용 생각하기
         
         #isolate id별로 초기화
-        init_result=subprocess.run(['isolate', '--cg', '-b',str(i),'--init'],capture_output=True)
+        subprocess.run(['isolate', '--cg', '-b',str(i),'--init'],capture_output=True)
         
         # 실행 파일 생성
         f1=open('/var/local/lib/isolate/'+str(i)+'/box/src.py','w')
         f1.write(sourcecode)
         f1.close()
 
+        #테스트 케이스 input 폴더에 복사
+
+        #meta data 저장공간
+        meta_path='/home/sjw/COCO_Back_End/sandbox/'+str(i)+'/meta/meta.txt'
+        #input data 저장공간
+        # input_path='/home/sjw/COCO_Back_End/sandbox/'+str(i)+'/in/in.txt'
+        input_path='/home/sjw/COCO_Back_End/tasks/'+str(taskid)+'/input/test1.in'
+        #output data 저장공간
+        output_path='/home/sjw/COCO_Back_End/sandbox/'+str(i)+'/out/out.txt'
+
+
         #isolate 환경에서 실행
-        subprocess.run('isolate --meta /home/sjw/COCO_Back_End/box/'+str(i)+'/meta/meta.txt --cg -t 2 -b '+str(i)+' --run /usr/bin/python3 src.py < /home/sjw/COCO_Back_End/box/'+str(i)+'/in/in.txt > /home/sjw/COCO_Back_End/box/'+str(i)+'/out/out.txt',shell=True)
+        subprocess.run('isolate --meta '+meta_path+' --cg -t 2 -b '+str(i)+' --run /usr/bin/python3 src.py < '+input_path+' > '+output_path,shell=True)
         
         #isolate id 삭제
-        init_result=subprocess.run(['isolate', '--cg', '-b',str(i),'--cleanup'],capture_output=True)
+        subprocess.run(['isolate', '--cg', '-b',str(i),'--cleanup'],capture_output=True)
 
         time.sleep(5)
         conn.set(str(i),"0")

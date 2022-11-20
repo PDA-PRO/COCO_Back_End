@@ -1,10 +1,9 @@
-from fastapi import FastAPI, File, UploadFile,Path
-from celery_worker import process_sub
-import subprocess
-import redis
-from typing import Union
+from fastapi import APIRouter
 from pydantic import BaseModel
-app = FastAPI()
+from core.celery_worker import process_sub
+import redis
+
+router = APIRouter()
 
 class Submission(BaseModel):
     taskid: int
@@ -14,13 +13,14 @@ class Submission(BaseModel):
     callbackurl:str
     token:str
 
-@app.post("/submission")
+
+@router.post("/submission/", tags=["submission"])
 async def root(sub:Submission):
     # db에 새로운 제출 저장하기
     process_sub.apply_async([sub.taskid,sub.stdid,sub.time,sub.sourcecode,sub.callbackurl,sub.token])
     return {"message": sub}
-    
-@app.get("/running_stat")
+
+@router.get("/running_stat/", tags=["submission"])
 async def work_result():
     i=1
     temp=[]
@@ -29,4 +29,3 @@ async def work_result():
             temp.append(int(conn.get(str(i))))
             i+=1
     return {"message": (temp)}
-
