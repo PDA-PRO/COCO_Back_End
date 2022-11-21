@@ -4,6 +4,7 @@ import redis
 import subprocess
 from contextlib import contextmanager
 import os
+import glob
 
 redis_client = redis.Redis(host='127.0.0.1', port=6379)
 
@@ -84,6 +85,14 @@ def process_sub(taskid,stdid,subtime,sourcecode,callbackurl,token):
                         answer_file.close()
                         break
         conn.set('sub'+str(taskid)+str(stdid),task_result)
+        #폴더 초기화
+        for i in glob.glob('/home/sjw/COCO_Back_End/sandbox/'+str(box_id)+'/error/*'):
+            os.remove(i)
+        for i in glob.glob('/home/sjw/COCO_Back_End/sandbox/'+str(box_id)+'/meta/*'):
+            os.remove(i)
+        for i in glob.glob('/home/sjw/COCO_Back_End/sandbox/'+str(box_id)+'/out/*'):
+            os.remove(i)
+        
     
         #isolate id 삭제
         clean_result=subprocess.run(['isolate', '--cg', '-b',str(box_id),'--cleanup'],capture_output=True)
