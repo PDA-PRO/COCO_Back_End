@@ -5,14 +5,12 @@ from crud.user import CrudUser
 
 router = APIRouter()
 
-user_model = CrudUser()
-
 #회원가입 정보
 class SignUp(BaseModel):
     name: str
     id: str
     pw: str
-    type: int #1이면 학생, 2이면 선생
+    role: int #0이면 학생, 1이면 선생
 
 #아이디 중복 확인
 class ID(BaseModel):
@@ -26,12 +24,13 @@ class Login(BaseModel):
 
 @router.post('/login/', tags=["login"])
 async def login(user:Login):
-    return {'code': user_model.check_db(user)}
+    return {'code': CrudUser.check_db(user)}
 
 @router.post("/signup/", tags=["login"])
 async def create_user(user: SignUp):
-    return {"code": user_model.insert_db(user)}
+    return {"code": CrudUser.insert_db(user)}
 
 @router.post("/checkids/", tags=["login"])
 async def check_ids(id: ID):
-    return {"code": user_model.find_ids(id.id)} 
+    user_id = id.id
+    return {"code": CrudUser.find_id(user_id)} 
