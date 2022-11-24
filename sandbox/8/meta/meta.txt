@@ -1,7 +1,0 @@
-time:0.015
-time-wall:0.015
-max-rss:9740
-csw-voluntary:4
-csw-forced:3
-cg-mem:3644
-exitcode:0
