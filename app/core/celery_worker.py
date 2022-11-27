@@ -5,8 +5,20 @@ import subprocess
 from contextlib import contextmanager
 import os
 import glob
+from crud.task import Crudtask
+from crud.submission import CrudSubmission
 
 redis_client = redis.Redis(host='127.0.0.1', port=6379)
+
+def txt_to_dic(file_path): 
+    result={}
+    with open(file_path) as file:
+        for i in file.readlines():
+            name,value=i.split(":")
+            result[name]=value.rstrip()
+    print(result)
+    return result
+
 
 @contextmanager
 def redis_lock(lock_name):
@@ -24,7 +36,7 @@ def redis_lock(lock_name):
         redis_client.delete(lock_name)
 
 @celery_task.task(ignore_result=True)
-def process_sub(taskid,stdid,subtime,sourcecode,callbackurl,token):
+def process_sub(taskid,stdid,subtime,sourcecode,callbackurl,token,sub_id):
     box_id=1
     with redis.StrictRedis(host='127.0.0.1', port=6379, db=0) as conn:
         while True:
@@ -40,7 +52,10 @@ def process_sub(taskid,stdid,subtime,sourcecode,callbackurl,token):
                 else:
                     time.sleep(0.1)
         #todo
-        # 데이터베이스 연결해서 문제id로 testcase, 제한사항 가져오기
+        # 데이터베이스 연결해서 문제id로 제한사항 가져오기
+        task=Crudtask()
+        result=task.select_task(taskid)
+        submit=CrudSubmission()
         # 실행 결과 데이터베이스에 업데이트하기
         # callback url 활용 생각하기
 
@@ -55,7 +70,7 @@ def process_sub(taskid,stdid,subtime,sourcecode,callbackurl,token):
         #채점
         #TC data 저장공간
         task_path='/home/sjw/COCO_Back_End/tasks/'+str(taskid)+'/input/'
-        task_result='collect'
+        task_result=1#1이 정답 0이 오답
         for TC_num in range(1,len(os.listdir(task_path))+1):
             #error data 저장공간
             error_path='/home/sjw/COCO_Back_End/sandbox/'+str(box_id)+'/error/error'+str(TC_num)+'.txt'
@@ -68,30 +83,40 @@ def process_sub(taskid,stdid,subtime,sourcecode,callbackurl,token):
             #test case output data 저장공간
             answer_path='/home/sjw/COCO_Back_End/tasks/'+str(taskid)+'/output/test'+str(TC_num)+'.out'
             #isolate 환경에서 실행
-            subprocess.run('isolate --meta '+meta_path+' --cg -t 5 -d /etc:noexec --cg-mem='+str(128000)+' -b '+str(box_id)+' --stderr-to-stdout --run /usr/bin/python3 src.py < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
+            subprocess.run('isolate --meta '+meta_path+' --cg -t '+str(result[7])+' -d /etc:noexec --cg-mem='+str(result[6]*1000)+' -b '+str(box_id)+' --stderr-to-stdout --run /usr/bin/python3 src.py < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
             
-            with open(error_path,'r') as error_file:
-                #제출 코드 실행 결과가 정상적이지 않다면 채점 종료
-                if error_file.readline().split()[0]!='OK':
-                    task_result=str(TC_num)+" error"
-                    break
-                else:
-                    #결과가 정상적이다면 결과와 정답과 비교
+            exec_result=txt_to_dic(meta_path)
+            if exec_result.get("exitcode")==None:#샌드박스에 의해서 종료됨 -> 문제의 제한사항에 걸려서 종료됨
+                submit.update(sub_id,2,message="제한사항에 걸림")
+                task_result=0
+                break
+            else:
+                if exec_result["exitcode"]=="0":#제출 코드 실행 결과가 정상적
                     output_file=open(output_path,'r')
+                    output=output_file.readlines()
                     answer_file=open(answer_path,'r')
-                    if output_file.readline().rstrip()!=answer_file.readline().rstrip():
-                        task_result=str(TC_num)+" incollect"
-                        output_file.close()
-                        answer_file.close()
-                        break
-        conn.set('sub'+str(taskid)+str(stdid),task_result)
+                    answer=answer_file.readlines()
+                    for line_num in range(len(answer)):
+                        if output[line_num].rstrip()!=answer[line_num].rstrip():
+                            submit.update(sub_id,int(exec_result["exitcode"]),"".join(output),number_of_runs=TC_num)
+                            task_result=0
+                            output_file.close()
+                            answer_file.close()
+                            break
+                    
+                else:#제출코드 실행 결과가 정상적이지 않다. -> 런타임 에러 등 
+                    submit.update(sub_id,int(exec_result["exitcode"]),message="런타임 에러",number_of_runs=TC_num)
+                    task_result=0
+                    break
+        if task_result==1:
+            submit.update(sub_id,int(exec_result["exitcode"]))
         #폴더 초기화
-        for i in glob.glob('/home/sjw/COCO_Back_End/sandbox/'+str(box_id)+'/error/*'):
-            os.remove(i)
-        for i in glob.glob('/home/sjw/COCO_Back_End/sandbox/'+str(box_id)+'/meta/*'):
-            os.remove(i)
-        for i in glob.glob('/home/sjw/COCO_Back_End/sandbox/'+str(box_id)+'/out/*'):
-            os.remove(i)
+        # for i in glob.glob('/home/sjw/COCO_Back_End/sandbox/'+str(box_id)+'/error/*'):
+        #     os.remove(i)
+        # for i in glob.glob('/home/sjw/COCO_Back_End/sandbox/'+str(box_id)+'/meta/*'):
+        #     os.remove(i)
+        # for i in glob.glob('/home/sjw/COCO_Back_End/sandbox/'+str(box_id)+'/out/*'):
+        #     os.remove(i)
         
     
         #isolate id 삭제
