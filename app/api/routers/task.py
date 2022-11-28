@@ -1,35 +1,39 @@
 from pydantic import BaseModel
 from fastapi import APIRouter, UploadFile, Depends
 from crud.task import CrudTask
+from typing import List
 
 router = APIRouter()
 
 class Task(BaseModel):
     title: str
-    desc: str
-    desPic: UploadFile
+    description: str
+    desPic: List[UploadFile]
     diff: int
-    time: int
-    mem: int
-    inputDesc: str
+    timeLimit: int
+    memLimit: int
+    inputDescription: str
     inputEx1: str
     inputEx2: str
-    inputFile: UploadFile
-    outputDesc: str
+    outputDescription: str
     outputEx1: str
     outputEx2: str
-    outputFile: UploadFile
-    py: bool
-    cLan: bool
+    python: bool
+    C_Lan: bool
     testCase: UploadFile
 
+#일단은 입출력 예제 두개씩 넣기
 @router.post('/manage/', tags=['manage'])
 async def upload_task(task: Task = Depends()):
     CrudTask.insert_task(task)
     return {
-        "desc": task.desPic.filename,
-        "inputFile": task.inputFile,
-        "outputFile":task. outputFile,
-        "testCase": task.testCase,
-        "task": task.title
+        "desPic": [file.filename for file in task.desPic],
     }
+
+@router.get('/problems', tags=['manage'])
+async def read_task():
+    return CrudTask.read_problems()
+
+@router.get('/problems/{task_id}')
+async def task_detail(task_id: int):
+    return CrudTask.search_task(task_id)
