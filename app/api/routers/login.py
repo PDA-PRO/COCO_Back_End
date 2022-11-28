@@ -11,6 +11,7 @@ class SignUp(BaseModel):
     id: str
     pw: str
     role: int #0이면 학생, 1이면 선생
+    age: int
 
 #아이디 중복 확인
 class ID(BaseModel):

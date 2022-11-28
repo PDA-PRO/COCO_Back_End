@@ -20,7 +20,7 @@ class CrudUser():
         sql = f"INSERT INTO `coco`.`user` (`id`, `pw`, `name`, `role`) VALUES ('{user.id}', '{user.pw}', '{user.name}', '{user.role}')"
         CrudUser.insert_mysql(sql)
         if user.role == 0:
-            sql = f"INSERT INTO `coco`.`student` (`std_id`, `rate`, `age`, `user_id`) VALUES ('{uuid.uuid1()}', '{0.00}', '{0}', '{user.id}');"
+            sql = f"INSERT INTO `coco`.`student` (`std_id`, `rate`, `age`, `user_id`) VALUES ('{uuid.uuid1()}', '{0.00}', '{user.age}', '{user.id}');"
         else:
             sql = f"INSERT INTO `coco`.`teacher` (`tea_id`, `is_manager`, `user_id`) VALUES ('{uuid.uuid1()}', '{0}', '{user.id}');"
         CrudUser.insert_mysql(sql)
