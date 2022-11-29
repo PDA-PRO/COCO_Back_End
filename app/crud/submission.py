@@ -24,11 +24,10 @@ class CrudSubmission():
         self.insert_mysql(sql,data)
         return a.hex
 
-    def update(self,sub_id,exit_code,stdout=None,stderr=None,message=None,number_of_runs=100):
-        now = time
-        a=uuid.uuid1()
-        sql="UPDATE coco.submissions SET exit_code=%s, stdout=%s, stderr=%s, message=%s, number_of_runs=%s WHERE sub_id=%s;"
+    def update(self,sub_id,exit_code,stdout=None,stderr=None,message=None,number_of_runs=100,status_id=None):
+        sql="UPDATE coco.submissions SET status_id=%s ,exit_code=%s, stdout=%s, stderr=%s, message=%s, number_of_runs=%s WHERE sub_id=%s;"
         data=(
+            status_id,
             exit_code,
             stdout,
             stderr,

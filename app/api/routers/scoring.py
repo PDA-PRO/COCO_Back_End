@@ -11,10 +11,9 @@ router = APIRouter()
 @router.post("/submission/", tags=["submission"])
 async def root(submit:Submit):
     # db에 새로운 제출 저장하기
-    for i in range(64):
-        crud_sub=CrudSubmission()
-        sub_id=crud_sub.init_submit(submit)
-        process_sub.apply_async([submit.taskid,submit.userid,submit.time,submit.sourcecode,submit.callbackurl,submit.token,sub_id])
+    crud_sub=CrudSubmission()
+    sub_id=crud_sub.init_submit(submit)
+    process_sub.apply_async([submit.taskid,submit.userid,submit.time,submit.sourcecode,submit.callbackurl,submit.token,sub_id])
 
     return {"message": submit}
 
