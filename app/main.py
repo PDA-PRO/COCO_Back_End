@@ -1,6 +1,8 @@
 from fastapi import FastAPI
-from api.routers import login,scoring
+from api.routers import login,scoring, task
+
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 
 app = FastAPI()
 
@@ -22,11 +24,13 @@ app.add_middleware(
 #라우터 설정
 app.include_router(scoring.router)
 app.include_router(login.router)
+app.include_router(task.router)
 
 @app.get("/test")
 async def hello_test():
     return {"message": 'hello'}
-    
+
+
 
 
 
