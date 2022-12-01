@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from api.routers import submission, login, task, board
+from api.routers import scoring, login, task, board
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 
