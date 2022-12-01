@@ -3,7 +3,7 @@ from schemas.submission import Submit
 from core.celery_worker import process_sub
 from crud.submission import CrudSubmission
 import redis
-from crud.task import Crudtask
+from crud.task import CrudTask
 
 router = APIRouter()
 

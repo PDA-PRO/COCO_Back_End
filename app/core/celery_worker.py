@@ -5,7 +5,7 @@ import subprocess
 from contextlib import contextmanager
 import os
 import glob
-from crud.task import Crudtask
+from crud.task import CrudTask
 from crud.submission import CrudSubmission
 
 redis_client = redis.Redis(host='127.0.0.1', port=6379)
@@ -17,7 +17,7 @@ def txt_to_dic(file_path): #txt 파일을 dic 자료형으로 변환 -> metafile
         for i in file.readlines():
             name,value=i.split(":")
             if name=="status":
-                value=convert[value.rstrip]
+                value=convert[value.rstrip()]
                 result[name]=value
             else:
                 result[name]=value.rstrip()
@@ -59,12 +59,12 @@ def process_sub(taskid,stdid,subtime,sourcecode,callbackurl,token,sub_id):
         # callback url 활용 생각하기
 
         # 데이터베이스 연결해서 문제id로 제한사항 가져오기
-        task=Crudtask()
+        task=CrudTask()
         result=task.select_task(taskid)
 
         #sub 테이블 접근에 필요한 객체
         submit=CrudSubmission()
-
+        submit.status_update(sub_id,2)
         #isolate id별로 초기화
         init_result= subprocess.run(['isolate', '--cg', '-b',str(box_id),'--init'],capture_output=True,text=True)
         time.sleep(0.2)#격리 공간 생기는 거 기다리기
@@ -121,7 +121,7 @@ def process_sub(taskid,stdid,subtime,sourcecode,callbackurl,token,sub_id):
                     break
 
         if task_result==1:#모든 TC를 통과했다면 정답처리
-            submit.update(sub_id,int(exec_result["exitcode"]),message="정답!")
+            submit.update(sub_id,int(exec_result["exitcode"]),message="정답!",status=3)
         
         #폴더 초기화
         for i in glob.glob('/home/sjw/COCO_Back_End/sandbox/'+str(box_id)+'/error/*'):
@@ -134,5 +134,5 @@ def process_sub(taskid,stdid,subtime,sourcecode,callbackurl,token,sub_id):
     
         #isolate id 삭제
         clean_result=subprocess.run(['isolate', '--cg', '-b',str(box_id),'--cleanup'],capture_output=True)
-        time.sleep(0.2)
+        time.sleep(10)
         conn.set(str(box_id),"0")
