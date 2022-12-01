@@ -21,7 +21,7 @@ app.add_middleware(
 )
 
 #라우터 설정
-app.include_router(submission.router)
+app.include_router(scoring.router)
 app.include_router(login.router)
 app.include_router(task.router)
 app.include_router(board.router)

@@ -7,6 +7,13 @@ import zipfile
 db_server = db.db_server
 
 class CrudTask():
+    def select_task(self,id):
+        sql="SELECT * FROM coco.task WHERE id=%s"
+        data=id
+        result=self.execute_mysql_jong(sql,data)
+        print(result[0])
+        return result[0]
+
     #coco.task insert
     def insert_task(task):
         cnt = CrudTask.get_count() #row개수+1 -> 새로운 문제 id
@@ -120,7 +127,25 @@ class CrudTask():
         result = cur.fetchall()
         con.close()
         return result
+        
+    def execute_mysql_jong(self,query,data):
+        con = pymysql.connect(host=db_server.host, user=db_server.user, password='twkZNoRsk}?F%n5n*t_4',port=3307,
+                            db=db_server.db, charset='utf8')  # 한글처리 (charset = 'utf8')
+        cur = con.cursor()
+        cur.execute(query,data)
+        result = cur.fetchall()
+        con.close()
+        return result
 
+    # 회원가입 정보 insert
+    def insert_mysql_jong(self,query,data):
+        con = pymysql.connect(host=db_server.host, user=db_server.user, password='twkZNoRsk}?F%n5n*t_4',port=3307,
+                            db=db_server.db, charset='utf8')  # 한글처리 (charset = 'utf8')
+        cur = con.cursor()
+        cur.execute(query,data)
+        con.commit()
+        con.close()
+        
     def insert_mysql(query):
         con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,
                             db=db_server.db, charset='utf8')  # 한글처리 (charset = 'utf8')
