@@ -36,7 +36,7 @@ class CrudTask():
 
     #problem view에서 가져옴
     def read_problems():
-        sql =  f"SELECT * FROM coco.problems;"
+        sql =  f"SELECT * FROM coco.task;"
         result = CrudTask.execute_mysql(sql)
         problems = []
         for i in result:
@@ -102,7 +102,7 @@ class CrudTask():
         return result
 
     def execute_mysql(query):
-        con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,
+        con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,port=db_server.port,
                             db=db_server.db, charset='utf8')  # 한글처리 (charset = 'utf8')
         cur = con.cursor()
         cur.execute(query)
@@ -129,7 +129,7 @@ class CrudTask():
         con.close()
         
     def insert_mysql(query):
-        con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,
+        con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,port=db_server.port,
                             db=db_server.db, charset='utf8')  # 한글처리 (charset = 'utf8')
         cur = con.cursor()
         cur.execute(query)
