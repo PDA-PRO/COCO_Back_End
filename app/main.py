@@ -1,6 +1,5 @@
 from fastapi import FastAPI
-from api.routers import login,scoring, task
-
+from api.routers import submission, login, task, board
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 
@@ -25,6 +24,7 @@ app.add_middleware(
 app.include_router(scoring.router)
 app.include_router(login.router)
 app.include_router(task.router)
+app.include_router(board.router)
 
 @app.get("/test")
 async def hello_test():

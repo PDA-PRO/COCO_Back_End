@@ -2,6 +2,8 @@ from pydantic import BaseModel
 from fastapi import APIRouter, UploadFile, Depends
 from crud.task import CrudTask
 from typing import List
+import zipfile
+import os
 
 router = APIRouter()
 
@@ -34,6 +36,22 @@ async def upload_task(task: Task = Depends()):
 async def read_task():
     return CrudTask.read_problems()
 
-@router.get('/problems/{task_id}')
+@router.get('/problems/{task_id}', tags=['manage'])
 async def task_detail(task_id: int):
     return CrudTask.search_task(task_id)
+
+@router.post('/test', tags=['manage'])
+async def test_test(files: UploadFile):
+    # 올릴 zip의 경로
+    zip_file_path = f"C:/Users/sdjmc/Desktop/123242" 
+
+    with zipfile.ZipFile(f"{zip_file_path}.zip") as encrypt_zip:
+        encrypt_zip.extractall(
+            # 압축 해제된 zip이 저장되는 경로
+            f"C:/Users/sdjmc/vscode/COCO_Back_End/tasks",
+            None,
+            # bytes(256, encoding='utf-8')
+        )
+    # 문제 id에 맞게 폴더 이름 변경
+    os.rename(f"C:/Users/sdjmc/vscode/COCO_Back_End/tasks/test", 'C:/Users/sdjmc/vscode/COCO_Back_End/tasks/100')
+    return {'filename': files}

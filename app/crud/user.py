@@ -17,7 +17,7 @@ class CrudUser():
 
     # 새로운 회원 정보 insert
     def insert_db(user):
-        sql = f"INSERT INTO `coco`.`user` (`id`, `pw`, `name`, `role`) VALUES ('{user.id}', '{user.pw}', '{user.name}', '{user.role}')"
+        sql = f"INSERT INTO `coco`.`user` (`id`, `pw`, `name`, `role`, `email`) VALUES ('{user.id}', '{user.pw}', '{user.name}', '{user.role}', '{user.email}')"
         CrudUser.insert_mysql(sql)
         if user.role == 0:
             sql = f"INSERT INTO `coco`.`student` (`std_id`, `rate`, `age`, `user_id`) VALUES ('{uuid.uuid1()}', '{0.00}', '{user.age}', '{user.id}');"
@@ -28,7 +28,7 @@ class CrudUser():
 
 
     # 회원가입시 아이디 중복 검사
-    def find_id(id):
+    def check_id(id):
         sql = f"SELECT id FROM `coco`.`user` where id = '{id}';"
         result = CrudUser.execute_mysql(sql)
         if len(result) == 0:
@@ -36,6 +36,21 @@ class CrudUser():
         else:
             return 0
 
+    def find_id(info):
+        sql = f"SELECT id FROM `coco`.`user` WHERE name = '{info.name}' AND email = '{info.email}'"
+        result = CrudUser.execute_mysql(sql)
+        if len(result) == 0:
+            return 0
+        else:
+            return result[0][0]
+
+    def find_pw(info):
+        sql = f"SELECT pw FROM `coco`.`user` WHERE name = '{info.name}' AND id = '{info.id}' AND email = '{info.email}'"
+        result = CrudUser.execute_mysql(sql)
+        if len(result) == 0:
+            return 0
+        else:
+            return result[0][0]
 
     def execute_mysql(query):
         con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,

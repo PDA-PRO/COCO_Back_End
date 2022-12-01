@@ -10,6 +10,7 @@ class SignUp(BaseModel):
     name: str
     id: str
     pw: str
+    email: str
     role: int #0이면 학생, 1이면 선생
     age: int
 
@@ -21,6 +22,16 @@ class ID(BaseModel):
 class Login(BaseModel):
     id: str
     pw: str
+
+class FindId(BaseModel):
+    name: str
+    email: str
+
+class FindPw(BaseModel):
+    name: str
+    id: str
+    email:str
+    
 
 
 @router.post('/login/', tags=["login"])
@@ -34,4 +45,12 @@ async def create_user(user: SignUp):
 @router.post("/checkids/", tags=["login"])
 async def check_ids(id: ID):
     user_id = id.id
-    return {"code": CrudUser.find_id(user_id)} 
+    return {"code": CrudUser.check_id(user_id)} 
+
+@router.post("/findid/", tags=["login"])
+async def find_id(info: FindId):
+    return {"code": CrudUser.find_id(info)}
+
+@router.post("/findpw/", tags=["login"])
+async def find_pw(info: FindPw):
+    return {"code": CrudUser.find_pw(info)}

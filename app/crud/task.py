@@ -1,8 +1,9 @@
 import pymysql
 import db
-import uuid
 import json
-    
+import os
+import zipfile
+
 db_server = db.db_server
 
 class CrudTask():
@@ -16,7 +17,7 @@ class CrudTask():
     #coco.task insert
     def insert_task(task):
         cnt = CrudTask.get_count() #row개수+1 -> 새로운 문제 id
-        testCase = f'testCase_{cnt+1}_{task.testCase.filename}' #task폴더에 id맞춰서 저장      
+        testCase = f'C:/Users/sdjmc/vscode/COCO_Back_End/tasks/{cnt+1}'     
         imgs = [file.filename for file in task.desPic]
         cLan = 1 if task.C_Lan == True else 0
         py = 1 if task.python == True else 0 
@@ -28,8 +29,25 @@ class CrudTask():
             json_object("input", "{[task.inputEx1, task.inputEx2]}", "output", "{[task.outputEx1, task.outputEx2]}")
             , '{0.00}', '{testCase}', '{task.memLimit}', '{task.timeLimit}', json_object("desPic", "{imgs}"), 
             '{task.diff}', '{task.inputDescription}', '{task.outputDescription}','{cLan}', '{py}');"""
+        
         CrudTask.insert_mysql(sql)
+        CrudTask.save_testcase(task.testCase, cnt+1)
 
+    #test case zip파일 압축해서 저장
+    def save_testcase(zip, task_id):
+        origin_path = f"C:/Users/sdjmc/Desktop/123242" 
+        with zipfile.ZipFile(f"{origin_path}.zip") as encrypt_zip:
+            encrypt_zip.extractall(
+                # 압축 해제된 zip이 저장되는 경로
+                f"C:/Users/sdjmc/vscode/COCO_Back_End/tasks",
+                None,
+                # bytes(256, encoding='utf-8')
+            )
+        # 문제 id에 맞게 폴더 이름 변경
+        os.rename(f"C:/Users/sdjmc/vscode/COCO_Back_End/tasks/test", 
+                  f'C:/Users/sdjmc/vscode/COCO_Back_End/tasks/{task_id}')
+
+    #row개수+1 -> 새로운 문제 id
     def get_count():
         sql = f'SELECT COUNT(`id`) FROM coco.task;'       
         return CrudTask.execute_mysql(sql)[0][0]
