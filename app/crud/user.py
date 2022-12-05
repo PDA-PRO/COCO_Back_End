@@ -32,43 +32,45 @@ class CrudUser():
             return False
 
     # 새로운 회원 정보 insert
-    def insert_db(user):
+    def insert_db(self, user):
         sql = f"INSERT INTO `coco`.`user` (`id`, `pw`, `name`, `role`, `email`) VALUES ('{user.id}', '{user.pw}', '{user.name}', '{user.role}', '{user.email}')"
-        CrudUser.insert_mysql(sql)
+        self.insert_mysql(sql)
         if user.role == 0:
             sql = f"INSERT INTO `coco`.`student` (`std_id`, `rate`, `age`, `user_id`) VALUES ('{uuid.uuid1()}', '{0.00}', '{user.age}', '{user.id}');"
         else:
             sql = f"INSERT INTO `coco`.`teacher` (`tea_id`, `is_manager`, `user_id`) VALUES ('{uuid.uuid1()}', '{0}', '{user.id}');"
-        CrudUser.insert_mysql(sql)
+        self.insert_mysql(sql)
         return 1
 
 
     # 회원가입시 아이디 중복 검사
-    def check_id(id):
+    def check_id(self, id):
         sql = f"SELECT id FROM `coco`.`user` where id = '{id}';"
-        result = CrudUser.execute_mysql(sql)
+        result = self.execute_mysql(sql)
         if len(result) == 0:
             return 1
         else:
             return 0
 
-    def find_id(info):
+    #id 찾기
+    def find_id(self, info):
         sql = f"SELECT id FROM `coco`.`user` WHERE name = '{info.name}' AND email = '{info.email}'"
-        result = CrudUser.execute_mysql(sql)
+        result = self.execute_mysql(sql)
         if len(result) == 0:
             return 0
         else:
             return result[0][0]
 
-    def find_pw(info):
+    #pw 찾기
+    def find_pw(self, info):
         sql = f"SELECT pw FROM `coco`.`user` WHERE name = '{info.name}' AND id = '{info.id}' AND email = '{info.email}'"
-        result = CrudUser.execute_mysql(sql)
+        result = self.execute_mysql(sql)
         if len(result) == 0:
             return 0
         else:
             return result[0][0]
 
-    def execute_mysql(query):
+    def execute_mysql(self, query):
         con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,port=db_server.port,
                             db=db_server.db, charset='utf8')  # 한글처리 (charset = 'utf8')
         cur = con.cursor()
@@ -78,12 +80,10 @@ class CrudUser():
         return result
 
     # 회원가입 정보 insert
-    def insert_mysql(query):
+    def insert_mysql(self, query):
         con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,port=db_server.port,
                             db=db_server.db, charset='utf8')  # 한글처리 (charset = 'utf8')
         cur = con.cursor()
         cur.execute(query)
         con.commit()
         con.close()
-
-crud_user = CrudUser()
