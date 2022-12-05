@@ -52,7 +52,7 @@ class CrudSubmission():
         self.insert_mysql([[sql,data]])
 
     def execute_mysql(self,query):
-        con = pymysql.connect(host=db_server.host, user=db_server.user, password='twkZNoRsk}?F%n5n*t_4',port=3307,
+        con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,port=db_server.port,
                             db=db_server.db, charset='utf8')  # 한글처리 (charset = 'utf8')
         cur = con.cursor()
         cur.execute(query)
@@ -62,7 +62,7 @@ class CrudSubmission():
 
     # 회원가입 정보 insert
     def insert_mysql(self,query):
-        con = pymysql.connect(host=db_server.host, user=db_server.user, password='twkZNoRsk}?F%n5n*t_4',port=3307,
+        con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,port=db_server.port,
                             db=db_server.db, charset='utf8')  # 한글처리 (charset = 'utf8')
         cur = con.cursor()
         for i in (query):
@@ -71,7 +71,7 @@ class CrudSubmission():
         con.close()
 
     def insert_mysql_other(self,query,temp):
-        con = pymysql.connect(host=db_server.host, user=db_server.user, password='twkZNoRsk}?F%n5n*t_4',port=3307,
+        con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,port=db_server.port,
                             db=db_server.db, charset='utf8')  # 한글처리 (charset = 'utf8')
         cur = con.cursor()
         for i in (query):

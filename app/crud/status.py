@@ -5,7 +5,7 @@ db_server = db.db_server
 
 class CrudStatus():
     def select_status(self):
-        sql="SELECT * FROM coco.status_all"
+        sql="select s.*,t.title from coco.status_all as s, coco.task as t where s.task_id=t.id order by s.sub_id desc;"
         result = self.execute_mysql(sql)
         contents = []
         for i in result:
@@ -14,13 +14,14 @@ class CrudStatus():
                 'user_id': i[1],
                 'task_id': i[2],
                 'status': i[3],
-                'time': i[4]
+                'time': i[4],
+                'title':i[5]
             }
             contents.append(content)
         return contents
 
     def select_status_user(self,user):
-        sql="SELECT * FROM coco.status_all where user_id=%s"
+        sql="select s.*,t.title from coco.status_all as s, coco.task as t where s.task_id=t.id and s.user_id=%s order by s.sub_id desc"
         data=(user)
         result = self.execute_mysql(sql,data)
         contents = []
@@ -30,7 +31,8 @@ class CrudStatus():
                 'user_id': i[1],
                 'task_id': i[2],
                 'status': i[3],
-                'time': i[4]
+                'time': i[4],
+                'title':i[5]
             }
             contents.append(content)
         return contents
