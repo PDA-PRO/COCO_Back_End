@@ -4,6 +4,7 @@ from crud.user import CrudUser
 # import pymysql
 
 router = APIRouter()
+crudUser = CrudUser()
 
 #회원가입 정보
 class SignUp(BaseModel):
@@ -36,21 +37,21 @@ class FindPw(BaseModel):
 
 @router.post('/login/', tags=["login"])
 async def login(user:Login):
-    return {'code': CrudUser.check_db(user)}
+    return {'code': crudUser.check_db(user)}
 
 @router.post("/signup/", tags=["login"])
 async def create_user(user: SignUp):
-    return {"code": CrudUser.insert_db(user)}
+    return {"code": crudUser.insert_db(user)}
 
 @router.post("/checkids/", tags=["login"])
 async def check_ids(id: ID):
     user_id = id.id
-    return {"code": CrudUser.check_id(user_id)} 
+    return {"code": crudUser.check_id(user_id)} 
 
 @router.post("/findid/", tags=["login"])
 async def find_id(info: FindId):
-    return {"code": CrudUser.find_id(info)}
+    return {"code": crudUser.find_id(info)}
 
 @router.post("/findpw/", tags=["login"])
 async def find_pw(info: FindPw):
-    return {"code": CrudUser.find_pw(info)}
+    return {"code": crudUser.find_pw(info)}

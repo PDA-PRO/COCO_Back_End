@@ -1,5 +1,6 @@
 import pymysql
 import db
+from datetime import datetime
 
 db_server = db.db_server
 
@@ -28,7 +29,7 @@ class CrudBoard():
         result = self.execute_mysql(sql)
         return {
             'id': result[0][0],
-            'contest': result[0][1],
+            'context': result[0][1],
             'title': result[0][2],
             'rel_task': result[0][3],
             'time': result[0][4],
@@ -37,6 +38,15 @@ class CrudBoard():
             'views': result[0][7],
             'comments': result[0][8]
         }
+
+    def fast_write(self, fastWrite):
+        sql = f"INSERT INTO `coco`.`boards` (`context`, `title`, `time`, `category`, `likes`, `views`, `comments`) VALUES ('{fastWrite.context}', '{fastWrite.title}', '{datetime.now().date()}', '3', '0', '0', '0');"
+        self.insert_mysql(sql)
+        user_sql = f"SELECT * FROM coco.boards order by id;"
+        result = self.execute_mysql(user_sql)
+        board_sql = f"INSERT INTO `coco`.`boards_ids` (`board_id`, `user_id`) VALUES ('{result[-1][0]}', '{fastWrite.user_id}');"
+        self.insert_mysql(board_sql)
+        return 1
 
     def execute_mysql(self, query):
         con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,
