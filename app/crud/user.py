@@ -5,15 +5,16 @@ import uuid
 db_server = db.db_server
 
 class CrudUser():
-    def check_db(user):
+    def check_db(self,user):
         sql = f"SELECT id, pw, role FROM `coco`.`user` where id = '{user.id}';"
-        result = CrudUser.execute_mysql(sql)
+        result = self.execute_mysql(sql)
+        print(result)
         if len(result) == 0:#로그인 정보가 없다면
             return 0
         else:#로그인 정보가 있다면
             if user.pw == result[0][1]:#패스워드가 맞다면
                 if result[0][2]=='1':#로그인 한사람이 선생이라면
-                    if CrudUser.check_manager(user.id):#매니저인지 확인
+                    if self.check_manager(user.id):#매니저인지 확인
                         return 2#매니저면 매니저 로그인 2
                     else:#매니저가 아니면 그냥 로그인
                         return 1
@@ -21,9 +22,9 @@ class CrudUser():
                     return 1
             return 0
 
-    def check_manager(id):
+    def check_manager(self,id):
         sql = f"SELECT is_manager FROM `coco`.`teacher` where user_id = '{id}';"
-        result = CrudUser.execute_mysql(sql)
+        result = self.execute_mysql(sql)
         if len(result) == 0:
             return False
         else:

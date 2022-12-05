@@ -26,3 +26,12 @@ async def work_result():
             temp.append(int(conn.get(str(i))))
             i+=1
     return {"message": (temp)}
+
+@router.get("/result/{sub_id}", tags=["submission"])
+async def load_result(sub_id: int):
+    crud_sub=CrudSubmission()
+    rows=crud_sub.select_submit(sub_id)
+    if len(rows):
+        return rows[0]
+    else:
+        return None

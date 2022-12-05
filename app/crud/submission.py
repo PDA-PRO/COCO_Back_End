@@ -30,6 +30,12 @@ class CrudSubmission():
         id=self.insert_mysql_other(query,sql3)
         return id
 
+    def select_submit(self,sub_id):
+        sql="SELECT * FROM coco.submissions WHERE sub_id=%s;"
+        data=(
+            sub_id)
+        row=self.execute_mysql([[sql,data]])
+        return row
 
     def status_update(self, sub_id,status):
         sql="UPDATE coco.submissions SET status=%s WHERE sub_id=%s;"
@@ -55,7 +61,8 @@ class CrudSubmission():
         con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,port=db_server.port,
                             db=db_server.db, charset='utf8')  # 한글처리 (charset = 'utf8')
         cur = con.cursor()
-        cur.execute(query)
+        for i in (query):
+            cur.execute(i[0],i[1])
         result = cur.fetchall()
         con.close()
         return result
