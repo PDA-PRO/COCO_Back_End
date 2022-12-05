@@ -10,8 +10,7 @@ class CrudTask():
     def select_task(self,id):
         sql="SELECT * FROM coco.task WHERE id=%s"
         data=id
-        result=self.execute_mysql_jong(sql,data)
-        print(result[0])
+        result = self.execute_mysql_jong(sql,data)
         return result[0]
 
     #coco.task insert
@@ -54,7 +53,7 @@ class CrudTask():
 
     #problem view에서 가져옴
     def read_problems():
-        sql =  f"SELECT * FROM coco.task;"
+        sql =  f"SELECT * FROM view_task;"
         result = CrudTask.execute_mysql(sql)
         problems = []
         for i in result:
@@ -72,24 +71,26 @@ class CrudTask():
     def search_task(id):
         sql = f"SELECT * FROM coco.task WHERE id = '{id}';"
         result = CrudTask.execute_mysql(sql)
-        sample = CrudTask.sample_json(result[0][3])
+        sample = CrudTask.sample_json(result[0][2])
+        desc_sql = f"SELECT * FROM coco.descriptions where task_id = '{id}';"
+        desc_result = CrudTask.execute_mysql(desc_sql)
         task = {
             'id': result[0][0],
             'title': result[0][1],
-            'desc': result[0][2],
+            'rate': result[0][3],
+            'memLimit': result[0][5],
+            'timeLimit': result[0][6],
+            'img': result[0][7],     
+            'diff': result[0][8],      
+            'C_Lan': result[0][9],
+            'python': result[0][10],
             'inputEx1': sample[0],
             'inputEx2': sample[1],
             'outputEx1': sample[2],
             'outputEx2': sample[3],
-            'rate': result[0][4],
-            'memLimit': result[0][6],
-            'timeLimit': result[0][7],
-            'desPic': CrudTask.pic_json(result[0][8]),
-            'diff': result[0][9],
-            'inputDescription': result[0][10],
-            'outputDescription': result[0][11],
-            'C_Lan': result[0][12],
-            'python': result[0][13]
+            'mainDesc': desc_result[0][1],
+            'inDesc': desc_result[0][2],
+            'outDesc': desc_result[0][3],
         }
         return task
 
@@ -154,4 +155,3 @@ class CrudTask():
         con.commit()
         con.close()
 
-crud_task = CrudTask()
