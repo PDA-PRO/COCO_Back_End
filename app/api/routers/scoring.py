@@ -13,9 +13,9 @@ async def root(submit:Submit):
     # db에 새로운 제출 저장하기
     crud_sub=CrudSubmission()
     sub_id=crud_sub.init_submit(submit)
-    process_sub.apply_async([submit.taskid,submit.userid,submit.time,submit.sourcecode,submit.callbackurl,submit.token,sub_id])
+    process_sub.apply_async([submit.taskid,submit.sourcecode,submit.callbackurl,"hi",sub_id])
 
-    return {"message": submit}
+    return {"result": 1}
 
 @router.get("/running_stat/", tags=["submission"])
 async def work_result():

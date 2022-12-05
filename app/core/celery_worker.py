@@ -40,7 +40,7 @@ def redis_lock(lock_name):
         redis_client.delete(lock_name)
 
 @celery_task.task(ignore_result=True)
-def process_sub(taskid,stdid,subtime,sourcecode,callbackurl,token,sub_id):
+def process_sub(taskid,sourcecode,callbackurl,token,sub_id):
     box_id=1
     with redis.StrictRedis(host='127.0.0.1', port=6379, db=0) as conn:
         while True:#폴링으로 worker가 남았는지 계속 확인
@@ -89,7 +89,7 @@ def process_sub(taskid,stdid,subtime,sourcecode,callbackurl,token,sub_id):
             #test case output data 저장공간
             answer_path='/home/sjw/COCO_Back_End/tasks/'+str(taskid)+'/output/test'+str(TC_num)+'.txt'
             #isolate 환경에서 실행
-            subprocess.run('isolate --meta '+meta_path+' --cg -t '+str(result[7])+' -d /etc:noexec --cg-mem='+str(result[6]*1000)+' -b '+str(box_id)+' --stderr-to-stdout --run /usr/bin/python3 src.py < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
+            subprocess.run('isolate --meta '+meta_path+' --cg -t '+str(result[6])+' -d /etc:noexec --cg-mem='+str(result[5]*1000)+' -b '+str(box_id)+' --run /usr/bin/python3 src.py < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
             
             #실행결과 분석
             exec_result=txt_to_dic(meta_path)
@@ -105,7 +105,8 @@ def process_sub(taskid,stdid,subtime,sourcecode,callbackurl,token,sub_id):
                     answer=answer_file.readlines()
                     for line_num in range(len(answer)):
                         if output[line_num].rstrip()!=answer[line_num].rstrip():
-                            submit.update(sub_id,int(exec_result["exitcode"]),"".join(output),number_of_runs=TC_num,message="TC 실패")
+                            print(output)
+                            submit.update(sub_id,int(exec_result["exitcode"]),stdout="".join(output),number_of_runs=TC_num,message="TC 실패")
                             task_result=0
                             output_file.close()
                             answer_file.close()
@@ -115,7 +116,9 @@ def process_sub(taskid,stdid,subtime,sourcecode,callbackurl,token,sub_id):
                     
                 else:#제출코드 실행 결과가 정상적이지 않다. -> 런타임 에러 등 
                     error_file=open(error_path,'r')
+                    
                     error=error_file.readlines()
+                    print(error)
                     submit.update(sub_id,int(exec_result["exitcode"]),message="런타임 에러",number_of_runs=TC_num,status_id=exec_result["status"],stderr="".join(error))
                     task_result=0
                     break
@@ -134,5 +137,4 @@ def process_sub(taskid,stdid,subtime,sourcecode,callbackurl,token,sub_id):
     
         #isolate id 삭제
         clean_result=subprocess.run(['isolate', '--cg', '-b',str(box_id),'--cleanup'],capture_output=True)
-        time.sleep(10)
         conn.set(str(box_id),"0")
