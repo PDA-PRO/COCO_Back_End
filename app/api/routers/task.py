@@ -1,3 +1,4 @@
+import shutil
 from pydantic import BaseModel
 from fastapi import APIRouter, UploadFile, Depends
 from crud.task import CrudTask
@@ -6,6 +7,7 @@ import zipfile
 import os
 
 router = APIRouter()
+
 class Task(BaseModel):
     title: str
     description: str
@@ -28,7 +30,7 @@ class Task(BaseModel):
 async def upload_task(task: Task = Depends()):
     CrudTask.insert_task(task)
     return {
-        "desPic": [file.filename for file in task.desPic],
+        "result": 1,
     }
 
 @router.get('/problems', tags=['manage'])
@@ -41,16 +43,15 @@ async def task_detail(task_id: int):
 
 @router.post('/test', tags=['manage'])
 async def test_test(files: UploadFile):
-    # 올릴 zip의 경로
-    zip_file_path = f"C:/Users/sdjmc/Desktop/123242" 
+    zip_file_path = f'/home/sjw/COCO_Back_End/tasks/temp/temp'
 
+    with open(f"{zip_file_path}.zip", 'wb') as upload_zip:
+            shutil.copyfileobj(files.file, upload_zip)
     with zipfile.ZipFile(f"{zip_file_path}.zip") as encrypt_zip:
-        encrypt_zip.extractall(
-            # 압축 해제된 zip이 저장되는 경로
-            f"C:/Users/sdjmc/vscode/COCO_Back_End/tasks",
-            None,
-            # bytes(256, encoding='utf-8')
-        )
+            encrypt_zip.extractall(
+                f'/home/sjw/COCO_Back_End/tasks/temp/re',
+                None
+            )
     # 문제 id에 맞게 폴더 이름 변경
-    os.rename(f"C:/Users/sdjmc/vscode/COCO_Back_End/tasks/test", 'C:/Users/sdjmc/vscode/COCO_Back_End/tasks/100')
+    # os.rename(f"C:/Users/sdjmc/vscode/COCO_Back_End/tasks/test", 'C:/Users/sdjmc/vscode/COCO_Back_End/tasks/100')
     return {'filename': files}
