@@ -13,6 +13,20 @@ class CrudTask():
         data=id
         result = self.execute_mysql_jong(sql,data)
         return result[0]
+    
+    def select_simplelist():
+        sql="SELECT t.id,t.title,s.* FROM coco.task t left outer join coco.sub_per_task s on t.id=s.task_id;"
+        result = CrudTask.execute_mysql(sql)
+        print(result)
+        return result
+
+    def delete_task(id):
+        sql=f"DELETE FROM coco.submissions where sub_id in (SELECT sub_id FROM coco.sub_ids where task_id={id})"
+        CrudTask.insert_mysql(sql)
+        sql=f"DELETE FROM coco.task where id={id}"
+        CrudTask.insert_mysql(sql)
+        shutil.rmtree(f'/home/sjw/COCO_Back_End/tasks/{id}')
+        return 1
 
     #coco.task insert
     def insert_task(task):
