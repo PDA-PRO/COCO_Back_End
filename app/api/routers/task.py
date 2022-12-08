@@ -11,7 +11,7 @@ router = APIRouter()
 class Task(BaseModel):
     title: str
     description: str
-    desPic: List[UploadFile]
+    desPic: List[UploadFile] | None
     diff: int
     timeLimit: int
     memLimit: int

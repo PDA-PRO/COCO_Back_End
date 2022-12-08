@@ -31,7 +31,9 @@ class CrudTask():
     #coco.task insert
     def insert_task(task):
         testCase = f'/home/sjw/COCO_Back_End/tasks'     
-        imgs = [file.filename for file in task.desPic]
+        if task.desPic:
+            imgs = [file.filename for file in task.desPic]
+        imgs=""
         cLan = 1 if task.C_Lan == True else 0
         py = 1 if task.python == True else 0 
         desc=[task.description,task.inputDescription,task.outputDescription]
