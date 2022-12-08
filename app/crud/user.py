@@ -5,10 +5,9 @@ import uuid
 db_server = db.db_server
 
 class CrudUser():
-    def check_db(self,user):
+    def check_db(self, user):
         sql = f"SELECT id, pw, role FROM `coco`.`user` where id = '{user.id}';"
         result = self.execute_mysql(sql)
-        print(result)
         if len(result) == 0:#로그인 정보가 없다면
             return 0
         else:#로그인 정보가 있다면
@@ -22,7 +21,7 @@ class CrudUser():
                     return 1
             return 0
 
-    def check_manager(self,id):
+    def check_manager(self, id):
         sql = f"SELECT is_manager FROM `coco`.`teacher` where user_id = '{id}';"
         result = self.execute_mysql(sql)
         if len(result) == 0:
