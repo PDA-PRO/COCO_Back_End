@@ -76,18 +76,20 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id):
         #채점
         #TC data 저장공간
         task_path='/home/sjw/COCO_Back_End/tasks/'+str(taskid)+'/input/'
+        TC_list=os.listdir(task_path)
+
         task_result=1#1이 정답 0이 오답
-        for TC_num in range(1,len(os.listdir(task_path))+1):
+        for TC_num in range(len(TC_list)):
             #error data 저장공간
-            error_path='/home/sjw/COCO_Back_End/sandbox/'+str(box_id)+'/error/error'+str(TC_num)+'.txt'
+            error_path='/home/sjw/COCO_Back_End/sandbox/'+str(box_id)+'/error/'+str(TC_num)+'.txt'
             #meta data 저장공간
-            meta_path='/home/sjw/COCO_Back_End/sandbox/'+str(box_id)+'/meta/meta'+str(TC_num)+'.txt'
+            meta_path='/home/sjw/COCO_Back_End/sandbox/'+str(box_id)+'/meta/'+str(TC_num)+'.txt'
             #제출 코드 실행 output data 저장공간
-            output_path='/home/sjw/COCO_Back_End/sandbox/'+str(box_id)+'/out/out'+str(TC_num)+'.txt'
+            output_path='/home/sjw/COCO_Back_End/sandbox/'+str(box_id)+'/out/'+str(TC_num)+'.txt'
             #test case input data 저장공간
-            input_path='/home/sjw/COCO_Back_End/tasks/'+str(taskid)+'/input/test'+str(TC_num)+'.txt'
+            input_path='/home/sjw/COCO_Back_End/tasks/'+str(taskid)+'/input/'+TC_list[TC_num]
             #test case output data 저장공간
-            answer_path='/home/sjw/COCO_Back_End/tasks/'+str(taskid)+'/output/test'+str(TC_num)+'.txt'
+            answer_path='/home/sjw/COCO_Back_End/tasks/'+str(taskid)+'/output/'+TC_list[TC_num]
             #isolate 환경에서 실행
             subprocess.run('isolate --meta '+meta_path+' --cg -t '+str(result[6])+' -d /etc:noexec --cg-mem='+str(result[5]*1000)+' -b '+str(box_id)+' --run /usr/bin/python3 src.py < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
             
@@ -103,14 +105,20 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id):
                     output=output_file.readlines()
                     answer_file=open(answer_path,'r')
                     answer=answer_file.readlines()
-                    for line_num in range(len(answer)):
-                        if output[line_num].rstrip()!=answer[line_num].rstrip():
-                            print(output)
-                            submit.update(sub_id,int(exec_result["exitcode"]),stdout="".join(output),number_of_runs=TC_num,message="TC 실패")
-                            task_result=0
-                            output_file.close()
-                            answer_file.close()
-                            break
+                    print(output)
+                    if len(output):
+                        for line_num in range(len(answer)):
+                            if output[line_num].rstrip()!=answer[line_num].rstrip():
+                                submit.update(sub_id,int(exec_result["exitcode"]),stdout="".join(output),number_of_runs=TC_num,message="TC 실패")
+                                task_result=0
+                                output_file.close()
+                                answer_file.close()
+                                break
+                    else:
+                        submit.update(sub_id,int(exec_result["exitcode"]),number_of_runs=TC_num,message="TC 실패")
+                        task_result=0
+                        output_file.close()
+                        answer_file.close()
                     if task_result==0:
                         break
                     
