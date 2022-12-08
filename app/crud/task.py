@@ -1,3 +1,4 @@
+import shutil
 import pymysql
 import db
 import json
@@ -12,44 +13,55 @@ class CrudTask():
         data=id
         result = self.execute_mysql_jong(sql,data)
         return result[0]
+    
+    def select_simplelist():
+        sql="SELECT t.id,t.title,s.* FROM coco.task t left outer join coco.sub_per_task s on t.id=s.task_id;"
+        result = CrudTask.execute_mysql(sql)
+        print(result)
+        return result
+
+    def delete_task(id):
+        sql=f"DELETE FROM coco.submissions where sub_id in (SELECT sub_id FROM coco.sub_ids where task_id={id})"
+        CrudTask.insert_mysql(sql)
+        sql=f"DELETE FROM coco.task where id={id}"
+        CrudTask.insert_mysql(sql)
+        shutil.rmtree(f'/home/sjw/COCO_Back_End/tasks/{id}')
+        return 1
 
     #coco.task insert
     def insert_task(task):
-        cnt = CrudTask.get_count() #row개수+1 -> 새로운 문제 id
-        testCase = f'C:/Users/sdjmc/vscode/COCO_Back_End/tasks/{cnt+1}'     
-        imgs = [file.filename for file in task.desPic]
+        testCase = f'/home/sjw/COCO_Back_End/tasks'     
+        if task.desPic:
+            imgs = [file.filename for file in task.desPic]
+        imgs=""
         cLan = 1 if task.C_Lan == True else 0
         py = 1 if task.python == True else 0 
+        desc=[task.description,task.inputDescription,task.outputDescription]
 
         #time_limit, diff는 한자리 숫자
-        sql= f"""INSERT INTO `coco`.`task` (`id`, `title`, `main_desc`, `sample`, `rate`, `test_case`, `mem_limit`, 
-            `time_limit`, `img`, `diff`, `in_desc`, `out_desc`, `lan_c`, `lan_py`) 
-            VALUES ('{cnt+1}', '{task.title}', '{task.description}', 
+        sql= f"""INSERT INTO `coco`.`task` ( `title`, `sample`, `rate`, `test_case`, `mem_limit`, 
+            `time_limit`, `img`, `diff`, `lan_c`, `lan_py`) 
+            VALUES ( '{task.title}',  
             json_object("input", "{[task.inputEx1, task.inputEx2]}", "output", "{[task.outputEx1, task.outputEx2]}")
             , '{0.00}', '{testCase}', '{task.memLimit}', '{task.timeLimit}', json_object("desPic", "{imgs}"), 
-            '{task.diff}', '{task.inputDescription}', '{task.outputDescription}','{cLan}', '{py}');"""
+            '{task.diff}', '{cLan}', '{py}');"""
         
-        CrudTask.insert_mysql(sql)
-        CrudTask.save_testcase(task.testCase, cnt+1)
+        id=CrudTask.insert_last_mysql(sql,desc)
+        CrudTask.save_testcase(task.testCase,id[0][0])
 
     #test case zip파일 압축해서 저장
     def save_testcase(zip, task_id):
-        origin_path = f"C:/Users/sdjmc/Desktop/123242" 
-        with zipfile.ZipFile(f"{origin_path}.zip") as encrypt_zip:
-            encrypt_zip.extractall(
-                # 압축 해제된 zip이 저장되는 경로
-                f"C:/Users/sdjmc/vscode/COCO_Back_End/tasks",
-                None,
-                # bytes(256, encoding='utf-8')
-            )
-        # 문제 id에 맞게 폴더 이름 변경
-        os.rename(f"C:/Users/sdjmc/vscode/COCO_Back_End/tasks/test", 
-                  f'C:/Users/sdjmc/vscode/COCO_Back_End/tasks/{task_id}')
+        zip_file_path = f'/home/sjw/COCO_Back_End/tasks/{task_id}'
+        os.mkdir(zip_file_path)
 
-    #row개수+1 -> 새로운 문제 id
-    def get_count():
-        sql = f'SELECT COUNT(`id`) FROM coco.task;'       
-        return CrudTask.execute_mysql(sql)[0][0]
+        with open(f"{zip_file_path}/temp.zip", 'wb') as upload_zip:
+                shutil.copyfileobj(zip.file, upload_zip)
+        with zipfile.ZipFile(f"{zip_file_path}/temp.zip") as encrypt_zip:
+                encrypt_zip.extractall(
+                    zip_file_path,
+                    None
+                )
+        os.remove(f"{zip_file_path}/temp.zip")
 
     #problem view에서 가져옴
     def read_problems():
@@ -154,4 +166,16 @@ class CrudTask():
         cur.execute(query)
         con.commit()
         con.close()
+
+    def insert_last_mysql(query,desc):
+        con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,port=db_server.port,
+                            db=db_server.db, charset='utf8')  # 한글처리 (charset = 'utf8')
+        cur = con.cursor()
+        cur.execute(query)
+        cur.execute("select LAST_INSERT_ID();")
+        id=cur.fetchall()
+        cur.execute(f"insert into coco.descriptions values (LAST_INSERT_ID(),'{desc[0]}','{desc[1]}','{desc[2]}');")
+        con.commit()
+        con.close()
+        return id
 
