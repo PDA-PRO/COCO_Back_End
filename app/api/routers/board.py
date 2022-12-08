@@ -38,6 +38,14 @@ class CommentInfo(BaseModel):
     context: str
     board_id: int
 
+class DeleteBoard(BaseModel):
+    board_id: int
+    user_id: str
+
+
+class DeleteComment(BaseModel):
+    comment_id: int
+    user_id: str
 
 
 
@@ -65,3 +73,11 @@ async def comment_likes(commentLikes: CommentLikes):
 @router.post('/fastWrite/', tags = ['board'])
 async def fast_write(fastWrite: FastWrite):
     return {'code': crudBoard.fast_write(fastWrite)}
+
+@router.post('/delete_content/', tags=['board'])
+async def delete_content(board_id: DeleteBoard):
+    return {'code': crudBoard.delete_content(board_id)}
+
+@router.post('/delete_comment/', tags=['board'])
+async def delete_comment(comment_id: DeleteComment):
+    return {'code': crudBoard.delete_comment(comment_id)}

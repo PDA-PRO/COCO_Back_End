@@ -111,6 +111,23 @@ class CrudBoard():
         con.close()
         return idx[0][0]
 
+    def delete_content(self, board_id):
+        print(board_id)
+        board_sql = f"DELETE FROM `coco`.`boards` WHERE (`id` = '{board_id.board_id}');"
+        self.insert_mysql(board_sql)
+        comments_sql = f"select * from coco.comments_ids where board_id = '{board_id.board_id}';"
+        comments = self.execute_mysql(comments_sql)
+        for i in comments:
+            del_sql = f"DELETE FROM `coco`.`comments` WHERE (`id` = '{i[0]}');"
+            self.insert_mysql(del_sql)
+        return 1
+
+    def delete_comment(self, comment_id):
+        comment_sql = f"DELETE FROM `coco`.`comments` WHERE (`id` = '{comment_id.comment_id}');"
+        print(comment_sql)
+        self.insert_mysql(comment_sql)
+        return 1
+
     def execute_mysql(self, query):
         con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,
                             db=db_server.db, charset='utf8')  # 한글처리 (charset = 'utf8')
