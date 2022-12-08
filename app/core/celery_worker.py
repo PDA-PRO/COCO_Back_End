@@ -105,10 +105,10 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id):
                     output=output_file.readlines()
                     answer_file=open(answer_path,'r')
                     answer=answer_file.readlines()
+                    print(output)
                     if len(output):
                         for line_num in range(len(answer)):
                             if output[line_num].rstrip()!=answer[line_num].rstrip():
-                                print(output)
                                 submit.update(sub_id,int(exec_result["exitcode"]),stdout="".join(output),number_of_runs=TC_num,message="TC 실패")
                                 task_result=0
                                 output_file.close()
