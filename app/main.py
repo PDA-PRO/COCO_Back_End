@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from api.routers import scoring, login, task, board, status
+from api.routers import scoring, login, task, board, status, hot
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 
@@ -26,6 +26,7 @@ app.include_router(login.router)
 app.include_router(task.router)
 app.include_router(board.router)
 app.include_router(status.router)
+app.include_router(hot.router)
 
 @app.get("/test")
 async def hello_test():
