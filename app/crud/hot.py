@@ -32,8 +32,8 @@ class CrudHot():
             'problem_title': task_result[2],
             'problem_rate': task_result[3],
             'problem_diff': task_result[6],
-            'problem_timeLimit': task_result[4],
-            'problem_memLimit': task_result[5],
+            'problem_timeLimit': task_result[5],
+            'problem_memLimit': task_result[4],
             'problem_submitCount': task_result[0]    
         }
 
