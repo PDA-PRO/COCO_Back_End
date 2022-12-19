@@ -101,7 +101,7 @@ class CrudBoard():
         self.insert_mysql(type_sql)
 
     def insert_comments(self, query, idx_query):
-        con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,
+        con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,port=db_server.port,
                             db=db_server.db, charset='utf8')  # 한글처리 (charset = 'utf8')
         cur = con.cursor()
         cur.execute(query)
@@ -129,7 +129,7 @@ class CrudBoard():
         return 1
 
     def execute_mysql(self, query):
-        con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,
+        con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,port=db_server.port,
                             db=db_server.db, charset='utf8')  # 한글처리 (charset = 'utf8')
         cur = con.cursor()
         cur.execute(query)
@@ -138,7 +138,7 @@ class CrudBoard():
         return result
 
     def insert_mysql(self, query):
-        con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,
+        con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,port=db_server.port,
                             db=db_server.db, charset='utf8')  # 한글처리 (charset = 'utf8')
         cur = con.cursor()
         cur.execute(query)
