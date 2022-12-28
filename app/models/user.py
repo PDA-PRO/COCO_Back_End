@@ -3,3 +3,4 @@ class User():
     pw:str
     name:str
     role:str
+    email:str

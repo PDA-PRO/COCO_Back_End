@@ -91,7 +91,7 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id):
             #test case output data 저장공간
             answer_path='/home/sjw/COCO_Back_End/tasks/'+str(taskid)+'/output/'+TC_list[TC_num]
             #isolate 환경에서 실행
-            subprocess.run('isolate --meta '+meta_path+' --cg -t '+str(result[6])+' -d /etc:noexec --cg-mem='+str(result[5]*1000)+' -b '+str(box_id)+' --run /usr/bin/python3 src.py < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
+            subprocess.run('isolate --meta '+meta_path+' --cg -t '+str(result["time_limit"])+' -d /etc:noexec --cg-mem='+str(result["mem_limit"]*1000)+' -b '+str(box_id)+' --run /usr/bin/python3 src.py < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
             
             #실행결과 분석
             exec_result=txt_to_dic(meta_path)
