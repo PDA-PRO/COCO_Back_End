@@ -26,3 +26,7 @@ class FindPw(BaseModel):
     name: str
     id: str
     email:str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
