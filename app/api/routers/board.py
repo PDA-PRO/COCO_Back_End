@@ -1,83 +1,36 @@
-from pydantic import BaseModel
 from fastapi import APIRouter
-from crud.board import CrudBoard
-
+from crud.board import board_crud
+from schemas.board import *
 router = APIRouter()
-crudBoard = CrudBoard()
-
-class Board(BaseModel):
-    id: int
-    title: str
-    user_id: str
-    time: str
-    category: int
-    likes: int
-    views: int
-    comments: int
-
-class FastWrite(BaseModel):
-    user_id: str
-    title: str
-    context: str
-
-class BoardLikes(BaseModel):
-    user_id: str
-    board_id: int
-    likes: int
-    type: bool
-
-class CommentLikes(BaseModel):
-    user_id: str
-    board_id: int
-    comment_id: int
-    likes: int
-    type: bool
-
-class CommentInfo(BaseModel):
-    user_id: str
-    context: str
-    board_id: int
-
-class DeleteBoard(BaseModel):
-    board_id: int
-    user_id: str
-
-
-class DeleteComment(BaseModel):
-    comment_id: int
-    user_id: str
-
-
-
 
 @router.get('/board/', tags = ['board'])
 async def check_board():
-    return crudBoard.check_board()
+    return board_crud.check_board()
 
 @router.get('/board/{board_id}', tags = ['board'] )
 async def detail_board(board_id: int):
-    return crudBoard.board_detail(board_id)
+    return board_crud.board_detail(board_id)
 
 @router.post('/board_likes/', tags = ['board'])
 async def board_likes(boardLikes: BoardLikes):
-    return {'code': crudBoard.board_likes(boardLikes)}
+    return {'code': board_crud.board_likes(boardLikes)}
 
 @router.post('/comment/', tags = ['board'])
 async def write_comment(commentInfo: CommentInfo):
-    return {'code': crudBoard.write_comment(commentInfo)}
+    return {'code': board_crud.write_comment(commentInfo)}
 
 @router.post('/comment_likes/', tags = ['board'])
 async def comment_likes(commentLikes: CommentLikes):
-    return {'code': crudBoard.comment_likes(commentLikes)}
+    return {'code': board_crud.comment_likes(commentLikes)}
 
 @router.post('/fastWrite/', tags = ['board'])
 async def fast_write(fastWrite: FastWrite):
-    return {'code': crudBoard.fast_write(fastWrite)}
+    return {'code': board_crud.fast_write(fastWrite)}
 
 @router.post('/delete_content/', tags=['board'])
 async def delete_content(board_id: DeleteBoard):
-    return {'code': crudBoard.delete_content(board_id)}
+    return {'code': board_crud.delete_content(board_id)}
 
 @router.post('/delete_comment/', tags=['board'])
 async def delete_comment(comment_id: DeleteComment):
-    return {'code': crudBoard.delete_comment(comment_id)}
+    return {'code': board_crud.delete_comment(comment_id)}
