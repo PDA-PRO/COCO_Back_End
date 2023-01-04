@@ -33,8 +33,8 @@ class CrudUser(Crudbase):
             sql = "INSERT INTO `coco`.`student` (`std_id`, `rate`, `age`, `user_id`) VALUES (%s,%s,%s,%s);"
             data=(uuid.uuid1(), 0.00, user.age, user.id)
         else:
-            sql = "INSERT INTO `coco`.`teacher` (`tea_id`, `is_manager`, `user_id`) VALUES (%s,%s,%s);"
-            data=(uuid.uuid1(), 0, user.id)
+            sql = "INSERT INTO `coco`.`teacher` (`tea_id`, `user_id`) VALUES (%s,%s);"
+            data=(uuid.uuid1(), user.id)
         self.execute_sql(sql,data)
         return 1
 
