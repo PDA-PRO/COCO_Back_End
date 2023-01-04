@@ -6,22 +6,6 @@ from core import security
 db_server = db.db_server
 
 class CrudUser(Crudbase):
-    def check_db(self, user):
-        sql = "SELECT id, pw, role FROM `coco`.`user` where id = %s;"
-        data=(user.id)
-        result = self.select_sql(sql,data)
-        if len(result) == 0:#로그인 정보가 없다면
-            return 0
-        else:#로그인 정보가 있다면
-            if security.verify_password(user.pw, result[0]["pw"]):#패스워드가 맞다면
-                if result[0]["role"]=='1':#로그인 한사람이 선생이라면
-                    if self.check_manager(user.id):#매니저인지 확인
-                        return 2#매니저면 매니저 로그인 2
-                    else:#매니저가 아니면 그냥 로그인
-                        return 1
-                else:#선생이 아니라면 그냥 로그인
-                    return 1
-            return 0
 
     def get_user(self,user):
         sql = "SELECT id, pw, role FROM `coco`.`user` where id = %s;"
@@ -29,7 +13,7 @@ class CrudUser(Crudbase):
         result = self.select_sql(sql,data)
         return result
 
-    def check_db_v2(self, user_id, user_pw):
+    def check_db(self, user_id, user_pw):
         result = self.get_user(user_id)
         if len(result) == 0:#로그인 정보가 없다면
             return None
@@ -38,16 +22,6 @@ class CrudUser(Crudbase):
                 return result[0]
             return None
 
-    def check_manager(self, id):
-        sql = "SELECT is_manager FROM `coco`.`teacher` where user_id = %s;"
-        data=(id)
-        result = self.select_sql(sql,data)
-        if len(result) == 0:
-            return False
-        else:
-            if result[0]["is_manager"]==1:
-                return True
-            return False
 
     # 새로운 회원 정보 insert
     # pw해쉬값 저장
