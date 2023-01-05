@@ -11,14 +11,16 @@ class CrudHot(Crudbase):
             where b.id = i.board_id
             order by likes desc limit 1;
         """
-        board_result = self.select_sql(board_sql)[0]
+        board_result = self.select_sql(board_sql)
+        board_result = board_result[0]
         task_sql = """
             select count(*), i.task_id, t.title, t.rate, t.mem_limit, t.time_limit, t.diff 
             from coco.sub_ids as i , coco.task as t
             where i.task_id = t.id group by i.task_id order by count(*) 
             desc limit 1;
         """
-        task_result = self.select_sql(task_sql)[0]
+        task_result = self.select_sql(task_sql)
+        task_result = task_result[0]
         return {
             'board_id': board_result["id"],
             'user_id': board_result["user_id"],
