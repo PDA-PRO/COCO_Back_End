@@ -1,6 +1,6 @@
 class db_server:
     host = 'localhost'
     user = 'root'
-    password = 'twkZNoRsk}?F%n5n*t_4'
+    password = 'minsu0418'
     db = 'coco'
-    port = 3307
+    port = 3306
