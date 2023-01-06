@@ -14,14 +14,15 @@ class CrudSubmission(Crudbase):
         a=uuid.uuid1()
         sql=[]
         data=[]
-        sql.append("INSERT into coco.submissions (code,time,token,callback_url,status ) values(%s, %s, %s, %s, %s);")
+        sql.append("INSERT into coco.submissions (code,time,token,callback_url,status,lang ) values(%s, %s, %s, %s, %s,%s);")
         sql.append("insert into coco.sub_ids values (%s,%s,LAST_INSERT_ID());")
         data.append((
             submit.sourcecode,
             now.strftime('%Y-%m-%d %H:%M:%S'),
             a.hex,
             submit.callbackurl,
-            1))
+            1,
+            submit.lang))
         data.append((
             submit.userid,
             submit.taskid
