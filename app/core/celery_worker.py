@@ -187,6 +187,10 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang):
             if "keep" in i:
                 continue
             os.remove(i)
+
+        #정답률 수정
+        rate=submit.calc_rate(taskid)
+        task.update_rate(taskid,rate)
         
         #isolate id 삭제
         subprocess.run(['isolate', '--cg', '-b',str(box_id),'--cleanup'],capture_output=True)

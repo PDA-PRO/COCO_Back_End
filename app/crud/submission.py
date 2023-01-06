@@ -55,5 +55,15 @@ class CrudSubmission(Crudbase):
             status,
             sub_id)
         self.execute_sql(sql,data)
+    
+    def calc_rate(self,task_id):
+        sql="SELECT * FROM coco.status_all where task_id=%s;"
+        data=(task_id)
+        all_sub=self.select_sql(sql,data)
+        right_sub=0
+        for i in all_sub:
+            if i.get("status")==3:
+                right_sub+=1
+        return round(right_sub/len(all_sub)*100,1)
 
 submission_crud=CrudSubmission()

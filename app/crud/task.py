@@ -118,4 +118,10 @@ class CrudTask(Crudbase):
             result.append(i)
         return result
 
+    def update_rate(self, task_id,rate):
+        sql = "UPDATE task SET rate = %s WHERE (id = %s);"
+        data=(rate,task_id)
+        self.execute_sql(sql,data)
+
+
 task_crud=CrudTask()
