@@ -68,5 +68,20 @@ class CrudUser(Crudbase):
             return 0
         else:
             return result[0]["pw"]
+    
+    #유저의 경험치 업데이트
+    def update_exp(self,user_id):
+        sql="SELECT distinct user_id,task_id,diff FROM coco.user_problem where user_id=%s and status=3;"
+        data=(user_id)
+        result=self.select_sql(sql,data)
+
+        new_exp=0
+        for i in result:
+            new_exp+=i.get("diff")*100
+        sql="UPDATE coco.user SET exp = %s WHERE (id = %s);"
+        data=(new_exp,user_id)
+        self.execute_sql(sql,data)
+
+
 
 user_crud=CrudUser()

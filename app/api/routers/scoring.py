@@ -10,7 +10,7 @@ router = APIRouter()
 async def root(submit:Submit):
     # db에 새로운 제출 저장하기
     sub_id=submission_crud.init_submit(submit)
-    process_sub.apply_async([submit.taskid,submit.sourcecode,submit.callbackurl,"hi",sub_id,submit.lang])
+    process_sub.apply_async([submit.taskid,submit.sourcecode,submit.callbackurl,"hi",sub_id,submit.lang,submit.userid])
 
     return {"result": 1}
 

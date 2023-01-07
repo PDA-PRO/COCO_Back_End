@@ -7,6 +7,7 @@ import os
 import glob
 from crud.task import CrudTask
 from crud.submission import CrudSubmission
+from crud.user import user_crud
 
 redis_client = redis.Redis(host='127.0.0.1', port=6379)
 
@@ -70,7 +71,7 @@ def ready_C(code,box_id,sub_id):#C언어 채점 준비 -> 소스코드 컴파일
 
 
 @celery_task.task(ignore_result=True)
-def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang):
+def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
     box_id=1
     with redis.StrictRedis(host='127.0.0.1', port=6379, db=0) as conn:
         while True:#폴링으로 worker가 남았는지 계속 확인
@@ -171,6 +172,7 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang):
 
                 if task_result==1:#모든 TC를 통과했다면 정답처리
                     submit.update(sub_id,int(exec_result["exitcode"]),message="정답!",status=3)
+                    user_crud.update_exp(user_id)
             except:
                 print("채점 중 오류 발생")
         
