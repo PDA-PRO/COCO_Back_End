@@ -34,3 +34,11 @@ async def delete_content(board_id: DeleteBoard):
 @router.post('/delete_comment/', tags=['board'])
 async def delete_comment(comment_id: DeleteComment):
     return {'code': board_crud.delete_comment(comment_id)}
+
+@router.get('/boardlist', tags=['manage'])
+async def boardlist():
+    return board_crud.check_board()
+
+@router.get('/deleteBoard/{board_id}', tags=['manage'])
+async def deletetask(board_id):
+    return board_crud.delete_content(board_id)

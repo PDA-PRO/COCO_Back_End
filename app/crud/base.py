@@ -32,3 +32,20 @@ class Crudbase():
         con.commit()
         con.close()
         return id[0]["id"]
+    
+    def reset_auto_increment(self, cnt_query, reset_query):
+        print(cnt_query, reset_query)
+        con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,port=db_server.port,
+                    db=db_server.db, charset='utf8')  # 한글처리 (charset = 'utf8')
+        cur = con.cursor()
+        cur.execute(cnt_query)
+        row_cnt = cur.fetchall()
+        print(row_cnt[0][0])
+        if row_cnt[0][0] == 0:
+            cur.execute(reset_query)
+        con.commit()
+        con.close()
+        
+
+
+
