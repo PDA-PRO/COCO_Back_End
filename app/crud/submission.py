@@ -14,14 +14,15 @@ class CrudSubmission(Crudbase):
         a=uuid.uuid1()
         sql=[]
         data=[]
-        sql.append("INSERT into coco.submissions (code,time,token,callback_url,status ) values(%s, %s, %s, %s, %s);")
+        sql.append("INSERT into coco.submissions (code,time,token,callback_url,status,lang ) values(%s, %s, %s, %s, %s,%s);")
         sql.append("insert into coco.sub_ids values (%s,%s,LAST_INSERT_ID());")
         data.append((
             submit.sourcecode,
             now.strftime('%Y-%m-%d %H:%M:%S'),
             a.hex,
             submit.callbackurl,
-            1))
+            1,
+            submit.lang))
         data.append((
             submit.userid,
             submit.taskid
@@ -54,5 +55,15 @@ class CrudSubmission(Crudbase):
             status,
             sub_id)
         self.execute_sql(sql,data)
+    
+    def calc_rate(self,task_id):
+        sql="SELECT * FROM coco.status_all where task_id=%s;"
+        data=(task_id)
+        all_sub=self.select_sql(sql,data)
+        right_sub=0
+        for i in all_sub:
+            if i.get("status")==3:
+                right_sub+=1
+        return round(right_sub/len(all_sub)*100,1)
 
 submission_crud=CrudSubmission()
