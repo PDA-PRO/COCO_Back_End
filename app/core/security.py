@@ -2,11 +2,13 @@ from jose import jwt, JWTError
 from datetime import datetime, timedelta
 from passlib.context import CryptContext
 import os
+from fastapi import APIRouter,Depends,HTTPException,status
 from dotenv import load_dotenv
+from fastapi.security import OAuth2PasswordBearer
 
 #환경변수에서 민감한 정보 가져오기
 load_dotenv(verbose=True)
-
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def create_access_token(data: dict,is_admin=False,exp_time:int=7):
@@ -36,3 +38,14 @@ def decode_jwt(token: str) -> str:
     except JWTError:
         return ""
     return role
+
+def check_token(token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    role=decode_jwt(token)
+    if role=="":
+        raise credentials_exception
+    return {"role":role}

@@ -1,3 +1,4 @@
+from core import security
 from crud.task import task_crud
 from fastapi import APIRouter, Depends
 from schemas.task import Task
@@ -27,5 +28,5 @@ async def tasklist():
     return task_crud.select_simplelist()
 
 @router.get('/deletetask/{task_id}', tags=['manage'])
-async def deletetask(task_id):
+async def deletetask(task_id,token: dict = Depends(security.check_token)):
     return task_crud.delete_task(task_id)
