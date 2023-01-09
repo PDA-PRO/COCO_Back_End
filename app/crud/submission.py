@@ -1,36 +1,47 @@
 import pymysql
 import db
 import uuid
-from models.submission import Submission
 from schemas.submission import Submit
 import time
+from .base import Crudbase
 
 db_server = db.db_server
 
-class CrudSubmission():
+class CrudSubmission(Crudbase):
     
     def init_submit(self,submit:Submit):
         now = time
         a=uuid.uuid1()
-        sql="INSERT into coco.submissions (task_id, user_id, sub_id,code,time,token,callback_url,status ) values(%s, %s, %s, %s, %s, %s, %s,%s)"
-        data=(
-            submit.taskid,
-            submit.userid,
-            a.hex,
+        sql=[]
+        data=[]
+        sql.append("INSERT into coco.submissions (code,time,token,callback_url,status,lang ) values(%s, %s, %s, %s, %s,%s);")
+        sql.append("insert into coco.sub_ids values (%s,%s,LAST_INSERT_ID());")
+        data.append((
             submit.sourcecode,
             now.strftime('%Y-%m-%d %H:%M:%S'),
             a.hex,
             submit.callbackurl,
-            1)
-        self.insert_mysql(sql,data)
-        return a.hex
+            1,
+            submit.lang))
+        data.append((
+            submit.userid,
+            submit.taskid
+        ))
+        id=self.insert_last_id(sql,data)
+        return id
+
+    def select_submit(self,sub_id):
+        sql="SELECT * FROM coco.submissions WHERE sub_id=%s;"
+        data=(sub_id)
+        row=self.select_sql(sql,data)
+        return row
 
     def status_update(self, sub_id,status):
         sql="UPDATE coco.submissions SET status=%s WHERE sub_id=%s;"
         data=(
             status,
             sub_id)
-        self.insert_mysql(sql,data)
+        self.execute_sql(sql,data)
 
     def update(self,sub_id,exit_code,status=4,stdout=None,stderr=None,message=None,number_of_runs=100,status_id=None):
         sql="UPDATE coco.submissions SET status_id=%s ,exit_code=%s, stdout=%s, stderr=%s, message=%s, number_of_runs=%s, status=%s WHERE sub_id=%s;"
@@ -43,22 +54,16 @@ class CrudSubmission():
             number_of_runs,
             status,
             sub_id)
-        self.insert_mysql(sql,data)
+        self.execute_sql(sql,data)
+    
+    def calc_rate(self,task_id):
+        sql="SELECT * FROM coco.status_all where task_id=%s;"
+        data=(task_id)
+        all_sub=self.select_sql(sql,data)
+        right_sub=0
+        for i in all_sub:
+            if i.get("status")==3:
+                right_sub+=1
+        return round(right_sub/len(all_sub)*100,1)
 
-    def execute_mysql(self,query):
-        con = pymysql.connect(host=db_server.host, user=db_server.user, password='twkZNoRsk}?F%n5n*t_4',port=3307,
-                            db=db_server.db, charset='utf8')  # 한글처리 (charset = 'utf8')
-        cur = con.cursor()
-        cur.execute(query)
-        result = cur.fetchall()
-        con.close()
-        return result
-
-    # 회원가입 정보 insert
-    def insert_mysql(self,query,data):
-        con = pymysql.connect(host=db_server.host, user=db_server.user, password='twkZNoRsk}?F%n5n*t_4',port=3307,
-                            db=db_server.db, charset='utf8')  # 한글처리 (charset = 'utf8')
-        cur = con.cursor()
-        cur.execute(query,data)
-        con.commit()
-        con.close()
+submission_crud=CrudSubmission()

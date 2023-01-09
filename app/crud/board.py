@@ -1,66 +1,121 @@
-import pymysql
 import db
 from datetime import datetime
+from .base import Crudbase
 
 db_server = db.db_server
 
-class CrudBoard():
+class CrudBoard(Crudbase):
     def check_board(self):
-        sql = f'select * from view_board'
-        result = self.execute_mysql(sql)
-        contents = []
-        for i in result:
-            content = {
-                'board_id': i[0],
-                'title': i[1],
-                'time': i[2],
-                'category': i[3],
-                'likes': i[4],
-                'views': i[5],
-                'comments': i[6],
-                'user_id': i[7],
-            }
-            contents.append(content)
-        return contents
+        sql = 'select * from view_board order by time desc;'
+        result = self.select_sql(sql)
+        return result
 
     def board_detail(self, board_id):
-        print(board_id)
-        sql = f"SELECT * FROM coco.boards where id = '{board_id}';"
-        result = self.execute_mysql(sql)
+        views_sql = "SELECT views FROM coco.boards WHERE id = %s;"
+        data=(board_id)
+        cnt_views = self.select_sql(views_sql,data)
+        update_views = "UPDATE `coco`.`boards` SET `views` = %s WHERE (`id` = %s);"
+        data=(cnt_views[0]["views"]+1,board_id)
+        self.execute_sql(update_views,data)
+        sql = """
+            SELECT b.id, b.context, b.title, b.rel_task, b.time, b.category, b.likes, b.views, b.comments, i.user_id
+            FROM coco.boards AS b, coco.boards_ids AS i
+            WHERE b.id = i.board_id AND b.id = %s;
+        """
+        data=(board_id)
+        result = self.select_sql(sql,data)
+        comments_sql = """
+            SELECT c.id, c.context, c.write_time, c.likes, i.user_id, i.board_id
+            FROM coco.comments AS c, comments_ids AS i
+            WHERE i.comment_id = c.id AND i.board_id = %s;
+        """
+        data=(board_id)
+        comments_result = self.select_sql(comments_sql,data)
+
         return {
-            'id': result[0][0],
-            'context': result[0][1],
-            'title': result[0][2],
-            'rel_task': result[0][3],
-            'time': result[0][4],
-            'category': result[0][5],
-            'likes': result[0][6],
-            'views': result[0][7],
-            'comments': result[0][8]
+            'id': result[0]["id"],
+            'context': result[0]["context"],
+            'title': result[0]["title"],
+            'rel_task': result[0]["rel_task"],
+            'time': result[0]["time"],
+            'category': result[0]["category"],
+            'likes': result[0]["likes"],
+            'views': result[0]["views"],
+            'comments': result[0]["comments"],
+            'user_id': result[0]["user_id"],
+            'comments_datail': comments_result
         }
 
     def fast_write(self, fastWrite):
-        sql = f"INSERT INTO `coco`.`boards` (`context`, `title`, `time`, `category`, `likes`, `views`, `comments`) VALUES ('{fastWrite.context}', '{fastWrite.title}', '{datetime.now().date()}', '3', '0', '0', '0');"
-        self.insert_mysql(sql)
-        user_sql = f"SELECT * FROM coco.boards order by id;"
-        result = self.execute_mysql(user_sql)
-        board_sql = f"INSERT INTO `coco`.`boards_ids` (`board_id`, `user_id`) VALUES ('{result[-1][0]}', '{fastWrite.user_id}');"
-        self.insert_mysql(board_sql)
+        sql = "INSERT INTO `coco`.`boards` (`context`, `title`, `time`, `category`, `likes`, `views`, `comments`) VALUES (%s,%s,%s, '3', '0', '0', '0');"
+        data=(fastWrite.context, fastWrite.title, datetime.now())
+        self.execute_sql(sql,data)
+        user_sql = "SELECT * FROM coco.boards order by id;"
+        result = self.select_sql(user_sql)
+        board_sql = "INSERT INTO `coco`.`boards_ids` (`board_id`, `user_id`) VALUES (%s,%s);"
+        data=(result[-1]["id"], fastWrite.user_id)
+        self.execute_sql(board_sql,data)
         return 1
 
-    def execute_mysql(self, query):
-        con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,
-                            db=db_server.db, charset='utf8')  # 한글처리 (charset = 'utf8')
-        cur = con.cursor()
-        cur.execute(query)
-        result = cur.fetchall()
-        con.close()
-        return result
+    def board_likes(self, boardLikes):
+        update_sql = "UPDATE `coco`.`boards` SET `likes` = %s WHERE (`id` = %s);"
+        data=(boardLikes.likes, boardLikes.board_id)
+        self.execute_sql(update_sql,data)
+        type_sql = ""
+        if boardLikes.type:
+            type_sql = "DELETE FROM `coco`.`boards_likes` WHERE (`user_id` = %s) and (`boards_id` = %s);"
+            data=(boardLikes.user_id,boardLikes.board_id)
+        else:
+            type_sql = "INSERT INTO `coco`.`boards_likes` (`user_id`, `boards_id`) VALUES (%s, %s);" 
+            data=(boardLikes.user_id,boardLikes.board_id)
+        self.execute_sql(type_sql,data)
+        return 1
 
-    def insert_mysql(self, query):
-        con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,
-                            db=db_server.db, charset='utf8')  # 한글처리 (charset = 'utf8')
-        cur = con.cursor()
-        cur.execute(query)
-        con.commit()
-        con.close()
+    def write_comment(self, commentInfo):
+        sql=[]
+        data=[]
+        sql.append("INSERT INTO `coco`.`comments` (`context`, `write_time`, `likes`) VALUES (%s, %s, '0');")
+        data.append((commentInfo.context,datetime.now()))
+        last_idx = self.insert_last_id(sql, data)
+        comment_sql = "INSERT INTO `coco`.`comments_ids` (`comment_id`, `user_id`, `board_id`) VALUES (%s, %s,%s);"
+        data=(last_idx,commentInfo.user_id,commentInfo.board_id)
+        self.execute_sql(comment_sql,data)
+        cnt_sql = """
+            select count(*) as count from coco.comments_ids 
+            where board_id = %s;
+        """
+        data=(commentInfo.board_id)
+        cnt = self.select_sql(cnt_sql,data)
+        update_sql = "UPDATE `coco`.`boards` SET `comments` = %s WHERE (`id` = %s);"
+        data=(cnt[0]["count"],commentInfo.board_id)
+        self.execute_sql(update_sql,data)
+        return 1
+
+    def comment_likes(self, commentLikes):
+        update_sql = "UPDATE `coco`.`comments` SET `likes` = %s WHERE (`id` = %s);"
+        data=(commentLikes.likes,commentLikes.comment_id)
+        self.execute_sql(update_sql,data)
+        type_sql = ""
+        if commentLikes.type:
+            type_sql = "DELETE FROM `coco`.`comments_likes` WHERE (`user_id` = %s) and (`comment_id` = %s);"
+        else:
+            type_sql = "INSERT INTO `coco`.`comments_likes` (`user_id`, `comment_id`) VALUES (%s, %s);" 
+        data=(commentLikes.user_id,commentLikes.comment_id)
+        self.execute_sql(type_sql,data)
+
+    def delete_content(self, board_id):
+        comments_sql = "DELETE FROM coco.comments WHERE id in (select comment_id from coco.comments_ids where board_id=%s);"
+        data=(board_id.board_id)
+        self.execute_sql(comments_sql,data)
+        board_sql = "DELETE FROM `coco`.`boards` WHERE (`id` = %s);"
+        data=(board_id.board_id)
+        self.execute_sql(board_sql,data)
+        return 1
+
+    def delete_comment(self, comment_id):
+        comment_sql = "DELETE FROM `coco`.`comments` WHERE (`id` = %s);"
+        data=(comment_id.comment_id)
+        self.execute_sql(comment_sql,data)
+        return 1
+
+board_crud=CrudBoard()

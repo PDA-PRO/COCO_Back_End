@@ -1,21 +1,19 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from core import security
 from schemas.submission import Submit
 from core.celery_worker import process_sub
-from crud.submission import CrudSubmission
 import redis
-from crud.task import CrudTask
+from crud.submission import submission_crud
 
 router = APIRouter()
 
-
 @router.post("/submission/", tags=["submission"])
-async def root(submit:Submit):
+async def root(submit:Submit,token: dict = Depends(security.check_token)):
     # db에 새로운 제출 저장하기
-    crud_sub=CrudSubmission()
-    sub_id=crud_sub.init_submit(submit)
-    process_sub.apply_async([submit.taskid,submit.userid,submit.time,submit.sourcecode,submit.callbackurl,submit.token,sub_id])
+    sub_id=submission_crud.init_submit(submit)
+    process_sub.apply_async([submit.taskid,submit.sourcecode,submit.callbackurl,"hi",sub_id,submit.lang,submit.userid])
 
-    return {"message": submit}
+    return {"result": 1}
 
 @router.get("/running_stat/", tags=["submission"])
 async def work_result():
@@ -26,3 +24,11 @@ async def work_result():
             temp.append(int(conn.get(str(i))))
             i+=1
     return {"message": (temp)}
+
+@router.get("/result/{sub_id}", tags=["submission"])
+async def load_result(sub_id: int,token: dict = Depends(security.check_token)):
+    rows=submission_crud.select_submit(sub_id)
+    if len(rows):
+        return rows[0]
+    else:
+        return None

@@ -1,7 +1,6 @@
 from fastapi import FastAPI
-from api.routers import scoring, login, task, board
+from api.routers import scoring, login, task, board, status, hot, admin, authentication, mypage
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
 
 app = FastAPI()
 
@@ -25,12 +24,8 @@ app.include_router(scoring.router)
 app.include_router(login.router)
 app.include_router(task.router)
 app.include_router(board.router)
-
-@app.get("/test")
-async def hello_test():
-    return {"message": 'hello'}
-
-
-
-
-
+app.include_router(status.router)
+app.include_router(hot.router)
+app.include_router(admin.router)
+app.include_router(authentication.router)
+app.include_router(mypage.router)
