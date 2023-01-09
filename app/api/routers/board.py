@@ -8,9 +8,9 @@ router = APIRouter()
 async def check_board():
     return board_crud.check_board()
 
-@router.get('/board/{board_id}', tags = ['board'] )
-async def detail_board(board_id: int):
-    return board_crud.board_detail(board_id)
+@router.get('/board/{board_id}/{user_id}', tags = ['board'] )
+async def detail_board(board_id: int, user_id: str):
+    return board_crud.board_detail(board_id, user_id)
 
 @router.post('/board_likes/', tags = ['board'])
 async def board_likes(boardLikes: BoardLikes,token: dict = Depends(security.check_token)):
