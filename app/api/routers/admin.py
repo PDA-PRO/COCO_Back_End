@@ -23,7 +23,7 @@ async def admin_login(form_data: OAuth2PasswordRequestForm = Depends()):
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/modify_key", tags=["admin"])
-async def modify_admin_key(new_pw:Info):
+async def modify_admin_key(new_pw:Info,token:dict=Depends(security.check_token)):
     if check.modify_admin_key(new_pw=new_pw.PW):
         return
     else:
