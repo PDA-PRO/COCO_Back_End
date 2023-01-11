@@ -17,7 +17,7 @@ class CrudTask(Crudbase):
         return result[0]
     
     def select_simplelist(self):
-        sql="SELECT t.id,t.title,s.* FROM coco.task t left outer join coco.sub_per_task s on t.id=s.task_id;"
+        sql="SELECT t.id,t.title,t.rate,t.diff,t.lan_c,t.lan_py,s.* FROM coco.task t left outer join coco.sub_per_task s on t.id=s.task_id;"
         result = self.select_sql(sql)
         return result
 
