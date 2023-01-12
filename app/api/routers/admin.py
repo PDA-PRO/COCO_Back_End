@@ -4,6 +4,7 @@ from fastapi import APIRouter,Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from core import security
 from core.admin import check
+from crud.task import task_crud
 
 router = APIRouter(prefix="/manage")
 
@@ -32,6 +33,9 @@ async def modify_admin_key(new_pw:Info,token:dict=Depends(security.check_token))
             detail="admin PW 수정중 오류 발생"
         )
 
+@router.get("/tasklist", tags = ['admin'])
+async def get_tasklist():
+    return task_crud.manage_tasklist()
 
 @router.get("/notice",tags=["admin"])
 async def get_notice():
@@ -45,7 +49,6 @@ async def get_notice():
 
 @router.post('/notice', tags=["admin"])
 async def update_notice(data: str, token:dict=Depends(security.check_token)):
-    print(data)
     result=check.update_notice(data)
     if not result:
         raise HTTPException(

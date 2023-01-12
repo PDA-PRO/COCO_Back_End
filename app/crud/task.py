@@ -123,5 +123,14 @@ class CrudTask(Crudbase):
         data=(rate,task_id)
         self.execute_sql(sql,data)
 
+    def manage_tasklist(self):
+        sql = """
+            SELECT id, title, diff, rate, lan_c, lan_py, count(i.sub_id) as submits
+            FROM coco.task as t, coco.sub_ids as i
+            where t.id = i.task_id;
+        """
+        result = self.select_sql(sql)
+        return result
+
 
 task_crud=CrudTask()
