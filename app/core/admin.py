@@ -32,7 +32,7 @@ class Check():
         
     def update_notice(self,new_content):
         try:
-            with open("./../../COCO_Back_End/notice/notice.txt","w") as file:
+            with open("./../../COCO_Back_End/notice/notice.txt","w", encoding="UTF-8") as file:
                 file.write(new_content)
         except Exception as e:
             print("공지사항 파일 notice.txt 를 업데이트하는 중 오류가 발생하였습니다.",e)

@@ -43,10 +43,11 @@ async def get_notice():
         )
     return result
 
-@router.post("/notice/",tags=["admin"])
-async def update_notice(data:Notice,token:dict=Depends(security.check_token)):
-    rsult=check.update_notice(data.content)
-    if not rsult:
+@router.post('/notice', tags=["admin"])
+async def update_notice(data: str, token:dict=Depends(security.check_token)):
+    print(data)
+    result=check.update_notice(data)
+    if not result:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="공지사항 파일 업데이트 중 오류 발생"
