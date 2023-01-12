@@ -28,7 +28,7 @@ async def find_pw(info: FindPw):
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 @router.post("/login", response_model=Token,tags=["login"])
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+async def login_for_access_token(autologin:bool=False,form_data: OAuth2PasswordRequestForm = Depends()):
     user = user_crud.check_db(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -36,5 +36,8 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token = security.create_access_token( data={"sub": user["id"],"role":user["role"]})
+    if autologin:
+        access_token = security.create_access_token( data={"sub": user["id"],"role":user["role"]})
+    else:
+        access_token = security.create_access_token( data={"sub": user["id"],"role":user["role"]},exp_time=2)
     return {"access_token": access_token, "token_type": "bearer"}

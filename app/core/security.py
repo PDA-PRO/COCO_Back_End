@@ -11,9 +11,9 @@ load_dotenv(verbose=True)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-def create_access_token(data: dict,is_admin=False,exp_time:int=7):
+def create_access_token(data: dict,is_admin=False,exp_time:int=148):
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(days=exp_time)
+    expire = datetime.utcnow() + timedelta(hours=exp_time)
     print('to_encode: ', expire)
     to_encode.update({"exp": expire})
     if is_admin:
@@ -40,6 +40,11 @@ def decode_jwt(token: str) -> str:
     return role
 
 def check_token(token: str = Depends(oauth2_scheme)):
+    """
+    Validate the token
+    when token is invalid, error raised
+    raise error when token is invalid
+    """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
