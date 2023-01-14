@@ -62,10 +62,22 @@ class CrudTask(Crudbase):
                 )
         os.remove(f"{zip_file_path}/temp.zip")
 
-    #problem view에서 가져옴
-    def read_problems(self):
-        sql =  "SELECT * FROM view_task;"
-        result = self.select_sql(sql)
+    #
+    def read_problems(self,keyword:str=None,sort:str="id"):
+        '''
+        problem view에서 문제 리스트를 가져옴 
+        keyword가 존재할 시 해당 키워드를 포함하는 문제만 쿼리
+        sort가 id, title, diff, rate 중 한개라면 그에 맞게 정렬 쿼리
+        '''
+        if sort not in ["id","title","diff","rate"]:
+            sort="id"
+        if keyword:
+            sql =  "SELECT * FROM view_task where title like %s order by %s"
+            data=('%'+keyword+'%',sort)
+        else:
+            sql =  "SELECT * FROM view_task order by %s;"
+            data=(sort)
+        result = self.select_sql(sql,data)
         return result
     
 

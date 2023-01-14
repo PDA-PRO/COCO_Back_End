@@ -16,8 +16,8 @@ async def upload_task(task: Task = Depends()):
     }
 
 @router.get('/problems', tags=['manage'])
-async def read_task():
-    return task_crud.read_problems()
+async def read_task(keyword:str=None,sort:str="id"):
+    return task_crud.read_problems(keyword)
 
 @router.get('/problems/{task_id}', tags=['manage'])
 async def task_detail(task_id: int):
