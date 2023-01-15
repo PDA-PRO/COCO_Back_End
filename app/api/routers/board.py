@@ -24,9 +24,13 @@ async def write_comment(commentInfo: CommentInfo,token: dict = Depends(security.
 async def comment_likes(commentLikes: CommentLikes,token: dict = Depends(security.check_token)):
     return {'code': board_crud.comment_likes(commentLikes)}
 
-@router.post('/fastWrite/', tags = ['board'])
-async def fast_write(fastWrite: FastWrite,token: dict = Depends(security.check_token)):
-    return {'code': board_crud.fast_write(fastWrite)}
+# @router.post('/fastWrite/', tags = ['board'])
+# async def fast_write(fastWrite: FastWrite,token: dict = Depends(security.check_token)):
+#     return {'code': board_crud.fast_write(fastWrite)}
+
+@router.post('/write_board/', tags=['board'])
+async def write_board(writeBoard: WriteBoard, token: dict = Depends(security.check_token)):
+    return {'code': board_crud.write_board(writeBoard)}
 
 @router.post('/delete_content/', tags=['board'])
 async def delete_content(board_id: DeleteBoard,token: dict = Depends(security.check_token)):

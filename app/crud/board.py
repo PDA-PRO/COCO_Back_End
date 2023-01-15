@@ -49,7 +49,6 @@ class CrudBoard(Crudbase):
         """
         data = (board_id, user_id)
         comment_liked_result = self.select_sql(comment_liked_sql, data)
-        print(comment_liked_result[0]['comment_id'])
         if len(comment_liked_result) == 0:
             is_comment_liked = [False, 0]
         else:
@@ -71,14 +70,26 @@ class CrudBoard(Crudbase):
             'is_comment_liked': is_comment_liked
         }
 
-    def fast_write(self, fastWrite):
-        sql = "INSERT INTO `coco`.`boards` (`context`, `title`, `time`, `category`, `likes`, `views`, `comments`) VALUES (%s,%s,%s, '3', '0', '0', '0');"
-        data=(fastWrite.context, fastWrite.title, datetime.now())
+    # def fast_write(self, fastWrite):
+    #     sql = "INSERT INTO `coco`.`boards` (`context`, `title`, `time`, `category`, `likes`, `views`, `comments`) VALUES (%s,%s,%s, '3', '0', '0', '0');"
+    #     data=(fastWrite.context, fastWrite.title, datetime.now())
+    #     self.execute_sql(sql,data)
+    #     user_sql = "SELECT * FROM coco.boards order by id;"
+    #     result = self.select_sql(user_sql)
+    #     board_sql = "INSERT INTO `coco`.`boards_ids` (`board_id`, `user_id`) VALUES (%s,%s);"
+    #     data=(result[-1]["id"], fastWrite.user_id)
+    #     self.execute_sql(board_sql,data)
+    #     return 1
+
+    def write_board(self, writeBoard):
+        print(writeBoard)
+        sql = "INSERT INTO `coco`.`boards` (`context`, `title`, `time`, `category`, `likes`, `views`, `comments`) VALUES (%s,%s,%s, %s, '0', '0', '0');"
+        data=(writeBoard.context, writeBoard.title, datetime.now(), writeBoard.category)
         self.execute_sql(sql,data)
         user_sql = "SELECT * FROM coco.boards order by id;"
         result = self.select_sql(user_sql)
         board_sql = "INSERT INTO `coco`.`boards_ids` (`board_id`, `user_id`) VALUES (%s,%s);"
-        data=(result[-1]["id"], fastWrite.user_id)
+        data=(result[-1]["id"], writeBoard.user_id)
         self.execute_sql(board_sql,data)
         return 1
 
