@@ -16,8 +16,8 @@ async def upload_task(task: Task = Depends()):
     }
 
 @router.get('/problems', tags=['manage'])
-async def read_task():
-    return task_crud.read_problems()
+async def read_task(keyword:str=None,sort:str="id"):
+    return task_crud.read_problems(keyword)
 
 @router.get('/problems/{task_id}', tags=['manage'])
 async def task_detail(task_id: int):
@@ -26,6 +26,10 @@ async def task_detail(task_id: int):
 @router.get('/tasklist', tags=['manage'])
 async def tasklist():
     return task_crud.select_simplelist()
+
+@router.post("/order_task", tags=['manage'])
+async def order_task(order: dict):
+    return task_crud.order_task(order['order'])
 
 @router.get('/deletetask/{task_id}', tags=['manage'])
 async def deletetask(task_id,token: dict = Depends(security.check_token)):
