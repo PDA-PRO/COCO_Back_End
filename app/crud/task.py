@@ -21,6 +21,44 @@ class CrudTask(Crudbase):
         result = self.select_sql(sql)
         return result
 
+    def order_task(self, order):
+        if sum(order['diff']) == 0:
+            for i in range(5):
+                order['diff'][i] = i+1
+        if sum(order['lang']) == 0:
+            order['lang'][0], order['lang'][1] = 1, 1
+        print(order['diff'], order['lang'], order['rate'] )
+
+        if order['rate'] == '1':
+            #정답률 낮은 순 
+            sql = """
+                SELECT * FROM coco.task_list WHERE id in (select id from coco.task_list
+                where lan_c = %s and lan_py = %s)
+                having diff = %s OR diff = %s OR diff = %s OR diff = %s OR diff = %s
+                ORDER BY rate;
+            """
+            data = (order['lang'][1], order['lang'][0], order['diff'][0], order['diff'][1], order['diff'][2], order['diff'][3], order['diff'][4])
+            return self.select_sql(sql, data)
+        elif order['rate'] == '2':
+            # 정답률 높은 순
+            sql = """
+                SELECT * FROM coco.task_list WHERE id in (select id from coco.task_list
+                where lan_c = %s and lan_py = %s)
+                having diff = %s OR diff = %s OR diff = %s OR diff = %s OR diff = %s
+                ORDER BY rate DESC;
+            """
+            data = (order['lang'][1], order['lang'][0], order['diff'][0], order['diff'][1], order['diff'][2], order['diff'][3], order['diff'][4])
+            return self.select_sql(sql, data)
+        else:
+            sql = """
+                SELECT * FROM coco.task_list WHERE id in (select id from coco.task_list
+                where lan_c = %s and lan_py = %s)
+                having diff = %s OR diff = %s OR diff = %s OR diff = %s OR diff = %s;
+            """
+            data = (order['lang'][1], order['lang'][0], order['diff'][0], order['diff'][1], order['diff'][2], order['diff'][3], order['diff'][4])
+            return self.select_sql(sql, data)
+
+
     def delete_task(self,id):
         sql="DELETE FROM coco.submissions where sub_id in (SELECT sub_id FROM coco.sub_ids where task_id=%s)"
         data=(id)

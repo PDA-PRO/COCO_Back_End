@@ -27,6 +27,10 @@ async def task_detail(task_id: int):
 async def tasklist():
     return task_crud.select_simplelist()
 
+@router.post("/order_task", tags=['manage'])
+async def order_task(order: dict):
+    return task_crud.order_task(order['order'])
+
 @router.get('/deletetask/{task_id}', tags=['manage'])
 async def deletetask(task_id,token: dict = Depends(security.check_token)):
     return task_crud.delete_task(task_id)
