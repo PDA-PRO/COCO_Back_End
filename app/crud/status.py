@@ -1,12 +1,42 @@
 from .base import Crudbase
 
 class CrudStatus(Crudbase):
-    def select_status(self):
-        sql="select * from coco.status_list order by sub_id desc;"
-        result = self.select_sql(sql)
-        return result
+    def select_status(self, lang, result):
+        print(lang, result)
+        if lang == -1:
+            if result:
+                sql = """
+                    select * from coco.status_list 
+                    where status = 3
+                    order by sub_id desc;
+                """
+            else:
+                sql = """
+                    select * from coco.status_list 
+                    order by sub_id desc;
+                """
+            query_result = self.select_sql(sql)
+        else:
+            if result:
+                sql = """
+                    select * from coco.status_list 
+                    where lang = %s and status = 3
+                    order by sub_id desc;
+
+                """
+            else:
+                sql = """
+                    select * from coco.status_list 
+                    where lang = %s
+                    order by sub_id desc;
+                """
+            data = (lang)
+            query_result = self.select_sql(sql, data)
+
+        return query_result
 
     def select_status_user(self,user_id, lang, result):
+        print('result: ', user_id.strip(), lang, result)
         if result:
             if lang == -1:
                 sql = """
@@ -109,7 +139,6 @@ class CrudStatus(Crudbase):
                     """
                 data = ('%'+info.task_info+'%', '%'+info.task_info+'%', info.option[1])
         result = self.select_sql(sql,data)
-        print(result)
         return result
 
 status_crud=CrudStatus()

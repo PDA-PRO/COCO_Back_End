@@ -15,7 +15,7 @@ async def status(user_id: str|None = None, lang: int|None = None, result: bool|N
     if user_id:
         return status_crud.select_status_user(user_id, lang, result)
     else:
-        return status_crud.select_status()
+        return status_crud.select_status(lang, result)
 
 @router.post("/task_status/", tags=['status'])
 async def task_status(info: TaskStatus):
