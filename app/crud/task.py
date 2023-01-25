@@ -9,7 +9,7 @@ from .base import Crudbase
 db_server = db.db_server
 
 class CrudTask(Crudbase):
-    #해당 id의 문제 정보 검색
+    #해당 id의 문제 정보 검색 -> 문제 상세 페이지 이동
     def select_task(self,id):
         sql="SELECT * FROM coco.task WHERE id=%s"
         data=id
@@ -22,6 +22,7 @@ class CrudTask(Crudbase):
         return result
 
     def order_task(self, order):
+        print(order)
         if sum(order['diff']) == 0:
             for i in range(5):
                 order['diff'][i] = i+1
@@ -51,13 +52,16 @@ class CrudTask(Crudbase):
             return self.select_sql(sql, data)
         else:
             sql = """
-                SELECT * FROM coco.task_list WHERE id in (select id from coco.task_list
-                where lan_c = %s and lan_py = %s)
-                having diff = %s OR diff = %s OR diff = %s OR diff = %s OR diff = %s;
+                SELECT * FROM coco.task_list;
             """
-            data = (order['lang'][1], order['lang'][0], order['diff'][0], order['diff'][1], order['diff'][2], order['diff'][3], order['diff'][4])
-            return self.select_sql(sql, data)
+            return self.select_sql(sql)
 
+    def find_task(self, info):
+        print(info)
+        sql = "select * from coco.task_list where title like %s or id like %s"
+        data = ('%'+info+'%', '%'+info+'%')
+        result = self.select_sql(sql, data)
+        return result
 
     def delete_task(self,id):
         sql="DELETE FROM coco.submissions where sub_id in (SELECT sub_id FROM coco.sub_ids where task_id=%s)"

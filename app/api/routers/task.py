@@ -2,10 +2,12 @@ from core import security
 from crud.task import task_crud
 from fastapi import APIRouter, Depends
 from schemas.task import Task
+from pydantic import BaseModel
 
 router = APIRouter()
 
-
+class Info(BaseModel):
+    info: str
 
 #일단은 입출력 예제 두개씩 넣기
 @router.post('/manage/', tags=['manage'])
@@ -32,5 +34,9 @@ async def order_task(order: dict):
     return task_crud.order_task(order['order'])
 
 @router.get('/deletetask/{task_id}', tags=['manage'])
-async def deletetask(task_id,token: dict = Depends(security.check_token)):
+async def deletetask(task_id, token: dict = Depends(security.check_token)):
     return task_crud.delete_task(task_id)
+
+@router.post("/find_task/", tags=['manage'])
+async def find_task(info: Info):
+    return task_crud.find_task(info.info)
