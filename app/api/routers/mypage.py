@@ -9,12 +9,17 @@ router = APIRouter()
 async def mypage_one(user_id: str,token: dict = Depends(security.check_token)):
     return mypage.myinfo(user_id)
 
+@router.get('/myPageTwo/{user_id}', tags = ['mypage'])
+# async def mypage_two(user_id: str, token: dict = Depends(security.check_token)):
+async def mypage_two(user_id: str):
+    return mypage.myproblems(user_id)
+
 @router.get('/myPageThree/{user_id}', tags=['mypage'])
-async def mypage_three(user_id: str,token: dict = Depends(security.check_token)):
+async def mypage_three(user_id: str, token: dict = Depends(security.check_token)):
     return mypage.myboard(user_id)
 
 @router.post('/delete_myboard{board_id}', tags=['mypage'])
-async def delete_myboard(board_id:int,token: dict = Depends(security.check_token)):
+async def delete_myboard(board_id:int, token: dict = Depends(security.check_token)):
     return mypage.delete_myboard(board_id)
 
 @router.post('/changePW/', tags=['mypage'])
