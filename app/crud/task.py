@@ -1,10 +1,10 @@
 import shutil
-import pymysql
 import db
 import json
 import os
 import zipfile
 from .base import Crudbase
+from core.image import image
 
 db_server = db.db_server
 
@@ -89,6 +89,9 @@ class CrudTask(Crudbase):
 
         id=self.insert_last_id(sql,data)
         self.save_testcase(task.testCase,id)
+        if task.desPic!=None:
+            for img in task.desPic:
+                image.upload(3,id,img,0)
 
     #test case zip파일 압축해서 저장
     def save_testcase(self,zip, task_id):
@@ -132,6 +135,13 @@ class CrudTask(Crudbase):
         desc_sql = "SELECT * FROM coco.descriptions where task_id = %s;"
         data=(id)
         desc_result = self.select_sql(desc_sql,data)
+        filepath=os.path.join(os.getenv("TASK_PATH"),str(id))
+        taskinfo=os.listdir(filepath)
+        img=[]
+        for i in taskinfo:
+            if i.split(".")[-1] in ['jpg','JPG','jpeg']:
+                img.append(i)
+        img.sort()
         task = {
             'id': result[0]["id"],
             'title': result[0]["title"],
@@ -148,6 +158,7 @@ class CrudTask(Crudbase):
             'mainDesc': desc_result[0]["main"],
             'inDesc': desc_result[0]["in"],
             'outDesc': desc_result[0]["out"],
+            "img":img
         }
         return task
 
