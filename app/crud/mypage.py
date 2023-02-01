@@ -52,9 +52,6 @@ class CrudMyPage(Crudbase):
                 else:
                     solved_cnt.append([i['time'], i['cnt']])
 
-        
-        print('total: ', total_submit, total_solved)
-
         #전체 맞은 문제 리스트 + 성장 그래프
         solved_list_sql = """
             SELECT time, task_id, diff
@@ -101,22 +98,23 @@ class CrudMyPage(Crudbase):
             for i in range(len(growth), 8):
                 growth.append(['0000', 0])      
 
-        print("월별 제출 수: ", submit_cnt)
-        print("월별 정답 수: ", solved_cnt)
-        print("전체 맞은 문제 리스트: ", solved_list)
-        print("성장 그래프: ", sorted(growth, reverse=True))          
+        # print('total: ', total_submit, total_solved)
+        # print("월별 제출 수: ", submit_cnt)
+        # print("월별 정답 수: ", solved_cnt)
+        # print("전체 맞은 문제 리스트: ", solved_list)
+        # print("성장 그래프: ", sorted(growth, reverse=True))          
 
         return {
             'month_submit': submit_cnt,
             'month_solved': solved_cnt,
-            'solved_list': solved_list,
+            'solved_list': set(solved_list),
             'unsolved_list': unsolved_list,
             'growth': sorted(growth, reverse=True),
             'rate': round((total_solved/total_submit)*100, 1)
         }
 
     def myboard(self, user_id):
-        sql = "SELECT * FROM coco.view_board WHERE user_id = %s;"
+        sql = "SELECT * FROM coco.view_board WHERE user_id = %s order by time desc;"
         data = user_id
         result = self.select_sql(sql, data)
         return result

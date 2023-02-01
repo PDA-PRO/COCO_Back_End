@@ -8,9 +8,9 @@ router = APIRouter()
 async def check_board():
     return board_crud.check_board()
 
-@router.get('/board/{board_id}/{user_id}', tags = ['board'] )
-async def detail_board(board_id: int, user_id: str):
-    return board_crud.board_detail(board_id, user_id)
+@router.get('/board/{board_id}', tags = ['board'] )
+async def detail_board(board_id: int):
+    return board_crud.board_detail(board_id)
 
 @router.post('/board_likes/', tags = ['board'])
 async def board_likes(boardLikes: BoardLikes,token: dict = Depends(security.check_token)):
@@ -23,10 +23,6 @@ async def write_comment(commentInfo: CommentInfo,token: dict = Depends(security.
 @router.post('/comment_likes/', tags = ['board'])
 async def comment_likes(commentLikes: CommentLikes,token: dict = Depends(security.check_token)):
     return {'code': board_crud.comment_likes(commentLikes)}
-
-# @router.post('/fastWrite/', tags = ['board'])
-# async def fast_write(fastWrite: FastWrite,token: dict = Depends(security.check_token)):
-#     return {'code': board_crud.fast_write(fastWrite)}
 
 @router.post('/write_board/', tags=['board'])
 async def write_board(writeBoard: WriteBoard, token: dict = Depends(security.check_token)):
@@ -47,3 +43,8 @@ async def boardlist():
 @router.get('/deleteBoard/{board_id}', tags=['manage'])
 async def deletetask(board_id):
     return board_crud.delete_content(board_id)
+
+@router.post('/update_board/', tags=['board'])
+async def update_board(updateBoard: UpdateBoard, token: dict = Depends(security.check_token)):
+    return {'code': board_crud.update_board(updateBoard)} 
+

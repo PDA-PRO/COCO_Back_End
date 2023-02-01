@@ -11,16 +11,20 @@ class Board(BaseModel):
     views: int
     comments: int
 
-# class FastWrite(BaseModel):
-#     user_id: str
-#     title: str
-#     context: str
-
 class WriteBoard(BaseModel):
     user_id: str
     title: str
     context: str
     category: int
+    code: str=None
+
+class UpdateBoard(BaseModel):
+    board_id: int
+    user_id: str
+    title: str
+    context: str
+    category: int
+    code: str=None
 
 class BoardLikes(BaseModel):
     user_id: str
