@@ -10,7 +10,7 @@ class CrudBoard(Crudbase):
         result = self.select_sql(sql)
         return result
 
-    def board_detail(self, board_id, user_id):
+    def board_detail(self, board_id):
         views_sql = "SELECT views FROM coco.boards WHERE id = %s;"
         data=(board_id)
         cnt_views = self.select_sql(views_sql,data)
@@ -19,7 +19,8 @@ class CrudBoard(Crudbase):
         self.execute_sql(update_views,data)
 
         sql = """
-            SELECT b.id, b.context, b.title, b.rel_task, b.time, b.category, b.likes, b.views, b.comments, i.user_id
+            SELECT b.id, b.context, b.title, b.rel_task, b.time, 
+            b.category, b.likes, b.views, b.comments, i.user_id, b.code
             FROM coco.boards AS b, coco.boards_ids AS i
             WHERE b.id = i.board_id AND b.id = %s;
         """
@@ -34,25 +35,24 @@ class CrudBoard(Crudbase):
         data=(board_id)
         comments_result = self.select_sql(comments_sql,data)
 
-        board_liked_sql = "SELECT user_id FROM coco.boards_likes WHERE boards_id = %s and user_id = %s;"
-        data = (board_id, user_id)
+        board_liked_sql = "SELECT user_id FROM coco.boards_likes WHERE boards_id = %s;"
+        data = (board_id)
         board_liked_result = self.select_sql(board_liked_sql, data)
-        if len(board_liked_result) == 0:
-            is_board_liked = False
-        else:
-            is_board_liked = True
+
+        board_liked_list = []
+        for i in board_liked_result:
+            board_liked_list.append(i['user_id'])
 
         comment_liked_sql = """
             SELECT l.user_id, i.comment_id
             FROM coco.comments_likes AS l, coco.comments_ids AS i, coco.boards AS b
-            WHERE l.comment_id = i.comment_id AND b.id = %s AND l.user_id = %s;
+            WHERE l.comment_id = i.comment_id AND b.id = %s;
         """
-        data = (board_id, user_id)
+        data = (board_id)
         comment_liked_result = self.select_sql(comment_liked_sql, data)
-        if len(comment_liked_result) == 0:
-            is_comment_liked = [False, 0]
-        else:
-            is_comment_liked = [True, comment_liked_result[0]['comment_id']]
+        comment_liked_list = []
+        for i in comment_liked_result:
+            comment_liked_list.append([i['user_id'], i['comment_id']])
 
         return {
             'id': result[0]["id"],
@@ -65,26 +65,16 @@ class CrudBoard(Crudbase):
             'views': result[0]["views"],
             'comments': result[0]["comments"],
             'user_id': result[0]["user_id"],
+            'code': result[0]["code"],
             'comments_datail': comments_result,
-            'is_board_liked': is_board_liked,
-            'is_comment_liked': is_comment_liked
+            'is_board_liked': board_liked_list,
+            'is_comment_liked': comment_liked_list
         }
-
-    # def fast_write(self, fastWrite):
-    #     sql = "INSERT INTO `coco`.`boards` (`context`, `title`, `time`, `category`, `likes`, `views`, `comments`) VALUES (%s,%s,%s, '3', '0', '0', '0');"
-    #     data=(fastWrite.context, fastWrite.title, datetime.now())
-    #     self.execute_sql(sql,data)
-    #     user_sql = "SELECT * FROM coco.boards order by id;"
-    #     result = self.select_sql(user_sql)
-    #     board_sql = "INSERT INTO `coco`.`boards_ids` (`board_id`, `user_id`) VALUES (%s,%s);"
-    #     data=(result[-1]["id"], fastWrite.user_id)
-    #     self.execute_sql(board_sql,data)
-    #     return 1
 
     def write_board(self, writeBoard):
         print(writeBoard)
-        sql = "INSERT INTO `coco`.`boards` (`context`, `title`, `time`, `category`, `likes`, `views`, `comments`) VALUES (%s,%s,%s, %s, '0', '0', '0');"
-        data=(writeBoard.context, writeBoard.title, datetime.now(), writeBoard.category)
+        sql = "INSERT INTO `coco`.`boards` (`context`, `title`, `time`, `category`, `likes`, `views`, `comments`, `code`) VALUES (%s,%s,%s, %s, '0', '0', '0', %s);"
+        data=(writeBoard.context, writeBoard.title, datetime.now(), writeBoard.category, writeBoard.code)
         self.execute_sql(sql,data)
         user_sql = "SELECT * FROM coco.boards order by id;"
         result = self.select_sql(user_sql)
@@ -150,6 +140,12 @@ class CrudBoard(Crudbase):
         comment_sql = "DELETE FROM `coco`.`comments` WHERE (`id` = %s);"
         data=(comment_id.comment_id)
         self.execute_sql(comment_sql,data)
+        return 1
+
+    def update_board(self, updateBoard):
+        sql = "UPDATE coco.boards SET context = %s, title = %s WHERE (id = %s);"
+        data = (updateBoard.context, updateBoard.title, updateBoard.board_id)
+        self.execute_sql(sql,data)
         return 1
 
 board_crud=CrudBoard()
