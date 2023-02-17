@@ -34,9 +34,18 @@ class Check():
         return html
         
     def update_notice(self,new_content):
+        tempimagelist=os.listdir(os.getenv("NOTICE_PATH"))
+        imagelist=[]
+        for entity in new_content.entity.values():
+            imagename=entity.get("data").get("src").split('/')[-1]
+            imagelist.append(imagename)
+        for i in tempimagelist:
+            if i.split(".")[-1]!="keep" and not i in imagelist:
+                os.remove(os.path.join(os.getenv("NOTICE_PATH"),i))
+
         try:
-            with open("./../../COCO_Back_End/notice/notice.txt","w", encoding="UTF-8") as file:
-                file.write(new_content)
+            with open(os.path.join(os.getenv("NOTICE_PATH"),"notice.txt"),"w", encoding="UTF-8") as file:
+                file.write(new_content.html)
         except Exception as e:
             print("공지사항 파일 notice.txt 를 업데이트하는 중 오류가 발생하였습니다.",e)
             return False

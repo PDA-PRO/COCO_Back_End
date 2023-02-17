@@ -39,5 +39,15 @@ class Image():
         elif type==4:#프로필 이미지
             filepath=os.getenv("PROFILE_PATH")
         return os.path.join(filepath,filename)
+    
+    def upload_temp_notice(self,file):
+        nowtime=datetime.now().strftime('%Y%m%d%H%M%S%f')
+        extension=file.filename.split(".")[-1].lower()
+        filepath=os.getenv("NOTICE_PATH")
+        filename=nowtime+"."+extension
+        
+        with open(os.path.join(filepath,filename),"wb+") as new_image:
+            new_image.write(file.file.read())
+        return filename
 
 image=Image()
