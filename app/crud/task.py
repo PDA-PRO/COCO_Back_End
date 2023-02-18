@@ -74,26 +74,42 @@ class CrudTask(Crudbase):
         return 1
 
     #coco.task insert
-    def insert_task(self,task):  
+    def insert_task(self,task,description):  
         cLan = 1 if task.C_Lan == True else 0
         py = 1 if task.python == True else 0 
-        desc=(task.description,task.inputDescription,task.outputDescription)
+        
         sql=[]
         data=[]
-
-        #time_limit, diff는 한자리 숫자
+        
+        #time_limit, diff는 한자리 숫자 task 테이블에 문제 먼저 삽입해서 id추출
         sql.append("INSERT INTO `coco`.`task` ( `title`, `sample`, `rate`, `mem_limit`, `time_limit`, `diff`, `lan_c`, `lan_py`) VALUES ( %s,json_object('input', %s, 'output',%s), %s, %s, %s, %s, %s, %s);")
         data.append((task.title,f"[{task.inputEx1}, {task.inputEx2}]",f"[{task.outputEx1}, {task.outputEx2}]",0.00,task.memLimit,task.timeLimit,task.diff,cLan,py))
-        sql.append("insert into coco.descriptions values (LAST_INSERT_ID(),%s,%s,%s);")
-        data.append(desc)
-
         id=self.insert_last_id(sql,data)
-        self.save_testcase(task.testCase,id)
-        if task.desPic!=None:
-            for img in task.desPic:
-                image.upload(3,id,img,0)
 
-    #test case zip파일 압축해서 저장
+        #저장된 main desc에서 쓰인 사진만 추출 및 텍스트 에디터의 사진 경로를 실제 사진 경로로 수정
+        jsonObject = json.loads(description)
+        imagelist=[]
+        for entity in jsonObject.get("entityMap").values():
+            imagename=entity.get("data").get("src").split('/')[-2]
+            imagelist.append(imagename)
+            entity["data"]["src"]=entity["data"]["src"][:-5]+"?id="+str(id)
+        maindesc=json.dumps(jsonObject)
+
+        #desc 저장
+        temp=(id,maindesc,task.inputDescription,task.outputDescription)
+        self.execute_sql("insert into coco.descriptions values (%s,%s,%s,%s);",temp)
+        self.save_testcase(task.testCase,id)
+        
+        #temp폴더에서 실제로 저장되지 않은 사진 삭제 및 실제로 쓰인 사진를 문제 id에 맞는 경로로 이동
+        tempimagelist=os.listdir(os.path.join(os.getenv("TASK_PATH"),"temp")) #jwt가 같이 들어오면 이걸 user id로 변경
+        for i in tempimagelist:
+            if i.split(".")[-1]!="keep" and not i in imagelist:
+                os.remove(os.path.join(os.getenv("TASK_PATH"),"temp",i))
+            else:
+                shutil.move(os.path.join(os.getenv("TASK_PATH"),"temp",i),os.path.join(os.getenv("TASK_PATH"),str(id),i))
+
+
+    #test case zip파일 압축해서 저장ㄴ
     def save_testcase(self,zip, task_id):
         zip_file_path = f'/home/sjw/COCO_Back_End/tasks/{task_id}'
         os.mkdir(zip_file_path)
