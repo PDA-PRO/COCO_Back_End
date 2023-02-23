@@ -151,13 +151,6 @@ class CrudTask(Crudbase):
         desc_sql = "SELECT * FROM coco.descriptions where task_id = %s;"
         data=(id)
         desc_result = self.select_sql(desc_sql,data)
-        filepath=os.path.join(os.getenv("TASK_PATH"),str(id))
-        taskinfo=os.listdir(filepath)
-        img=[]
-        for i in taskinfo:
-            if i.split(".")[-1] in ['jpg','JPG','jpeg']:
-                img.append(i)
-        img.sort()
         task = {
             'id': result[0]["id"],
             'title': result[0]["title"],
@@ -174,7 +167,6 @@ class CrudTask(Crudbase):
             'mainDesc': desc_result[0]["main"],
             'inDesc': desc_result[0]["in"],
             'outDesc': desc_result[0]["out"],
-            "img":img
         }
         return task
 
