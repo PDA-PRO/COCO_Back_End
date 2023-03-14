@@ -10,8 +10,7 @@ async def mypage_one(user_id: str,token: dict = Depends(security.check_token)):
     return mypage.myinfo(user_id)
 
 @router.get('/myPageTwo/{user_id}', tags = ['mypage'])
-# async def mypage_two(user_id: str, token: dict = Depends(security.check_token)):
-async def mypage_two(user_id: str):
+async def mypage_two(user_id: str, token: dict = Depends(security.check_token)):
     return mypage.myproblems(user_id)
 
 @router.get('/myPageThree/{user_id}', tags=['mypage'])

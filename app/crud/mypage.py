@@ -13,7 +13,7 @@ class CrudMyPage(Crudbase):
 
     def myproblems(self, user_id):
         data = user_id
-        total_submit, total_solved = 0, 0
+        total_submit, total_solved = 1, 1
         #월별 제출수
         submit_cnt_sql = """
             SELECT time, count(*) as cnt FROM coco.user_problem
