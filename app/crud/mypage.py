@@ -157,9 +157,10 @@ class CrudMyPage(Crudbase):
         if check_result == 0:
             sql ="INSERT INTO `coco`.`my_tasks` (`user_id`, `task_num`) VALUES (%s, %s);"
             self.execute_sql(sql, data)
+            return True
         else:
             return False
-        return True
+    
     
     def task_lists(self, user_id):
         sql = "SELECT task_num FROM coco.my_tasks WHERE user_id = %s;"
