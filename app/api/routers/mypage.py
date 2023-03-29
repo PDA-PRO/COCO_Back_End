@@ -36,3 +36,7 @@ async def my_task(info: MyTask, token: dict = Depends(security.check_token)):
 @router.get("/mytasks/{user_id}", tags = ['mypage'])
 async def task_lists(user_id: str, token: dict = Depends(security.check_token)):
     return mypage.task_lists(user_id)
+
+@router.post("/delete_mytask", tags=['mypage'])
+async def delete_mytask(info: MyTask, token:dict = Depends(security.check_token)):
+    return mypage.delete_mytask(info)

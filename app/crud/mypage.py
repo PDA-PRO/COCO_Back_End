@@ -166,6 +166,12 @@ class CrudMyPage(Crudbase):
         data = (user_id)
         result = self.select_sql(sql, data)
         return result
+    
+    def delete_mytask(self, info):
+        sql = "DELETE FROM `coco`.`my_tasks` WHERE (`user_id` = %s) and (`task_num` = %s);"
+        data = (info.user_id, info.task_id)
+        self.execute_sql(sql, data)
+        return True
 
 
 
