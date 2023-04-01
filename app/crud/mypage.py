@@ -149,7 +149,7 @@ class CrudMyPage(Crudbase):
         self.execute_sql(sql, data)
         return 1
     
-    def my_task(self, info):
+    def post_mytask(self, info):
         data = (info.user_id, info.task_id)
         check_sql = "select exists( select 1 from coco.my_tasks where user_id = %s and task_num = %s) as my_task;" 
         result = self.select_sql(check_sql, data)
@@ -162,8 +162,12 @@ class CrudMyPage(Crudbase):
             return False
     
     
-    def task_lists(self, user_id):
-        sql = "SELECT task_num FROM coco.my_tasks WHERE user_id = %s;"
+    def get_mytasks(self, user_id):
+        sql = """
+            SELECT t.*, m.solved
+            FROM coco.my_tasks as m, coco.task_list as t
+            WHERE user_id = %s and m.task_num = t.id;
+        """
         data = (user_id)
         result = self.select_sql(sql, data)
         return result
