@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from core import security
 from crud.group import group
+from schemas.group import *
 
 router = APIRouter(prefix='/group')
 
@@ -12,3 +13,11 @@ async def all_groups():
 @router.get("/mygroup/{user_id}", tags=['group'])
 async def mygroup(user_id: str):
     return group.mygroup(user_id)
+
+@router.get("/userlist/", tags=["group"])
+async def userlist():
+    return group.userlist()
+
+@router.post("/makegroup/", tags=["group"])
+async def make_group(info: MakeGroup):
+    return group.make_group(info)
