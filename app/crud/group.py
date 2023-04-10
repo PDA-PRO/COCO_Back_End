@@ -1,3 +1,4 @@
+from datetime import datetime
 from .base import Crudbase
 from core import security
 import db
@@ -23,5 +24,22 @@ class CrudGroup(Crudbase):
             );
         """
         return self.select_sql(sql, data)
+    
+    def userlist(self):
+        sql = "select id, name, exp from coco.user;"
+        return self.select_sql(sql)
+    
+    def make_group(self, info):
+        group_sql, group_data = [], []
+        group_sql.append("INSERT INTO `coco`.`group` (`name`, `desc`) VALUES (%s, %s);")
+        group_data.append((info.name, info.desc))
+        last_idx = self.insert_last_id(group_sql, group_data)
+        print(last_idx)
+        member_sql = "INSERT INTO coco.group_users (group_id, user_id) VALUES (%s, %s);"
+        for member in info.members:
+            data = (last_idx, member)
+            self.execute_sql(member_sql, data)
+
+            
 
 group = CrudGroup()
