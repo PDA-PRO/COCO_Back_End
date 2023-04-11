@@ -40,6 +40,12 @@ class CrudGroup(Crudbase):
             data = (last_idx, member)
             self.execute_sql(member_sql, data)
 
+    def search_user(self, info):
+        print(info)
+        sql = "SELECT id, name, exp, level FROM coco.user WHERE id LIKE %s OR name LIKE %s;"
+        data = ('%'+info+'%', '%'+info+'%')
+        return self.select_sql(sql, data)
+
             
 
 group = CrudGroup()
