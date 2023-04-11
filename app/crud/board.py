@@ -30,7 +30,8 @@ class CrudBoard(Crudbase):
         comments_sql = """
             SELECT c.id, c.context, c.write_time, c.likes, i.user_id, i.board_id
             FROM coco.comments AS c, coco.comments_ids AS i
-            WHERE i.comment_id = c.id AND i.board_id = %s;
+            WHERE i.comment_id = c.id AND i.board_id = %s
+            order by write_time desc;
         """
         data=(board_id)
         comments_result = self.select_sql(comments_sql,data)

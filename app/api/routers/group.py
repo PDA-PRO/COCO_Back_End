@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from core import security
 from crud.group import group
 from schemas.group import *
+from pydantic import BaseModel
 
 router = APIRouter(prefix='/group')
 
@@ -21,3 +22,10 @@ async def userlist():
 @router.post("/makegroup/", tags=["group"])
 async def make_group(info: MakeGroup):
     return group.make_group(info)
+
+class Info(BaseModel):
+    info: str
+
+@router.post("/search_user/", tags=["group"])
+async def search_user(info: Info):
+    return group.search_user(info.info)
