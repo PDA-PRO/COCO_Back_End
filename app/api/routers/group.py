@@ -29,3 +29,11 @@ class Info(BaseModel):
 @router.post("/search_user/", tags=["group"])
 async def search_user(info: Info):
     return group.search_user(info.info)
+
+@router.post("/leave_group/", tags=["group"])
+async def leave_group(info: LeaveGroup):
+    return group.leave_group(info)
+
+@router.post("/delete_group/{group_id}/", tags=["group"])
+async def delete_group(info: int):
+    return group.delete_group(info)
