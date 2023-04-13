@@ -31,8 +31,8 @@ class CrudGroup(Crudbase):
     
     def make_group(self, info):
         group_sql, group_data = [], []
-        group_sql.append("INSERT INTO `coco`.`group` (`name`, `desc`) VALUES (%s, %s);")
-        group_data.append((info.name, info.desc))
+        group_sql.append("INSERT INTO `coco`.`group` (`name`, `desc`, `leader`) VALUES (%s, %s, %s);")
+        group_data.append((info.name, info.desc, info.leader))
         last_idx = self.insert_last_id(group_sql, group_data)
         print(last_idx)
         member_sql = "INSERT INTO coco.group_users (group_id, user_id) VALUES (%s, %s);"
@@ -45,6 +45,40 @@ class CrudGroup(Crudbase):
         sql = "SELECT id, name, exp, level FROM coco.user WHERE id LIKE %s OR name LIKE %s;"
         data = ('%'+info+'%', '%'+info+'%')
         return self.select_sql(sql, data)
+    
+    # 그룹 개수 -> ai 초기화 때문에
+    def group_len(self):
+        sql = "select count(id) as cnt from coco.group;"
+        result =  self.select_sql(sql)
+        return result[0]['cnt']
+    
+    # ai 초기화
+    def ai_reset(self, num):
+        sql = ["set @cnt = 0;", "update coco.group set coco.group.id = @cnt:=@cnt+1;", "alter table coco.group auto_increment = %s;"]
+        data = (num)
+        self.group_ai_reset(sql, data)
+    
+    def leave_group(self, info):
+        sql = "DELETE FROM `coco`.`group_users` WHERE (`group_id` = %s AND `user_id` = %s);"
+        data = (info.group_id, info.user_id)
+        len_sql = "select count(group_id) as cnt from coco.group_users where group_id = %s;"
+        len_data = (info.group_id)
+        group_len = self.select_sql(len_sql, len_data)
+        if group_len == 0:
+            sql = "DELETE FROM `coco`.`group` WHERE (`id` = %s);"
+            data = (info.group_id)
+            self.execute_sql(sql, data)
+
+    def delete_group(self, info):
+        sql = "DELETE FROM `coco`.`group` WHERE (`id` = %s);"
+        data = (info)
+        self.execute_sql(sql, data)
+        len = self.group_len()
+        print(len)
+        self.ai_reset(len)
+
+            
+
 
             
 

@@ -8,7 +8,7 @@ db_server = db.db_server
 class CrudUser(Crudbase):
 
     def get_user(self,user):
-        sql = "SELECT id, pw, role FROM `coco`.`user` where id = %s;"
+        sql = "SELECT id, pw, name, role, exp, level FROM `coco`.`user` where id = %s;"
         data=(user)
         result = self.select_sql(sql,data)
         return result
