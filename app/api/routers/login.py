@@ -37,7 +37,7 @@ async def login_for_access_token(autologin:bool=False,form_data: OAuth2PasswordR
             headers={"WWW-Authenticate": "Bearer"},
         )
     if autologin:
-        access_token = security.create_access_token( data={"sub": user["id"],"role":user["role"]})
+        access_token = security.create_access_token( data={"sub": user["id"],"role":user["role"], "user_exp":user["exp"], "level":user["level"]})
     else:
-        access_token = security.create_access_token( data={"sub": user["id"],"role":user["role"]},exp_time=2)
+        access_token = security.create_access_token( data={"sub": user["id"],"role":user["role"], "user_exp":user["exp"], "level":user["level"]},exp_time=2)
     return {"access_token": access_token, "token_type": "bearer"}

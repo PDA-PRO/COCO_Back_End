@@ -14,7 +14,6 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 def create_access_token(data: dict,is_admin=False,exp_time:int=148):
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(hours=exp_time)
-    print('to_encode: ', expire)
     to_encode.update({"exp": expire})
     if is_admin:
         to_encode.update({"role": 100})

@@ -31,9 +31,13 @@ async def search_user(info: Info):
     return group.search_user(info.info)
 
 @router.post("/leave_group/", tags=["group"])
-async def leave_group(info: LeaveGroup):
+async def leave_group(info: ModifyGroup):
     return group.leave_group(info)
 
 @router.post("/delete_group/{group_id}/", tags=["group"])
 async def delete_group(info: int):
     return group.delete_group(info)
+
+@router.post("/invite_member/", tags=["group"])
+async def invite_member(info: ModifyGroup):
+    return group.invite_member(info)
