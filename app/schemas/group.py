@@ -6,6 +6,6 @@ class MakeGroup(BaseModel):
     leader: str
     members: list
 
-class LeaveGroup(BaseModel):
+class ModifyGroup(BaseModel):
     group_id: int
     user_id: str
