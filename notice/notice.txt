@@ -1,2 +1,5 @@
-<p>새로운 공지입니당!</p>
-<p>새로운 공지입니당!!</p>
+<h1><span style="font-size: 60px;">제목 1입니다.</span></h1>
+<ul>
+<li>리<span style="color: rgb(44,130,201);">스트이비니다.</span></li>
+<li><span style="color: rgb(44,130,201);">ssssdddd</span></li>
+</ul>

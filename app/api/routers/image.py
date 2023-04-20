@@ -13,7 +13,7 @@ exception = HTTPException(
 
 @router.post("/upload",tags=["image"],)
 async def image_upload(request: Request,type:int,file:UploadFile,id:str=None,token: dict = Depends(security.check_token)):
-
+    """type 1 공지글 type 2 게시판 type 3문제글 type 4 프로필"""
     image_path=""
     if type!=1:
         if id==None:
@@ -24,6 +24,19 @@ async def image_upload(request: Request,type:int,file:UploadFile,id:str=None,tok
     else:
         image_path=image.upload(type,id,file,token["role"])
         return str(request.base_url)+"image/download/"+str(type)+"/"+image_path
+    
+@router.post("/upload-temp",tags=["image"],)
+async def image_upload(request: Request,type:int,file:UploadFile,id:str=None):
+    """type 1 공지글 type 2 게시판 type 3문제글 type 4 프로필"""
+    image_name=""
+    if type==1:
+        image_name=image.upload_temp_notice(file)
+        return str(request.base_url)+"image/download/"+str(type)+"/"+image_name
+    elif type==2:
+        pass
+    elif type==3:
+        image_name=image.upload_temp_task(file)
+        return str(request.base_url)+"image/download/"+str(type)+"/"+image_name+"/temp"
 
 @router.get("/download/{type}/{filename}",tags=["image"],)
 async def image_download(filename:str,type:int,id:str=None):
@@ -38,3 +51,10 @@ async def image_download(filename:str,type:int,id:str=None):
         image_path=image.download(filename,type,id)
     return FileResponse(image_path)
 
+@router.get("/download/{type}/{filename}/temp",tags=["image"],)
+async def image_download(filename:str,type:int):
+
+    image_path=""
+    if type==3:
+        image_path=image.download_temp(filename,type)
+    return FileResponse(image_path)
