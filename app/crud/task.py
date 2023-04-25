@@ -70,7 +70,7 @@ class CrudTask(Crudbase):
         sql="DELETE FROM coco.task where id=%s"
         data=(id)
         self.execute_sql(sql,data)
-        shutil.rmtree(f'/home/sjw/COCO_Back_End/tasks/{id}')
+        shutil.rmtree(f'/COCO_Back_End/tasks/{id}')
         return 1
 
     #coco.task insert
@@ -111,7 +111,7 @@ class CrudTask(Crudbase):
 
     #test case zip파일 압축해서 저장ㄴ
     def save_testcase(self,zip, task_id):
-        zip_file_path = f'/home/sjw/COCO_Back_End/tasks/{task_id}'
+        zip_file_path = f'/COCO_Back_End/tasks/{task_id}'
         os.mkdir(zip_file_path)
 
         with open(f"{zip_file_path}/temp.zip", 'wb') as upload_zip:
