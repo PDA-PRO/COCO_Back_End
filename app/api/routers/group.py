@@ -35,13 +35,13 @@ async def leave_group(info: ModifyGroup):
     return group.leave_group(info)
 
 @router.post("/delete_group/{group_id}/", tags=["group"])
-async def delete_group(info: int):
-    return group.delete_group(info)
+async def delete_group(group_id: int):
+    return group.delete_group(group_id)
 
 @router.post("/invite_member/", tags=["group"])
 async def invite_member(info: ModifyGroup):
     return group.invite_member(info)
 
 @router.get("/{group_id}/", tags=['group'])
-async def get_group(info: int):
-    return group.get_group(info)
+async def get_group(group_id: int):
+    return group.get_group(group_id)
