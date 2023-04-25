@@ -21,7 +21,8 @@ class CrudGroup(Crudbase):
             from coco.group as g, coco.group_users as u
             where u.group_id = g.id in (
                 select group_id from  coco.group_users where user_id = %s
-            );
+            )
+            group by g.id;
         """
         return self.select_sql(sql, data)
     
