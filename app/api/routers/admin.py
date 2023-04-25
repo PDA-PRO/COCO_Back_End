@@ -48,8 +48,8 @@ async def get_notice():
     return result
 
 @router.post('/notice', tags=["admin"])
-async def update_notice(data: str, token:dict=Depends(security.check_token)):
-    result=check.update_notice(data)
+async def update_notice(content: Notice):
+    result=check.update_notice(content)
     if not result:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
