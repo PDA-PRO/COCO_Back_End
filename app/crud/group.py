@@ -8,9 +8,10 @@ db_server = db.db_server
 class CrudGroup(Crudbase):
     def all_groups(self):
         sql = """
-            select g.id, g.name, g.desc, g.leader, count(g.id) as members
-            from coco.group as g, coco.group_users as u
-            where g.id = u.group_id group by g.id;
+            select g.id, g.name, g.desc, g.leader, count(g.id) as members, sum(u.exp) as exp
+            from coco.group as g, coco.group_users as gu, coco.user as u
+            where g.id = gu.group_id and gu.user_id = u.id
+            group by g.id order by exp desc;
         """
         return self.select_sql(sql)
     
@@ -82,6 +83,29 @@ class CrudGroup(Crudbase):
         sql = "INSERT INTO coco.group_users (group_id, user_id) VALUES (%s, %s);"
         data = (info.group_id, info.user_id)
         self.execute_sql(sql, data)
+
+    def get_group(self, info):
+        sql = """
+            select g.id, g.name, g.desc, g.leader, gu.user_id, u.exp
+            from coco.group as g, coco.group_users as gu, coco.user as u
+            where gu.group_id = g.id and gu.group_id = %s and gu.user_id = u.id;
+        """
+        data = (info)
+        result = self.select_sql(sql, data)
+        members = []
+        exp = 0
+        for user in result:
+            members.append({user['user_id']:user['exp']})
+            exp += user['exp']
+
+        return {
+            'group_id': result[0]['id'],
+            'name': result[0]['name'],
+            'desc': result[0]['desc'],
+            'leader': result[0]['leader'],
+            'members': members,
+            'exp': exp
+        }
 
 
             

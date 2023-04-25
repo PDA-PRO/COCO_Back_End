@@ -41,3 +41,7 @@ async def delete_group(info: int):
 @router.post("/invite_member/", tags=["group"])
 async def invite_member(info: ModifyGroup):
     return group.invite_member(info)
+
+@router.post("/{group_id}/", tags=['group'])
+async def get_group(info: int):
+    return group.get_group(info)
