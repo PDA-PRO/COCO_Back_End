@@ -20,7 +20,7 @@ class CrudBoard(Crudbase):
 
         sql = """
             SELECT b.id, b.context, b.title, b.rel_task, b.time, 
-            b.category, b.likes, b.views, b.comments, i.user_id, b.code
+            b.category, b.likes, b.views, b.comments, i.user_id, b.code, b.group_id
             FROM coco.boards AS b, coco.boards_ids AS i
             WHERE b.id = i.board_id AND b.id = %s;
         """
@@ -67,6 +67,7 @@ class CrudBoard(Crudbase):
             'comments': result[0]["comments"],
             'user_id': result[0]["user_id"],
             'code': result[0]["code"],
+            'group_id': result[0]['group_id'],
             'comments_datail': comments_result,
             'is_board_liked': board_liked_list,
             'is_comment_liked': comment_liked_list
@@ -74,8 +75,8 @@ class CrudBoard(Crudbase):
 
     def write_board(self, writeBoard):
         print(writeBoard)
-        sql = "INSERT INTO `coco`.`boards` (`context`, `title`, `time`, `category`, `likes`, `views`, `comments`, `code`) VALUES (%s,%s,%s, %s, '0', '0', '0', %s);"
-        data=(writeBoard.context, writeBoard.title, datetime.now(), writeBoard.category, writeBoard.code)
+        sql = "INSERT INTO `coco`.`boards` (`context`, `title`, `time`, `category`, `likes`, `views`, `comments`, `code`, `group_id`) VALUES (%s,%s,%s, %s, '0', '0', '0', %s, %s);"
+        data=(writeBoard.context, writeBoard.title, datetime.now(), writeBoard.category, writeBoard.code, writeBoard.group_id)
         self.execute_sql(sql,data)
         user_sql = "SELECT * FROM coco.boards order by id;"
         result = self.select_sql(user_sql)
