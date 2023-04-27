@@ -106,6 +106,14 @@ class CrudGroup(Crudbase):
             'members': members,
             'exp': exp
         }
+    
+    def group_boardlist(self, group_id):
+        sql = "SELECT * FROM coco.view_board WHERE group_id = %s;"
+        data = (group_id)
+        return self.select_sql(sql, data)
+    
+    # def group_detail_board(self, group_id, board_id):
+    #     print(group_id, board_id)
 
 
             

@@ -30,7 +30,7 @@ class CrudTask(Crudbase):
             order['lang'][0], order['lang'][1] = 1, 1
         print(order['diff'], order['lang'], order['rate'] )
 
-        if order['rate'] == '1':
+        if order['rate'] == '1' or order['rate'] == 0:
             #정답률 낮은 순 
             sql = """
                 SELECT * FROM coco.task_list WHERE id in (select id from coco.task_list
@@ -82,8 +82,8 @@ class CrudTask(Crudbase):
         data=[]
         
         #time_limit, diff는 한자리 숫자 task 테이블에 문제 먼저 삽입해서 id추출
-        sql.append("INSERT INTO `coco`.`task` ( `title`, `sample`, `rate`, `mem_limit`, `time_limit`, `diff`, `lan_c`, `lan_py`) VALUES ( %s,json_object('input', %s, 'output',%s), %s, %s, %s, %s, %s, %s);")
-        data.append((task.title,f"[{task.inputEx1}, {task.inputEx2}]",f"[{task.outputEx1}, {task.outputEx2}]",0.00,task.memLimit,task.timeLimit,task.diff,cLan,py))
+        sql.append("INSERT INTO `coco`.`task` ( `title`, `desc`, `sample`, `rate`, `mem_limit`, `time_limit`, `diff`, `lan_c`, `lan_py`) VALUES ( %s, %s, json_object('input', %s, 'output',%s), %s, %s, %s, %s, %s, %s);")
+        data.append((task.title, task.desc, f"[{task.inputEx1}, {task.inputEx2}]",f"[{task.outputEx1}, {task.outputEx2}]",0.00,task.memLimit,task.timeLimit,task.diff,cLan,py))
         id=self.insert_last_id(sql,data)
 
         #저장된 main desc에서 쓰인 사진만 추출 및 텍스트 에디터의 사진 경로를 실제 사진 경로로 수정
@@ -107,6 +107,7 @@ class CrudTask(Crudbase):
                 os.remove(os.path.join(os.getenv("TASK_PATH"),"temp",i))
             else:
                 shutil.move(os.path.join(os.getenv("TASK_PATH"),"temp",i),os.path.join(os.getenv("TASK_PATH"),str(id),i))
+        return 1
 
 
     #test case zip파일 압축해서 저장ㄴ

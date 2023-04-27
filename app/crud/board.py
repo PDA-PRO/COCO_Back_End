@@ -6,7 +6,7 @@ db_server = db.db_server
 
 class CrudBoard(Crudbase):
     def check_board(self):
-        sql = 'select * from view_board order by time desc;'
+        sql = 'select * from view_board where group_id = 0 order by time desc;'
         result = self.select_sql(sql)
         return result
 
@@ -80,7 +80,7 @@ class CrudBoard(Crudbase):
         self.execute_sql(sql,data)
         user_sql = "SELECT * FROM coco.boards order by id;"
         result = self.select_sql(user_sql)
-        board_sql = "INSERT INTO `coco`.`boards_ids` (`board_id`, `user_id`) VALUES (%s,%s);"
+        board_sql = "INSERT INTO `coco`.`boards_ids` (`board_id`, `user_id`, `group_id`) VALUES (%s, %s, %s);"
         data=(result[-1]["id"], writeBoard.user_id)
         self.execute_sql(board_sql,data)
         return 1

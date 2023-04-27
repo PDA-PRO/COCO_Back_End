@@ -18,9 +18,8 @@ async def upload_task(description :str=Form(...),task: Task = Depends()):
     description : 텍스트 에디터의 raw format 즉 json형식의 str
     task : 문제의 다른 요소들
     """
-    task_crud.insert_task(task,description)
     return {
-        "result": 1,
+        "result":  task_crud.insert_task(task,description)
     }
 
 @router.get('/problems', tags=['manage'])
