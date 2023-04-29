@@ -95,7 +95,7 @@ class CrudGroup(Crudbase):
         members = []
         exp = 0
         for user in result:
-            members.append({user['user_id']:user['exp']})
+            members.append([user['user_id'],user['exp']])
             exp += user['exp']
 
         return {
