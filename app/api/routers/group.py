@@ -50,3 +50,20 @@ async def group_boardlist(group_id: int):
 # @router.get("/board/{group_id}/{board_id}", tags=["group"])
 # async def group_detail_board(group_id: int, board_id: int):
 #     return group.group_detail_board(group_id, board_id)
+
+@router.post("/create_workbook", tags=["group"])
+async def create_workbook(info: GroupWorkBook):
+    return group.create_workbook(info)
+
+@router.get("/group_workbooks/{group_id}", tags=["group"])
+async def group_workbooks(group_id: int):
+    return group.group_workbooks(group_id)
+
+@router.get("/workbook/{workbook_id}", tags=["group"])
+async def workbook(workbook_id: int):
+    return group.workbook(workbook_id)
+
+@router.post("/add_problem", tags=["group"])
+async def add_task(info: AddProblem):
+    return group.add_task(info)
+

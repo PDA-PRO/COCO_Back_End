@@ -115,6 +115,31 @@ class CrudGroup(Crudbase):
     # def group_detail_board(self, group_id, board_id):
     #     print(group_id, board_id)
 
+    def create_workbook(self, info):
+        sql = "INSERT INTO `coco`.`group_workbook` (`group_id`, `workbook_name`) VALUES (%s, %s);"
+        data = (info.group_id, info.workbook_name)
+        self.execute_sql(sql, data)
+        return True
+
+    def group_workbooks(self, group_id):
+        sql = "SELECT * FROM coco.group_workbook where group_id = %s;"
+        data = (group_id)
+        return self.select_sql(sql, data)
+    
+    def workbook(self, workbook_id):
+        sql = """
+            select w.workbook_id, t.*
+            from coco.workbook_problems as w, coco.task_list as t
+            where w.workbook_id = %s and w.task_id = t.id;
+        """
+        data = (workbook_id)
+        return self.select_sql(sql, data)
+    
+    def add_task(self, info):
+        sql = "INSERT INTO `coco`.`workbook_problems` (`workbook_id`, `task_id`) VALUES (%s, %s);"
+        data = (info.workbook_id, info.task_id)
+        self.execute_sql(sql, data)
+        return True
 
             
 
