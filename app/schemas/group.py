@@ -10,11 +10,6 @@ class ModifyGroup(BaseModel):
     group_id: int
     user_id: str
 
-class GroupWorkBook(BaseModel):
+class GroupProblem(BaseModel):
     group_id: int
-    workbook_name: str
-
-
-class AddProblem(BaseModel):
-    workbook_id: int
     task_id: int
