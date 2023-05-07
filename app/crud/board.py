@@ -81,7 +81,7 @@ class CrudBoard(Crudbase):
         user_sql = "SELECT * FROM coco.boards order by id;"
         result = self.select_sql(user_sql)
         board_sql = "INSERT INTO `coco`.`boards_ids` (`board_id`, `user_id`, `group_id`) VALUES (%s, %s, %s);"
-        data=(result[-1]["id"], writeBoard.user_id)
+        data=(result[-1]["id"], writeBoard.user_id, writeBoard.group_id)
         self.execute_sql(board_sql,data)
         return 1
 
