@@ -17,6 +17,7 @@ class WriteBoard(BaseModel):
     context: str
     category: int
     code: str=None
+    group_id: int
 
 class UpdateBoard(BaseModel):
     board_id: int

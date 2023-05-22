@@ -9,3 +9,7 @@ class MakeGroup(BaseModel):
 class ModifyGroup(BaseModel):
     group_id: int
     user_id: str
+
+class GroupProblem(BaseModel):
+    group_id: int
+    task_id: int

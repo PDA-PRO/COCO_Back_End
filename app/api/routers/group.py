@@ -23,21 +23,40 @@ async def userlist():
 async def make_group(info: MakeGroup):
     return group.make_group(info)
 
-class Info(BaseModel):
-    info: str
-
 @router.post("/search_user/", tags=["group"])
-async def search_user(info: Info):
-    return group.search_user(info.info)
+async def search_user(user_id: str):
+    return group.search_user(user_id)
 
 @router.post("/leave_group/", tags=["group"])
 async def leave_group(info: ModifyGroup):
     return group.leave_group(info)
 
 @router.post("/delete_group/{group_id}/", tags=["group"])
-async def delete_group(info: int):
-    return group.delete_group(info)
+async def delete_group(group_id: int):
+    return group.delete_group(group_id)
 
 @router.post("/invite_member/", tags=["group"])
 async def invite_member(info: ModifyGroup):
     return group.invite_member(info)
+
+@router.get("/{group_id}/", tags=['group'])
+async def get_group(group_id: int):
+    return group.get_group(group_id)
+
+@router.get("/board/{group_id}", tags=["group"])
+async def group_boardlist(group_id: int):
+    return group.group_boardlist(group_id)
+
+@router.get("/group_workbooks/{group_id}", tags=["group"])
+async def group_workbooks(group_id: int):
+    return group.group_workbooks(group_id)
+
+@router.post("/add_problem", tags=["group"])
+async def add_problem(info: GroupProblem):
+    return {
+        "code": group.add_problem(info)
+    }
+
+@router.post("/delete_problem", tags=["group"])
+async def delete_problem(info: GroupProblem):
+    return group.delete_problem(info)
