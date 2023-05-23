@@ -3,7 +3,6 @@ from fastapi import  UploadFile
 
 class Task(BaseModel):
     title: str
-    desc: str
     diff: int
     timeLimit: int
     memLimit: int

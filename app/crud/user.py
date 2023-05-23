@@ -23,24 +23,22 @@ class CrudUser(Crudbase):
             return None
 
 
-    # 새로운 회원 정보 insert
-    # pw해쉬값 저장
+    
     def insert_db(self, user):
+        """
+        새로운 회원 정보 insert
+        pw해쉬값 저장
+        """
         sql = "INSERT INTO `coco`.`user` (`id`, `pw`, `name`, `role`, `email`) VALUES (%s,%s,%s,%s,%s)"
         data=(user.id, security.get_password_hash(user.pw), user.name, user.role, user.email)
-        self.execute_sql(sql,data)
-        if user.role == 0:
-            sql = "INSERT INTO `coco`.`student` (`std_id`, `rate`, `age`, `user_id`) VALUES (%s,%s,%s,%s);"
-            data=(uuid.uuid1(), 0.00, user.age, user.id)
-        else:
-            sql = "INSERT INTO `coco`.`teacher` (`tea_id`, `user_id`) VALUES (%s,%s);"
-            data=(uuid.uuid1(), user.id)
         self.execute_sql(sql,data)
         return 1
 
 
-    # 회원가입시 아이디 중복 검사
     def check_id(self, id):
+        """
+        회원가입시 아이디 중복 검사
+        """
         sql = "SELECT id FROM `coco`.`user` where id = %s;"
         data=(id)
         result = self.select_sql(sql,data)
@@ -49,8 +47,10 @@ class CrudUser(Crudbase):
         else:
             return 0
 
-    #id 찾기
     def find_id(self, info):
+        """
+        id 찾기
+        """
         sql = "SELECT id FROM `coco`.`user` WHERE name = %s AND email = %s"
         data=(info.name,info.email)
         result = self.select_sql(sql,data)

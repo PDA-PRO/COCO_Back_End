@@ -70,7 +70,7 @@ class CrudTask(Crudbase):
         sql="DELETE FROM coco.task where id=%s"
         data=(id)
         self.execute_sql(sql,data)
-        shutil.rmtree(f'/COCO_Back_End/tasks/{id}')
+        shutil.rmtree(os.path.join(os.getenv("TASK_PATH"),str(id)))
         return 1
 
     #coco.task insert
@@ -82,8 +82,8 @@ class CrudTask(Crudbase):
         data=[]
         
         #time_limit, diff는 한자리 숫자 task 테이블에 문제 먼저 삽입해서 id추출
-        sql.append("INSERT INTO `coco`.`task` ( `title`, `desc`, `sample`, `rate`, `mem_limit`, `time_limit`, `diff`, `lan_c`, `lan_py`) VALUES ( %s, %s, json_object('input', %s, 'output',%s), %s, %s, %s, %s, %s, %s);")
-        data.append((task.title, task.desc, f"[{task.inputEx1}, {task.inputEx2}]",f"[{task.outputEx1}, {task.outputEx2}]",0.00,task.memLimit,task.timeLimit,task.diff,cLan,py))
+        sql.append("INSERT INTO `coco`.`task` ( `title`, `sample`, `rate`, `mem_limit`, `time_limit`, `diff`, `lan_c`, `lan_py`) VALUES ( %s, json_object('input', %s, 'output',%s), %s, %s, %s, %s, %s, %s);")
+        data.append((task.title, f"[{task.inputEx1}, {task.inputEx2}]",f"[{task.outputEx1}, {task.outputEx2}]",0.00,task.memLimit,task.timeLimit,task.diff,cLan,py))
         id=self.insert_last_id(sql,data)
 
         #저장된 main desc에서 쓰인 사진만 추출 및 텍스트 에디터의 사진 경로를 실제 사진 경로로 수정
@@ -112,9 +112,9 @@ class CrudTask(Crudbase):
 
     #test case zip파일 압축해서 저장ㄴ
     def save_testcase(self,zip, task_id):
-        zip_file_path = f'/COCO_Back_End/tasks/{task_id}'
+        zip_file_path = os.path.join(os.getenv("TASK_PATH"),str(task_id))
         os.mkdir(zip_file_path)
-
+        
         with open(f"{zip_file_path}/temp.zip", 'wb') as upload_zip:
                 shutil.copyfileobj(zip.file, upload_zip)
         with zipfile.ZipFile(f"{zip_file_path}/temp.zip") as encrypt_zip:
