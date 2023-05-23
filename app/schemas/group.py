@@ -13,3 +13,7 @@ class ModifyGroup(BaseModel):
 class GroupProblem(BaseModel):
     group_id: int
     task_id: int
+
+class SearchMember(BaseModel):
+    user_id: str
+    group_id: int

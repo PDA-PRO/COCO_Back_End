@@ -43,10 +43,9 @@ class CrudGroup(Crudbase):
             self.execute_sql(member_sql, data)
         return last_idx
 
-    def search_user(self, info):
-        print(info)
+    def search_user(self, user_id):
         sql = "SELECT id, name, exp, level FROM coco.user WHERE id LIKE %s OR name LIKE %s;"
-        data = ('%'+info+'%', '%'+info+'%')
+        data = ('%'+user_id+'%', '%'+user_id+'%')
         return self.select_sql(sql, data)
     
     # 그룹 개수 -> ai 초기화 때문에
@@ -80,9 +79,19 @@ class CrudGroup(Crudbase):
         self.ai_reset(len)
 
     def invite_member(self, info):
-        sql = "INSERT INTO coco.group_users (group_id, user_id) VALUES (%s, %s);"
+        check_sql = """
+            select exists( select 1 from coco.group_users 
+            where group_id = %s and user_id = %s) as is_member;
+        """
         data = (info.group_id, info.user_id)
-        self.execute_sql(sql, data)
+        result = self.select_sql(check_sql, data)
+        print(result[0]['is_member'])
+        if result[0]['is_member'] == 1:
+            return False
+        else:
+            sql = "INSERT INTO coco.group_users (group_id, user_id) VALUES (%s, %s);"
+            self.execute_sql(sql, data)
+            return True
 
     def get_group(self, info):
         sql = """

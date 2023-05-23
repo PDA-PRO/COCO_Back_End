@@ -23,9 +23,11 @@ async def userlist():
 async def make_group(info: MakeGroup):
     return group.make_group(info)
 
+class UserID(BaseModel):
+    user_id: str
 @router.post("/search_user/", tags=["group"])
-async def search_user(user_id: str):
-    return group.search_user(user_id)
+async def search_user(info: UserID):
+    return group.search_user(info.user_id)
 
 @router.post("/leave_group/", tags=["group"])
 async def leave_group(info: ModifyGroup):
@@ -53,9 +55,7 @@ async def group_workbooks(group_id: int):
 
 @router.post("/add_problem", tags=["group"])
 async def add_problem(info: GroupProblem):
-    return {
-        "code": group.add_problem(info)
-    }
+    return { "code": group.add_problem(info) }
 
 @router.post("/delete_problem", tags=["group"])
 async def delete_problem(info: GroupProblem):
