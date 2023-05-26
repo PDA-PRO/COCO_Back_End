@@ -147,7 +147,28 @@ class CrudGroup(Crudbase):
         data = (info.group_id, info.task_id)
         self.execute_sql(sql, data)
         return True
-
+    
+    def is_my_group(self, info):
+        sql = "select exists( select 1 from coco.group_users where group_id = %s and user_id = %s) as isMember;"
+        data = (info.group_id, info.user_id)
+        result = self.select_sql(sql, data)
+        if result[0]['isMember'] == 0:
+            return False
+        else:
+            return True
+        
+    def join_group(self, info):
+        print(info)
+        check_sql = "select exists( select 1 from coco.group_apply where group_id = %s and user_id = %s) as isJoin;"
+        check_data = (info.group_id, info.user_id)
+        result = self.select_sql(check_sql, check_data)
+        if result[0]['isJoin'] == 1:
+            return False
+        else:
+            sql = "INSERT INTO `coco`.`group_apply` (`group_id`, `user_id`, `message`) VALUES (%s, %s, %s);"
+            data = (info.group_id, info.user_id, info.message)
+            self.execute_sql(sql, data)
+            return True
             
 
 
