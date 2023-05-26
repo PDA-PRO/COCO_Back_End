@@ -158,7 +158,6 @@ class CrudGroup(Crudbase):
             return True
         
     def join_group(self, info):
-        print(info)
         check_sql = "select exists( select 1 from coco.group_apply where group_id = %s and user_id = %s) as isJoin;"
         check_data = (info.group_id, info.user_id)
         result = self.select_sql(check_sql, check_data)
@@ -169,7 +168,21 @@ class CrudGroup(Crudbase):
             data = (info.group_id, info.user_id, info.message)
             self.execute_sql(sql, data)
             return True
-            
+        
+    def group_leader(self, group_id):
+        print("group_id", group_id)
+        sql = "select leader from coco.group where id = %s;"
+        result = self.select_sql(sql, group_id)
+        return result[0]['leader']
+    
+    def group_apply(self, group_id):
+        sql = """
+            select a.*, u.exp, u.level
+            from coco.group_apply as a, coco.user as u
+            where a.user_id = u.id and a.group_id = %s;
+        """
+        result = self.select_sql(sql, group_id)
+        return result
 
 
             

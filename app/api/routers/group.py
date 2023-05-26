@@ -69,3 +69,11 @@ async def is_my_group(info: GroupMember):
 @router.post("/join_group/", tags=["group"])
 async def join_group(info: JoinGroup):
     return group.join_group(info)
+
+@router.get("/group_leader/{group_id}/", tags=["group"])
+async def group_leader(group_id: int):
+    return group.group_leader(group_id)
+
+@router.get("/group_apply/{group_id}/", tags=["group"])
+async def group_apply(group_id: int):
+    return group.group_apply(group_id)
