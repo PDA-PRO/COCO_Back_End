@@ -70,11 +70,16 @@ class CrudTask(Crudbase):
         sql="DELETE FROM coco.task where id=%s"
         data=(id)
         self.execute_sql(sql,data)
-        shutil.rmtree(os.path.join(os.getenv("TASK_PATH"),str(id)))
+        image.delete_image(os.path.join(os.getenv("TASK_PATH"),str(id)))
         return 1
 
-    #coco.task insert
-    def insert_task(self,task,description):  
+    def insert_task(self,task,description):
+        """
+        새로운 문제를 저장
+
+        - task : 문제의 다른 요소들
+        - description : 텍스트 에디터의 raw format 즉 json형식의 str
+        """
         cLan = 1 if task.C_Lan == True else 0
         py = 1 if task.python == True else 0 
         
@@ -86,34 +91,24 @@ class CrudTask(Crudbase):
         data.append((task.title, f"[{task.inputEx1}, {task.inputEx2}]",f"[{task.outputEx1}, {task.outputEx2}]",0.00,task.memLimit,task.timeLimit,task.diff,cLan,py))
         id=self.insert_last_id(sql,data)
 
-        #저장된 main desc에서 쓰인 사진만 추출 및 텍스트 에디터의 사진 경로를 실제 사진 경로로 수정
-        jsonObject = json.loads(description)
-        imagelist=[]
-        for entity in jsonObject.get("entityMap").values():
-            imagename=entity.get("data").get("src").split('/')[-2]
-            imagelist.append(imagename)
-            entity["data"]["src"]=entity["data"]["src"][:-5]+"?id="+str(id)
-        maindesc=json.dumps(jsonObject)
+        #이미지 저장
+        maindesc=image.save_image(os.path.join(os.getenv("TASK_PATH"),"temp"),os.path.join(os.getenv("TASK_PATH"),str(id)),description,id)
 
-        #desc 저장
+        #desc 및 테스트케이스 저장
         temp=(id,maindesc,task.inputDescription,task.outputDescription)
         self.execute_sql("insert into coco.descriptions values (%s,%s,%s,%s);",temp)
         self.save_testcase(task.testCase,id)
-        
-        #temp폴더에서 실제로 저장되지 않은 사진 삭제 및 실제로 쓰인 사진를 문제 id에 맞는 경로로 이동
-        tempimagelist=os.listdir(os.path.join(os.getenv("TASK_PATH"),"temp")) #jwt가 같이 들어오면 이걸 user id로 변경
-        for i in tempimagelist:
-            if i.split(".")[-1]!="keep" and not i in imagelist:
-                os.remove(os.path.join(os.getenv("TASK_PATH"),"temp",i))
-            else:
-                shutil.move(os.path.join(os.getenv("TASK_PATH"),"temp",i),os.path.join(os.getenv("TASK_PATH"),str(id),i))
+
         return 1
 
-
-    #test case zip파일 압축해서 저장ㄴ
     def save_testcase(self,zip, task_id):
+        """
+        테스트 케이스의 압축을 풀고 저장
+
+        - zip :테스트 케이스 압축파일
+        - task_id : 문제 id
+        """
         zip_file_path = os.path.join(os.getenv("TASK_PATH"),str(task_id))
-        os.mkdir(zip_file_path)
         
         with open(f"{zip_file_path}/temp.zip", 'wb') as upload_zip:
                 shutil.copyfileobj(zip.file, upload_zip)
@@ -124,7 +119,6 @@ class CrudTask(Crudbase):
                 )
         os.remove(f"{zip_file_path}/temp.zip")
 
-    #
     def read_problems(self,keyword:str=None,sort:str="id"):
         '''
         problem view에서 문제 리스트를 가져옴 

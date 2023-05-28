@@ -1,6 +1,8 @@
+import os
 import db
 from datetime import datetime
 from .base import Crudbase
+from core.image import image
 
 db_server = db.db_server
 
@@ -74,15 +76,27 @@ class CrudBoard(Crudbase):
         }
 
     def write_board(self, writeBoard):
-        print(writeBoard)
-        sql = "INSERT INTO `coco`.`boards` (`context`, `title`, `time`, `category`, `likes`, `views`, `comments`, `code`, `group_id`) VALUES (%s,%s,%s, %s, '0', '0', '0', %s, %s);"
-        data=(writeBoard.context, writeBoard.title, datetime.now(), writeBoard.category, writeBoard.code, writeBoard.group_id)
+        """
+        새로운 게시글을 저장
+
+        - writeBoard : 게시글의 요소들
+        """
+        sql=[]
+        data=[]
+
+        sql.append("INSERT INTO `coco`.`boards` (`context`, `title`, `time`, `category`, `likes`, `views`, `comments`, `code`, `group_id`) VALUES (%s,%s,%s, %s, '0', '0', '0', %s, %s);")
+        data.append((writeBoard.context, writeBoard.title, datetime.now(), writeBoard.category, writeBoard.code, writeBoard.group_id))
+        board_id=self.insert_last_id(sql,data)
+
+        sql = "INSERT INTO `coco`.`boards_ids` (`board_id`, `user_id`, `group_id`) VALUES (%s, %s, %s);"
+        data=(board_id, writeBoard.user_id, writeBoard.group_id)
         self.execute_sql(sql,data)
-        user_sql = "SELECT * FROM coco.boards order by id;"
-        result = self.select_sql(user_sql)
-        board_sql = "INSERT INTO `coco`.`boards_ids` (`board_id`, `user_id`, `group_id`) VALUES (%s, %s, %s);"
-        data=(result[-1]["id"], writeBoard.user_id, writeBoard.group_id)
-        self.execute_sql(board_sql,data)
+
+        new_context=image.save_image(os.path.join(os.getenv("BOARD_PATH"),"temp",writeBoard.user_id),os.path.join(os.getenv("BOARD_PATH"),str(board_id)),writeBoard.context,str(board_id))
+        sql="UPDATE `coco`.`boards` SET `context` = %s WHERE (`id` = %s);"
+        data=(new_context,board_id)
+        self.execute_sql(sql,data)
+        
         return 1
 
     def board_likes(self, boardLikes):
@@ -95,7 +109,6 @@ class CrudBoard(Crudbase):
             type_sql = "INSERT INTO `coco`.`boards_likes` (`user_id`, `boards_id`) VALUES (%s, %s);" 
         data=(boardLikes.user_id,boardLikes.board_id)
         self.execute_sql(type_sql,data)
-
         return 1
 
     def write_comment(self, commentInfo):
@@ -136,6 +149,7 @@ class CrudBoard(Crudbase):
         board_sql = "DELETE FROM `coco`.`boards` WHERE (`id` = %s);"
         data=(board_id.board_id)
         self.execute_sql(board_sql,data)
+        image.delete_image(os.path.join(os.getenv("BOARD_PATH"),str(board_id.board_id)))
         return 1
 
     def delete_comment(self, comment_id):
