@@ -69,6 +69,7 @@ class CrudGroup(Crudbase):
         group_len = self.select_sql(len_sql, len_data)
         if group_len == 0:
             self.delete_group(info.group_id)
+        return True
 
     def delete_group(self, info):
         sql = "DELETE FROM `coco`.`group` WHERE (`id` = %s);"
