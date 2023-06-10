@@ -91,6 +91,10 @@ class CrudGroup(Crudbase):
         else:
             sql = "INSERT INTO coco.group_users (group_id, user_id) VALUES (%s, %s);"
             self.execute_sql(sql, data)
+            if info.apply:
+                del_sql = "DELETE FROM `coco`.`group_apply` WHERE (`group_id` = %s) and (`user_id` = %s);"
+                del_data = (info.group_id, info.user_id)
+                self.execute_sql(del_sql, del_data)
             return True
 
     def get_group(self, info):
@@ -177,12 +181,22 @@ class CrudGroup(Crudbase):
     
     def group_apply(self, group_id):
         sql = """
-            select a.*, u.exp, u.level
+            select a.*, u.name, u.exp, u.level
             from coco.group_apply as a, coco.user as u
             where a.user_id = u.id and a.group_id = %s;
         """
         result = self.select_sql(sql, group_id)
-        return result
+        leader = self.group_leader(group_id)
+        return {
+            'leader': leader,
+            'apply': result
+        }
+    
+    def reject_apply(self, info):
+        del_sql = "DELETE FROM `coco`.`group_apply` WHERE (`group_id` = %s) and (`user_id` = %s);"
+        del_data = (info.group_id, info.user_id)
+        self.execute_sql(del_sql, del_data)
+        return True
 
 
             

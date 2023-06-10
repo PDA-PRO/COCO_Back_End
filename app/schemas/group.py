@@ -9,6 +9,7 @@ class MakeGroup(BaseModel):
 class GroupMember(BaseModel):
     group_id: int
     user_id: str
+    apply: bool=False
 
 class GroupProblem(BaseModel):
     group_id: int
