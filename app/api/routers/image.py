@@ -38,7 +38,7 @@ async def image_upload(request: Request,type:int,file:UploadFile,token: dict = D
     )
 
 @router.get("/download/{type}/{filename}",tags=["image"],)
-async def image_download(filename:str,type:int,id:str=None):
+async def image_download(filename:str,type:int,id:str=None,time:str=None):
     """
     실제로 저장된 사진을 리턴
 

@@ -47,6 +47,7 @@ class Image():
         - type : 1-공지글 2-게시판 3-문제글 4-프로필
         - id : type이 게시판, 문제글, 프로필일 경우 관련된 id
         """
+        print("dd")
         filepath=""
         if type==1:#공지글 이미지
             filepath=os.getenv("NOTICE_PATH")
@@ -56,7 +57,9 @@ class Image():
             filepath=os.path.join(os.getenv("TASK_PATH"),str(id))
         elif type==4:#프로필 이미지
             filepath=os.getenv("PROFILE_PATH")
-
+            if not os.path.exists(os.path.join(filepath,filename)):
+                shutil.copyfile(os.path.join(filepath,"base.jpg"),os.path.join(filepath,filename))
+                
         target_path=os.path.join(filepath,filename)
         if not os.path.exists(target_path):
             return None
