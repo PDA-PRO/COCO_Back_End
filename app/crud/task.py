@@ -22,39 +22,47 @@ class CrudTask(Crudbase):
         return result
 
     def order_task(self, order):
-        print(order)
-        if sum(order['diff']) == 0:
-            for i in range(5):
-                order['diff'][i] = i+1
-        if sum(order['lang']) == 0:
-            order['lang'][0], order['lang'][1] = 1, 1
-        print(order['diff'], order['lang'], order['rate'] )
+        """
+        문제 리스트에서 쿼리에 맞는 문제들의 정보만 리턴
+        
+        - order : 문제 쿼리 정보
+        """
 
-        if order['rate'] == '1' or order['rate'] == 0:
-            #정답률 낮은 순 
-            sql = """
-                SELECT * FROM coco.task_list WHERE id in (select id from coco.task_list
-                where lan_c = %s and lan_py = %s)
-                having diff = %s OR diff = %s OR diff = %s OR diff = %s OR diff = %s
-                ORDER BY rate;
-            """
-            data = (order['lang'][1], order['lang'][0], order['diff'][0], order['diff'][1], order['diff'][2], order['diff'][3], order['diff'][4])
-            return self.select_sql(sql, data)
-        elif order['rate'] == '2':
-            # 정답률 높은 순
-            sql = """
-                SELECT * FROM coco.task_list WHERE id in (select id from coco.task_list
-                where lan_c = %s and lan_py = %s)
-                having diff = %s OR diff = %s OR diff = %s OR diff = %s OR diff = %s
-                ORDER BY rate DESC;
-            """
-            data = (order['lang'][1], order['lang'][0], order['diff'][0], order['diff'][1], order['diff'][2], order['diff'][3], order['diff'][4])
-            return self.select_sql(sql, data)
-        else:
-            sql = """
-                SELECT * FROM coco.task_list;
-            """
-            return self.select_sql(sql)
+        #기본 sql 뼈대, order의 형식에 맞춰 sql이 지정되기 때문에 sql인젝션 걱정없습니다.
+        sql="SELECT * FROM coco.task_list "
+
+        #언어 구별 조건
+        lang_cond=""
+        if order['lang'][0] and order['lang'][1]:
+            lang_cond="lan_c=1 or lan_py=1 "
+        elif order['lang'][0] or order['lang'][1]:
+            if order['lang'][1]:
+                lang_cond="lan_c=1 "
+            if order['lang'][0]:
+                lang_cond="lan_py=1 "
+
+        #난이도 구별 조건
+        search_diff=[]
+        for idx,value in enumerate(order["diff"],1):
+            if value:
+                search_diff.append(str(idx))
+
+        #언어 조건, 난이도 조건 존재 유무에 따른 sql 변경
+        if lang_cond:
+            sql+="where "+lang_cond
+        if search_diff:
+            if lang_cond:
+                sql+="having diff in ("+",".join(search_diff)+") "
+            else:
+                sql+="where diff in ("+",".join(search_diff)+") "
+
+        #정렬 기준 추가
+        if order["rate"]=="1":
+            sql+="ORDER BY rate"
+        elif order["rate"]=="2":
+            sql+="ORDER BY rate desc"
+        print(sql)
+        return  self.select_sql(sql)
 
     def find_task(self, info):
         print(info)
