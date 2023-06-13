@@ -22,39 +22,47 @@ class CrudTask(Crudbase):
         return result
 
     def order_task(self, order):
-        print(order)
-        if sum(order['diff']) == 0:
-            for i in range(5):
-                order['diff'][i] = i+1
-        if sum(order['lang']) == 0:
-            order['lang'][0], order['lang'][1] = 1, 1
-        print(order['diff'], order['lang'], order['rate'] )
+        """
+        문제 리스트에서 쿼리에 맞는 문제들의 정보만 리턴
+        
+        - order : 문제 쿼리 정보
+        """
 
-        if order['rate'] == '1' or order['rate'] == 0:
-            #정답률 낮은 순 
-            sql = """
-                SELECT * FROM coco.task_list WHERE id in (select id from coco.task_list
-                where lan_c = %s and lan_py = %s)
-                having diff = %s OR diff = %s OR diff = %s OR diff = %s OR diff = %s
-                ORDER BY rate;
-            """
-            data = (order['lang'][1], order['lang'][0], order['diff'][0], order['diff'][1], order['diff'][2], order['diff'][3], order['diff'][4])
-            return self.select_sql(sql, data)
-        elif order['rate'] == '2':
-            # 정답률 높은 순
-            sql = """
-                SELECT * FROM coco.task_list WHERE id in (select id from coco.task_list
-                where lan_c = %s and lan_py = %s)
-                having diff = %s OR diff = %s OR diff = %s OR diff = %s OR diff = %s
-                ORDER BY rate DESC;
-            """
-            data = (order['lang'][1], order['lang'][0], order['diff'][0], order['diff'][1], order['diff'][2], order['diff'][3], order['diff'][4])
-            return self.select_sql(sql, data)
-        else:
-            sql = """
-                SELECT * FROM coco.task_list;
-            """
-            return self.select_sql(sql)
+        #기본 sql 뼈대, order의 형식에 맞춰 sql이 지정되기 때문에 sql인젝션 걱정없습니다.
+        sql="SELECT * FROM coco.task_list "
+
+        #언어 구별 조건
+        lang_cond=""
+        if order['lang'][0] and order['lang'][1]:
+            lang_cond="lan_c=1 or lan_py=1 "
+        elif order['lang'][0] or order['lang'][1]:
+            if order['lang'][1]:
+                lang_cond="lan_c=1 "
+            if order['lang'][0]:
+                lang_cond="lan_py=1 "
+
+        #난이도 구별 조건
+        search_diff=[]
+        for idx,value in enumerate(order["diff"],1):
+            if value:
+                search_diff.append(str(idx))
+
+        #언어 조건, 난이도 조건 존재 유무에 따른 sql 변경
+        if lang_cond:
+            sql+="where "+lang_cond
+        if search_diff:
+            if lang_cond:
+                sql+="having diff in ("+",".join(search_diff)+") "
+            else:
+                sql+="where diff in ("+",".join(search_diff)+") "
+
+        #정렬 기준 추가
+        if order["rate"]=="1":
+            sql+="ORDER BY rate"
+        elif order["rate"]=="2":
+            sql+="ORDER BY rate desc"
+        print(sql)
+        return  self.select_sql(sql)
 
     def find_task(self, info):
         print(info)
@@ -70,11 +78,16 @@ class CrudTask(Crudbase):
         sql="DELETE FROM coco.task where id=%s"
         data=(id)
         self.execute_sql(sql,data)
-        shutil.rmtree(f'/COCO_Back_End/tasks/{id}')
+        image.delete_image(os.path.join(os.getenv("TASK_PATH"),str(id)))
         return 1
 
-    #coco.task insert
-    def insert_task(self,task,description):  
+    def insert_task(self,task,description):
+        """
+        새로운 문제를 저장
+
+        - task : 문제의 다른 요소들
+        - description : 텍스트 에디터의 raw format 즉 json형식의 str
+        """
         cLan = 1 if task.C_Lan == True else 0
         py = 1 if task.python == True else 0 
         
@@ -82,39 +95,29 @@ class CrudTask(Crudbase):
         data=[]
         
         #time_limit, diff는 한자리 숫자 task 테이블에 문제 먼저 삽입해서 id추출
-        sql.append("INSERT INTO `coco`.`task` ( `title`, `desc`, `sample`, `rate`, `mem_limit`, `time_limit`, `diff`, `lan_c`, `lan_py`) VALUES ( %s, %s, json_object('input', %s, 'output',%s), %s, %s, %s, %s, %s, %s);")
-        data.append((task.title, task.desc, f"[{task.inputEx1}, {task.inputEx2}]",f"[{task.outputEx1}, {task.outputEx2}]",0.00,task.memLimit,task.timeLimit,task.diff,cLan,py))
+        sql.append("INSERT INTO `coco`.`task` ( `title`, `sample`, `rate`, `mem_limit`, `time_limit`, `diff`, `lan_c`, `lan_py`) VALUES ( %s, json_object('input', %s, 'output',%s), %s, %s, %s, %s, %s, %s);")
+        data.append((task.title, f"[{task.inputEx1}, {task.inputEx2}]",f"[{task.outputEx1}, {task.outputEx2}]",0.00,task.memLimit,task.timeLimit,task.diff,cLan,py))
         id=self.insert_last_id(sql,data)
 
-        #저장된 main desc에서 쓰인 사진만 추출 및 텍스트 에디터의 사진 경로를 실제 사진 경로로 수정
-        jsonObject = json.loads(description)
-        imagelist=[]
-        for entity in jsonObject.get("entityMap").values():
-            imagename=entity.get("data").get("src").split('/')[-2]
-            imagelist.append(imagename)
-            entity["data"]["src"]=entity["data"]["src"][:-5]+"?id="+str(id)
-        maindesc=json.dumps(jsonObject)
+        #이미지 저장
+        maindesc=image.save_image(os.path.join(os.getenv("TASK_PATH"),"temp"),os.path.join(os.getenv("TASK_PATH"),str(id)),description,id)
 
-        #desc 저장
+        #desc 및 테스트케이스 저장
         temp=(id,maindesc,task.inputDescription,task.outputDescription)
         self.execute_sql("insert into coco.descriptions values (%s,%s,%s,%s);",temp)
         self.save_testcase(task.testCase,id)
-        
-        #temp폴더에서 실제로 저장되지 않은 사진 삭제 및 실제로 쓰인 사진를 문제 id에 맞는 경로로 이동
-        tempimagelist=os.listdir(os.path.join(os.getenv("TASK_PATH"),"temp")) #jwt가 같이 들어오면 이걸 user id로 변경
-        for i in tempimagelist:
-            if i.split(".")[-1]!="keep" and not i in imagelist:
-                os.remove(os.path.join(os.getenv("TASK_PATH"),"temp",i))
-            else:
-                shutil.move(os.path.join(os.getenv("TASK_PATH"),"temp",i),os.path.join(os.getenv("TASK_PATH"),str(id),i))
+
         return 1
 
-
-    #test case zip파일 압축해서 저장ㄴ
     def save_testcase(self,zip, task_id):
-        zip_file_path = f'/COCO_Back_End/tasks/{task_id}'
-        os.mkdir(zip_file_path)
+        """
+        테스트 케이스의 압축을 풀고 저장
 
+        - zip :테스트 케이스 압축파일
+        - task_id : 문제 id
+        """
+        zip_file_path = os.path.join(os.getenv("TASK_PATH"),str(task_id))
+        
         with open(f"{zip_file_path}/temp.zip", 'wb') as upload_zip:
                 shutil.copyfileobj(zip.file, upload_zip)
         with zipfile.ZipFile(f"{zip_file_path}/temp.zip") as encrypt_zip:
@@ -124,7 +127,6 @@ class CrudTask(Crudbase):
                 )
         os.remove(f"{zip_file_path}/temp.zip")
 
-    #
     def read_problems(self,keyword:str=None,sort:str="id"):
         '''
         problem view에서 문제 리스트를 가져옴 

@@ -32,11 +32,12 @@ def decode_jwt(token: str) -> str:
     try:
         payload = jwt.decode(token, os.getenv("SECRET_KEY"), algorithms=[os.getenv("ALGORITHM")])
         role: str = payload.get("role")#잘못된 토큰이면 에러발생
-        if role is None:
-            return ""
+        id: str = payload.get("sub")#잘못된 토큰이면 에러발생
+        if role is None or id is None:
+            return "",""
     except JWTError:
-        return ""
-    return role
+        return "",""
+    return role,id
 
 def check_token(token: str = Depends(oauth2_scheme)):
     """
@@ -49,7 +50,7 @@ def check_token(token: str = Depends(oauth2_scheme)):
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    role=decode_jwt(token)
-    if role=="":
+    role,id=decode_jwt(token)
+    if role=="" or id=="":
         raise credentials_exception
-    return {"role":role}
+    return {"role":role,"id":id}

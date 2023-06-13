@@ -11,12 +11,13 @@ router = APIRouter()
 class Info(BaseModel):
     info: str
 
-#일단은 입출력 예제 두개씩 넣기
 @router.post('/manage/', tags=['manage'])
-async def upload_task(description :str=Form(...),task: Task = Depends()):
+async def upload_task(description :str=Form(...),task: Task = Depends(), token: dict = Depends(security.check_token)):
     """ 
-    description : 텍스트 에디터의 raw format 즉 json형식의 str
-    task : 문제의 다른 요소들
+    새로운 문제를 업로드
+    
+    - description : 텍스트 에디터의 raw format 즉 json형식의 str
+    - task : 문제의 다른 요소들
     """
     return {
         "result":  task_crud.insert_task(task,description)
