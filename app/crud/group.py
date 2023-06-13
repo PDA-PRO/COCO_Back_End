@@ -43,10 +43,9 @@ class CrudGroup(Crudbase):
             self.execute_sql(member_sql, data)
         return last_idx
 
-    def search_user(self, info):
-        print(info)
+    def search_user(self, user_id):
         sql = "SELECT id, name, exp, level FROM coco.user WHERE id LIKE %s OR name LIKE %s;"
-        data = ('%'+info+'%', '%'+info+'%')
+        data = ('%'+user_id+'%', '%'+user_id+'%')
         return self.select_sql(sql, data)
     
     # 그룹 개수 -> ai 초기화 때문에
@@ -70,6 +69,7 @@ class CrudGroup(Crudbase):
         group_len = self.select_sql(len_sql, len_data)
         if group_len == 0:
             self.delete_group(info.group_id)
+        return True
 
     def delete_group(self, info):
         sql = "DELETE FROM `coco`.`group` WHERE (`id` = %s);"
@@ -80,9 +80,23 @@ class CrudGroup(Crudbase):
         self.ai_reset(len)
 
     def invite_member(self, info):
-        sql = "INSERT INTO coco.group_users (group_id, user_id) VALUES (%s, %s);"
+        check_sql = """
+            select exists( select 1 from coco.group_users 
+            where group_id = %s and user_id = %s) as is_member;
+        """
         data = (info.group_id, info.user_id)
-        self.execute_sql(sql, data)
+        result = self.select_sql(check_sql, data)
+        print(result[0]['is_member'])
+        if result[0]['is_member'] == 1:
+            return False
+        else:
+            sql = "INSERT INTO coco.group_users (group_id, user_id) VALUES (%s, %s);"
+            self.execute_sql(sql, data)
+            if info.apply:
+                del_sql = "DELETE FROM `coco`.`group_apply` WHERE (`group_id` = %s) and (`user_id` = %s);"
+                del_data = (info.group_id, info.user_id)
+                self.execute_sql(del_sql, del_data)
+            return True
 
     def get_group(self, info):
         sql = """
@@ -138,8 +152,52 @@ class CrudGroup(Crudbase):
         data = (info.group_id, info.task_id)
         self.execute_sql(sql, data)
         return True
-
-            
+    
+    def is_my_group(self, info):
+        sql = "select exists( select 1 from coco.group_users where group_id = %s and user_id = %s) as isMember;"
+        data = (info.group_id, info.user_id)
+        result = self.select_sql(sql, data)
+        if result[0]['isMember'] == 0:
+            return False
+        else:
+            return True
+        
+    def join_group(self, info):
+        check_sql = "select exists( select 1 from coco.group_apply where group_id = %s and user_id = %s) as isJoin;"
+        check_data = (info.group_id, info.user_id)
+        result = self.select_sql(check_sql, check_data)
+        if result[0]['isJoin'] == 1:
+            return False
+        else:
+            sql = "INSERT INTO `coco`.`group_apply` (`group_id`, `user_id`, `message`) VALUES (%s, %s, %s);"
+            data = (info.group_id, info.user_id, info.message)
+            self.execute_sql(sql, data)
+            return True
+        
+    def group_leader(self, group_id):
+        print("group_id", group_id)
+        sql = "select leader from coco.group where id = %s;"
+        result = self.select_sql(sql, group_id)
+        return result[0]['leader']
+    
+    def group_apply(self, group_id):
+        sql = """
+            select a.*, u.name, u.exp, u.level
+            from coco.group_apply as a, coco.user as u
+            where a.user_id = u.id and a.group_id = %s;
+        """
+        result = self.select_sql(sql, group_id)
+        leader = self.group_leader(group_id)
+        return {
+            'leader': leader,
+            'apply': result
+        }
+    
+    def reject_apply(self, info):
+        del_sql = "DELETE FROM `coco`.`group_apply` WHERE (`group_id` = %s) and (`user_id` = %s);"
+        del_data = (info.group_id, info.user_id)
+        self.execute_sql(del_sql, del_data)
+        return True
 
 
             

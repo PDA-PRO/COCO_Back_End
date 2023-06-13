@@ -6,10 +6,17 @@ class MakeGroup(BaseModel):
     leader: str
     members: list
 
-class ModifyGroup(BaseModel):
+class GroupMember(BaseModel):
     group_id: int
     user_id: str
+    apply: bool=False
 
 class GroupProblem(BaseModel):
     group_id: int
     task_id: int
+
+class JoinGroup(BaseModel):
+    group_id: int
+    user_id: str
+    message: str
+
