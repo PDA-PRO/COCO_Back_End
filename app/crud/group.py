@@ -72,12 +72,16 @@ class CrudGroup(Crudbase):
         return True
 
     def delete_group(self, info):
-        sql = "DELETE FROM `coco`.`group` WHERE (`id` = %s);"
         data = (info)
+        comments_sql = "DELETE FROM coco.comments WHERE id in (select comment_id from coco.comments_ids where board_id=%s);"
+        self.execute_sql(comments_sql,data)
+        board_sql = "delete from coco.boards where (group_id = %s);"
+        self.execute_sql(board_sql, data)
+        sql = "DELETE FROM `coco`.`group` WHERE (`id` = %s);"
         self.execute_sql(sql, data)
         len = self.group_len()
-        print(len)
         self.ai_reset(len)
+        return True
 
     def invite_member(self, info):
         check_sql = """
