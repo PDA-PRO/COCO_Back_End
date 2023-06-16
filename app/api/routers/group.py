@@ -9,6 +9,9 @@ router = APIRouter(prefix='/group')
 class UserID(BaseModel):
     user_id: str
 
+class GroupID(BaseModel):
+    group_id: int
+
 # 전체 그룹 리스트(그룹명, 설명)
 @router.get('/all_groups', tags=['group'])
 async def all_groups():
@@ -34,9 +37,9 @@ async def search_user(info: UserID):
 async def leave_group(info: GroupMember):
     return group.leave_group(info)
 
-@router.post("/delete_group/{group_id}/", tags=["group"])
-async def delete_group(group_id: int):
-    return group.delete_group(group_id)
+@router.post("/delete_group/", tags=["group"])
+async def delete_group(group_id: GroupID):
+    return group.delete_group(group_id.group_id)
 
 @router.post("/invite_member/", tags=["group"])
 async def invite_member(info: GroupMember):
