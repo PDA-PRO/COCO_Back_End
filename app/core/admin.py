@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv,set_key,find_dotenv
 from core import security
+from core.image import image
 
 #환경변수에서 민감한 정보 가져오기
 load_dotenv(verbose=True)
@@ -34,18 +35,10 @@ class Check():
         return html
         
     def update_notice(self,new_content):
-        tempimagelist=os.listdir(os.getenv("NOTICE_PATH"))
-        imagelist=[]
-        for entity in new_content.entity.values():
-            imagename=entity.get("data").get("src").split('/')[-1]
-            imagelist.append(imagename)
-        for i in tempimagelist:
-            if i.split(".")[-1]!="keep" and not i in imagelist:
-                os.remove(os.path.join(os.getenv("NOTICE_PATH"),i))
-
         try:
+            image.save_update_image(os.getenv("NOTICE_PATH"),os.getenv("NOTICE_PATH"),new_content,mode="u")
             with open(os.path.join(os.getenv("NOTICE_PATH"),"notice.txt"),"w", encoding="UTF-8") as file:
-                file.write(new_content.html)
+                file.write(new_content)
         except Exception as e:
             print("공지사항 파일 notice.txt 를 업데이트하는 중 오류가 발생하였습니다.",e)
             return False

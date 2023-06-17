@@ -61,7 +61,7 @@ class CrudTask(Crudbase):
             sql+="ORDER BY rate"
         elif order["rate"]=="2":
             sql+="ORDER BY rate desc"
-        print(sql)
+
         return  self.select_sql(sql)
 
     def find_task(self, info):
@@ -100,7 +100,7 @@ class CrudTask(Crudbase):
         id=self.insert_last_id(sql,data)
 
         #이미지 저장
-        maindesc=image.save_image(os.path.join(os.getenv("TASK_PATH"),"temp"),os.path.join(os.getenv("TASK_PATH"),str(id)),description,id)
+        maindesc=image.save_update_image(os.path.join(os.getenv("TASK_PATH"),"temp"),os.path.join(os.getenv("TASK_PATH"),str(id)),description,id,"s")
 
         #desc 및 테스트케이스 저장
         temp=(id,maindesc,task.inputDescription,task.outputDescription)

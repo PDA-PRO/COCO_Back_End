@@ -1,7 +1,6 @@
 from pydantic import BaseModel
 
 class Notice(BaseModel):
-    entity: dict={}
     html:str =""
 
 

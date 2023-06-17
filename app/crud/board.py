@@ -92,7 +92,7 @@ class CrudBoard(Crudbase):
         data=(board_id, writeBoard.user_id, writeBoard.group_id)
         self.execute_sql(sql,data)
 
-        new_context=image.save_image(os.path.join(os.getenv("BOARD_PATH"),"temp",writeBoard.user_id),os.path.join(os.getenv("BOARD_PATH"),str(board_id)),writeBoard.context,str(board_id))
+        new_context=image.save_update_image(os.path.join(os.getenv("BOARD_PATH"),"temp",writeBoard.user_id),os.path.join(os.getenv("BOARD_PATH"),str(board_id)),writeBoard.context,board_id,"s")
         sql="UPDATE `coco`.`boards` SET `context` = %s WHERE (`id` = %s);"
         data=(new_context,board_id)
         self.execute_sql(sql,data)
