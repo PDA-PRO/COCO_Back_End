@@ -120,6 +120,7 @@ class CrudMyPage(Crudbase):
         return result
 
     def delete_myboard(self, board_id):
+        print(board_id)
         sql = "delete from coco.comments where id in (select comment_id from coco.comments_ids where board_id = %s);"
         data = board_id
         self.execute_sql(sql, data)
@@ -135,7 +136,7 @@ class CrudMyPage(Crudbase):
         comments_cnt = 'SELECT COUNT(*) as cnt FROM coco.comments;'
         comments_reset = "alter table coco.comments auto_increment = 0;"
         self.reset_auto_increment(comments_cnt, comments_reset)
-        return 1
+        return True
 
     def change_pw(self, info):
         sql = "UPDATE coco.user SET pw = %s WHERE id = %s;"
@@ -150,16 +151,17 @@ class CrudMyPage(Crudbase):
         return 1
     
     def post_mytask(self, info):
-            data = (info.user_id, info.task_id)
-            check_sql = "select exists( select 1 from coco.my_tasks where user_id = %s and task_num = %s) as my_task;" 
-            result = self.select_sql(check_sql, data)
-            check_result = result[0]['my_task']
-            if check_result == 0:
-                sql ="INSERT INTO `coco`.`my_tasks` (`user_id`, `task_num`, `solved`) VALUES (%s, %s, %s);"
-                self.execute_sql(sql, data)
-                return True
-            else:
-                return False
+        data = (info.user_id, info.task_id)
+        check_sql = "select exists( select 1 from coco.my_tasks where user_id = %s and task_num = %s) as my_task;"
+        result = self.select_sql(check_sql, data)
+        check_result = result[0]['my_task']
+        if check_result == 0:
+            sql ="INSERT INTO `coco`.`my_tasks` (`user_id`, `task_num`, `solved`) VALUES (%s, %s, %s);"
+            data = (info.user_id, info.task_id, 0)
+            self.execute_sql(sql, data)
+            return True
+        else:
+            return False
     
     
     def get_mytasks(self, user_id):

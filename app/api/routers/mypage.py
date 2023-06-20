@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from crud.mypage import mypage
-from schemas.mypage import ChangeInfo, MyTask
+from schemas.mypage import *
 from core import security
 
 router = APIRouter()
@@ -17,9 +17,9 @@ async def mypage_two(user_id: str, token: dict = Depends(security.check_token)):
 async def mypage_three(user_id: str, token: dict = Depends(security.check_token)):
     return mypage.myboard(user_id)
 
-@router.post('/delete_myboard{board_id}', tags=['mypage'])
-async def delete_myboard(board_id:int, token: dict = Depends(security.check_token)):
-    return mypage.delete_myboard(board_id)
+@router.post('/delete_myboard/', tags=['mypage'])
+async def delete_myboard(info:MyBoard):
+    return mypage.delete_myboard(info.board_id)
 
 @router.post('/changePW/', tags=['mypage'])
 async def change_pw(info: ChangeInfo,token: dict = Depends(security.check_token)):

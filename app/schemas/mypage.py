@@ -7,3 +7,6 @@ class ChangeInfo(BaseModel):
 class MyTask(BaseModel):
     user_id: str
     task_id: int
+
+class MyBoard(BaseModel):
+    board_id: int
