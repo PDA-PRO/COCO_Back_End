@@ -82,6 +82,28 @@ class CrudUser(Crudbase):
         data=(new_exp,user_id)
         self.execute_sql(sql,data)
 
+    def user_list(self):
+        sql = "select id, name from coco.user;"
+        result = self.select_sql(sql)
+        return result
+
+    def manager_list(self):
+        sql = "select id, name from coco.user where (role = '1');"
+        result = self.select_sql(sql)
+        return result
+    
+    def add_manager(self, user_id):
+        sql = "UPDATE `coco`.`user` SET `role` = '1' WHERE (`id` = %s);"
+        data = (user_id)
+        self.execute_sql(sql, data)
+        return True
+    
+    def delete_manager(self, user_id):
+        sql = "UPDATE `coco`.`user` SET `role` = '0' WHERE (`id` = %s);"
+        data = (user_id)
+        self.execute_sql(sql, data)
+        return True
+
 
 
 user_crud=CrudUser()

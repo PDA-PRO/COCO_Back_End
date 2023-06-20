@@ -5,6 +5,9 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from core import security
 from core.admin import check
 from crud.task import task_crud
+from crud.user import user_crud
+from crud.group import group
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/manage")
 
@@ -56,4 +59,26 @@ async def update_notice(content: Notice):
             detail="공지사항 파일 업데이트 중 오류 발생"
         )
 
+@router.get("/user_list", tags=["admin"])
+async def user_list():
+    return user_crud.user_list()
+
+@router.get("/manager_list/", tags=["admin"])
+async def manager_list():
+    return user_crud.manager_list()
+
+class UserID(BaseModel):
+    user_id: str
+
+@router.post("/search_user/", tags=['admin'])
+async def search_user(info: UserID):
+    return group.search_user(info.user_id)
+
+@router.post("/add_manager", tags=["admin"])
+async def add_manager(info: UserID):
+    return user_crud.add_manager(info.user_id)
+
+@router.post("/delete_manager", tags=["admin"])
+async def delete_manager(info: UserID):
+    return user_crud.delete_manager(info.user_id)
         
