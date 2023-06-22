@@ -59,7 +59,7 @@ async def group_workbooks(group_id: int):
 
 @router.post("/add_problem", tags=["group"])
 async def add_problem(info: GroupProblem):
-    return { "code": group.add_problem(info) }
+    return group.add_problem(info)
 
 @router.post("/delete_problem", tags=["group"])
 async def delete_problem(info: GroupProblem):
