@@ -141,6 +141,7 @@ class CrudGroup(Crudbase):
     
     def add_problem(self, info):
         check_sql = "select exists( select 1 from coco.workbook_problems where group_id = %s and task_id = %s) as group_workbook;" 
+        data = (info.group_id, info.task_id)
         result = self.select_sql(check_sql, data)
         check_result = result[0]['group_workbook']
         if check_result == 1:
