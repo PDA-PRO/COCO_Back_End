@@ -1,6 +1,8 @@
 from fastapi import FastAPI
-from api.routers import scoring, login, task, board, status, hot, admin, authentication, mypage, image, std_manage, group
+from api.routers import scoring, login, task, board, status, hot, admin,  mypage, image
 from fastapi.middleware.cors import CORSMiddleware
+
+from api.routers import room
 
 app = FastAPI()
 
@@ -28,8 +30,6 @@ app.include_router(board.router)
 app.include_router(status.router)
 app.include_router(hot.router)
 app.include_router(admin.router)
-app.include_router(authentication.router)
 app.include_router(mypage.router)
 app.include_router(image.router)
-app.include_router(std_manage.router)
-app.include_router(group.router)
+app.include_router(room.router)

@@ -6,7 +6,7 @@ from core import security
 from core.admin import check
 from crud.task import task_crud
 from crud.user import user_crud
-from crud.group import group
+from crud.room import room
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/manage")
@@ -72,7 +72,7 @@ class UserID(BaseModel):
 
 @router.post("/search_user/", tags=['admin'])
 async def search_user(info: UserID):
-    return group.search_user(info.user_id)
+    return room.search_user(info.user_id)
 
 @router.post("/add_manager", tags=["admin"])
 async def add_manager(info: UserID):
