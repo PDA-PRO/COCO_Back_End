@@ -58,7 +58,7 @@ async def delete_members(members: RoomMember):
     '''
     return room.delete_members(members)
 
-@router.get("/{room_id}/", tags=['room'], )
+@router.get("/{room_id}", tags=['room'], )
 async def get_room(room_id: int):
     '''
     해당 id의 study room의 정보를 리턴
@@ -72,14 +72,14 @@ async def get_room(room_id: int):
     return room.get_room(room_id)
 
 
-@router.get("/myroom/{user_id}", tags=['room'], response_model=list[RoomBase])
+@router.get("/myroom/{user_id}", tags=['room'], response_model=list[MyRoom])
 async def myroom(user_id: str):
     '''
     해당 user가 속한 study room의 정보를 리턴
     '''
     return room.myroom(user_id)
 
-@router.post("/write_question/", tags=['room'])
+@router.post("/write-question/", tags=['room'])
 async def write_question(info: RoomQuestion):
     '''
     Study room의 질문 생성
@@ -99,6 +99,18 @@ async def room_questions(room_id: int):
     '''
     return room.room_questions(room_id)
 
+@router.post("/write-answer", tags=['room'])
+async def write_answer(info: RoomAnswer):
+    '''
+    study room에 등록된 질문에 답변을 생성
+    - info: answer 생성에 필요한 입력 데이터
+        - room_id: 질문이 등록된 room id
+        - q_id: 답변이 달릴 질문 id
+        - answer: 답변
+        - code: 코드
+        - writer: 답변 작성자
+    '''
+    return room.write_answer(info)
 
  
 @router.get("/userlist/", tags=["room"])

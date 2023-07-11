@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import datetime
 from .base import Crudbase
 from core import security
@@ -53,6 +54,7 @@ class CrudRoom(Crudbase):
             `a_id` INT NOT NULL auto_increment,
             `q_id` INT NOT NULL,
             `answer` MEDIUMTEXT NULL,
+            `code` MEDIUMTEXT NULL,
             `ans_writer` VARCHAR(45) NULL,
             PRIMARY KEY (`a_id`),
             foreign key (`q_id`) REFERENCES `%s_question` (`id`));
@@ -173,7 +175,29 @@ class CrudRoom(Crudbase):
         '''
         data = (info)
         sql = 'SELECT * FROM room.%s_question;'
-        return self.select_sql(sql, data)
+        q_result = self.select_sql(sql, data)
+        qa = []
+        for q in q_result:
+            ans_sql = """
+                select q.id, a.answer, a.code, a.ans_writer from room.10_qa as a, room.%s_question as q
+                where a.q_id = q.id and q.id = %s;
+            """
+            ans_data = (info, q['id'])
+            ans_result = self.select_sql(ans_sql, ans_data)
+            qa.append({
+                'question': q,
+                'answers':ans_result
+            })
+        return qa
+    
+    def write_answer(self, info):
+        data = (info.room_id, info.q_id, info.answer, info.code, info.ans_writer)
+        sql = """
+            INSERT INTO `room`.`%s_qa` (`q_id`, `answer`, `code`, `ans_writer`) 
+            VALUES (%s, %s, %s, %s);
+        """
+        self.execute_sql(sql, data)
+        return True
 
     def userlist(self):
         sql = "select id, name, exp from coco.user;"
