@@ -4,7 +4,13 @@ import db
 db_server = db.db_server
 
 class Crudbase():
-    def select_sql(self, query,data:tuple=None):
+    def select_sql(self, query:str,data:tuple=None):
+        """
+        1개의 쿼리 실행 후 출력 값 리턴
+        
+        - query : 쿼리문
+        - data : 쿼리문에 들어갈 데이터
+        """
         con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,port=db_server.port,
                             db=db_server.db, charset='utf8')  # 한글처리 (charset = 'utf8')
         cur = con.cursor(pymysql.cursors.DictCursor)
@@ -13,7 +19,13 @@ class Crudbase():
         con.close()
         return result
 
-    def execute_sql(self, query:str,data:tuple):
+    def execute_sql(self, query:str,data:tuple=None):
+        """
+        1개의 쿼리 실행 리턴 값 없음
+        
+        - query : 쿼리문
+        - data : 쿼리문에 들어갈 데이터
+        """
         con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,port=db_server.port,
                             db=db_server.db, charset='utf8')  # 한글처리 (charset = 'utf8')
         cur = con.cursor()
@@ -21,7 +33,14 @@ class Crudbase():
         con.commit()
         con.close()
 
-    def insert_last_id(self,query,data):
+    def insert_last_id(self,query:list[str],data:list[tuple]):
+        """
+        id속성에 auto increment가 적용된 테이블에 대해
+        여러 개의 쿼리 실행 후 마지막 id값 리턴
+        
+        - query : 쿼리문 리스트
+        - data : 쿼리문에 들어갈 데이터 리스트
+        """
         con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,port=db_server.port,
                             db=db_server.db, charset='utf8')  # 한글처리 (charset = 'utf8')
         cur = con.cursor(pymysql.cursors.DictCursor)

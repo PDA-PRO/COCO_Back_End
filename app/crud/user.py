@@ -22,8 +22,6 @@ class CrudUser(Crudbase):
                 return result[0]
             return None
 
-
-    
     def insert_db(self, user):
         """
         새로운 회원 정보 insert
