@@ -5,12 +5,22 @@ class RoomBase(BaseModel):
     name:str
     desc:str
     leader:str
+    members:int
+    exp: int
+    ranking: int
 
 class CreateRoom(BaseModel):
     name: str
     desc: str
     leader: str
     members: list[str]
+
+class RoomQuestion(BaseModel):
+    room_id: int
+    title: str
+    question: str
+    code: str
+    writer: str
 
 class RoomMember(BaseModel):
     room_id: int

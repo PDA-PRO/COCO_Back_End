@@ -42,7 +42,9 @@ class CrudRoom(Crudbase):
         table_sql.append("""
             CREATE TABLE `room`.`%s_question` (
             `id` INT NOT NULL auto_increment,
+            `title` TEXT NULL,
             `question` MEDIUMTEXT NULL,
+            `code` MEDIUMTEXT NULL,             
             `writer` VARCHAR(45) NULL,
             PRIMARY KEY (`id`));
         """)
@@ -67,13 +69,17 @@ class CrudRoom(Crudbase):
         for sql,data in zip(table_sql,table_data):
             self.execute_sql(sql,data)
 
-        return True
+        return last_idx
     
     def read_all_rooms(self):
         """
         모든 study room 정보 리턴
         """
-        sql = "SELECT * FROM coco.room;"
+        sql = '''
+            select g.id, g.name, g.desc, g.leader, count(i.user_id) as members, sum(u.exp) as exp, row_number() over(order by sum(u.exp) desc) as ranking
+            from coco.room as g, coco.room_ids as i, coco.user as u
+            where g.id = i.room_id and i.user_id = u.id group by g.id order by exp desc;
+        '''
         return self.select_sql(sql)
     
     def delete_room(self, room_id:int):
@@ -113,7 +119,6 @@ class CrudRoom(Crudbase):
         
         return True
 
-
     def delete_members(self, members:RoomMember):
         '''
         해당 id의 study room에 member를 삭제
@@ -130,17 +135,46 @@ class CrudRoom(Crudbase):
         return True
     
     def myroom(self, user_id):
+        '''
+        해당 user가 속한 study room의 정보를 리턴            
+        '''
         data = (user_id)
         sql = """
-            select g.id, g.name, g.desc, g.leader, count(u.user_id) as members
-            from coco.room as g, coco.room_users as u
-            where u.room_id = g.id in (
-                select room_id from  coco.room_users where user_id = %s
+            select g.id, g.name, g.leader, count(i.user_id) as members, sum(u.exp) as exp, row_number() over(order by sum(u.exp) desc) as ranking
+            from coco.room as g, coco.room_ids as i, coco.user as u
+            where g.id = i.room_id and u.id = i.user_id and g.id in (
+                select room_id from coco.room_ids where user_id = %s
             )
-            room by g.id;
+            group by g.id order by exp desc;
         """
         return self.select_sql(sql, data)
     
+    def write_question(self, info):
+        '''
+        Study room의 질문 생성
+        
+        - info: question 생성에 필요한 입력 데이터
+            - room_id: question이 등록될 study room의 id
+            - question: user가 작성한 질문
+            - code: user가 작성한 코드
+            - writer: 질문 작성 user
+        '''
+        data = (info.room_id, info.title, info.question, info.code, info.writer)
+        sql = """
+            INSERT INTO `room`.`%s_question` (`title`, `question`, `code`, `writer`) 
+            VALUES (%s, %s, %s, %s);
+        """
+        self.execute_sql(sql, data)
+        return True
+    
+    def room_questions(self, info):
+        '''
+        해당 study room에 등록된 모든 질문 리스트 리턴
+        '''
+        data = (info)
+        sql = 'SELECT * FROM room.%s_question;'
+        return self.select_sql(sql, data)
+
     def userlist(self):
         sql = "select id, name, exp from coco.user;"
         return self.select_sql(sql)
@@ -187,7 +221,7 @@ class CrudRoom(Crudbase):
     def get_room(self, info):
         sql = """
             select g.id, g.name, g.desc, g.leader, gu.user_id, u.exp
-            from coco.room as g, coco.room_users as gu, coco.user as u
+            from coco.room as g, coco.room_ids as gu, coco.user as u
             where gu.room_id = g.id and gu.room_id = %s and gu.user_id = u.id;
         """
         data = (info)
@@ -267,24 +301,6 @@ class CrudRoom(Crudbase):
         result = self.select_sql(sql, room_id)
         return result[0]['leader']
     
-    def room_apply(self, room_id):
-        sql = """
-            select a.*, u.name, u.exp, u.level
-            from coco.room_apply as a, coco.user as u
-            where a.user_id = u.id and a.room_id = %s;
-        """
-        result = self.select_sql(sql, room_id)
-        leader = self.room_leader(room_id)
-        return {
-            'leader': leader,
-            'apply': result
-        }
-    
-    def reject_apply(self, info):
-        del_sql = "DELETE FROM `coco`.`room_apply` WHERE (`room_id` = %s) and (`user_id` = %s);"
-        del_data = (info.room_id, info.user_id)
-        self.execute_sql(del_sql, del_data)
-        return True
 
 
             
