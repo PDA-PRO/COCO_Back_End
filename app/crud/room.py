@@ -179,10 +179,10 @@ class CrudRoom(Crudbase):
         qa = []
         for q in q_result:
             ans_sql = """
-                select q.id, a.answer, a.code, a.ans_writer from room.10_qa as a, room.%s_question as q
+                select q.id, a.answer, a.code, a.ans_writer from room.%s_qa as a, room.%s_question as q
                 where a.q_id = q.id and q.id = %s;
             """
-            ans_data = (info, q['id'])
+            ans_data = (info,info, q['id'])
             ans_result = self.select_sql(ans_sql, ans_data)
             qa.append({
                 'question': q,
@@ -199,16 +199,90 @@ class CrudRoom(Crudbase):
         self.execute_sql(sql, data)
         return True
 
-    def userlist(self):
-        sql = "select id, name, exp from coco.user;"
-        return self.select_sql(sql)
+    def create_roadmap(self, info:RoomRoadMap):
+        '''
+        Study room의 roadmap 생성
+        
+        - info: roadmap 생성에 필요한 입력 데이터
+            - room_id: room id
+            - name: roadmap 제목
+            - desc: roadmap 메인 설명
+            - task_id: 관련 문제 목록
+        '''
+        data = (info.room_id, info.name, info.desc)
+        sql = """
+            INSERT INTO `room`.`%s_roadmap` ( `name`, `desc`) 
+            VALUES (%s, %s);
+        """
+        last_idx=self.insert_last_id([sql], [data])
+        for i in info.task_id:
+            data = (info.room_id,last_idx, i)
+            sql = """
+                INSERT INTO `room`.`%s_roadmap_ids` ( `roadmap_id`, `task_id`) 
+                VALUES (%s, %s);
+            """
+            self.execute_sql(sql,data)
+        return True
     
-    
+    def read_roadmap(self, room_id):
+        '''
+        Study room의 모든 roadmap 조회 
+        
+        - room_id: room id
+        '''
+        
+        sql = """
+            select r.*,group_concat(rids.task_id) as tasks from room.%s_roadmap as r, room.%s_roadmap_ids as rids
+                where r.id = rids.roadmap_id group by rids.roadmap_id;
+        """
+        data = (room_id,room_id)
+        result=self.select_sql(sql,data)
+        for i in result:
+            i["tasks"]=list(map(int,i["tasks"].split(",")))
+        return result
 
-    def search_user(self, user_id):
-        sql = "SELECT id, name, exp, level FROM coco.user WHERE id LIKE %s OR name LIKE %s;"
-        data = ('%'+user_id+'%', '%'+user_id+'%')
-        return self.select_sql(sql, data)
+    def delete_roadmap(self,room_id:int,roadmap_id:int):
+        '''
+        해당 id의 study room에서 roadmap을 삭제
+
+        - room_id : room id
+        - roadmap_id : roadmap id
+        '''
+        sql = "DELETE FROM `room`.`%s_roadmap` WHERE (`id` = %s);"
+        data = (room_id, roadmap_id)
+        self.execute_sql(sql, data)
+         
+        return True
+    
+    def insert_roadmap_task(self, room_id:int,roadmap_id:int,task_id:int):
+        """
+        해당 id의 study room의 roadmap에 task를 추가
+        
+        - room_id : room id
+        - roadmap_id : roadmap id
+        - task_id : task id
+        """
+        #study room에 포함된 멤버 추가
+        sql = "INSERT INTO `room`.`%s_roadmap_ids` (roadmap_id, task_id) VALUES (%s, %s);"
+        data = (room_id, roadmap_id,task_id)
+        self.execute_sql(sql, data)
+        
+        return True
+    
+    def delete_roadmap_task(self,room_id:int,roadmap_id:int,task_id:int):
+        '''
+        해당 id의 study room의 roadmap에 task를 삭제
+
+        - room_id : room id
+        - roadmap_id : roadmap id
+        - task_id : task id
+        '''
+        sql = "DELETE FROM `room`.`%s_roadmap_ids` WHERE (`roadmap_id` = %s) and (`task_id` = %s);"
+        data = (room_id, roadmap_id,task_id)
+        self.execute_sql(sql, data)
+         
+        return True
+    
     
     def leave_room(self, info):
         sql = "DELETE FROM `coco`.`room_users` WHERE (`room_id` = %s AND `user_id` = %s);"
