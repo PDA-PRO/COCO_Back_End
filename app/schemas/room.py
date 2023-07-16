@@ -50,5 +50,8 @@ class JoinRoom(BaseModel):
     user_id: str
     message: str
 
-class UserID(BaseModel):
-    user_id: str
+class RoomRoadMap(BaseModel):
+    id: int
+    name: str
+    desc: str
+    tasks: list[int]

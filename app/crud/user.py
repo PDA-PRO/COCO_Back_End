@@ -81,7 +81,7 @@ class CrudUser(Crudbase):
         self.execute_sql(sql,data)
 
     def user_list(self):
-        sql = "select id, name from coco.user;"
+        sql = "select id, name,exp,level from coco.user;"
         result = self.select_sql(sql)
         return result
 
@@ -102,6 +102,11 @@ class CrudUser(Crudbase):
         self.execute_sql(sql, data)
         return True
 
+    def search_user(self, user_id):
+        sql = "SELECT id, name, exp, level FROM coco.user WHERE id LIKE %s OR name LIKE %s;"
+        data = ('%'+user_id+'%', '%'+user_id+'%')
+        return self.select_sql(sql, data)
+    
 
 
 user_crud=CrudUser()

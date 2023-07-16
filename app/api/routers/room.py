@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from core import security
 from crud.room import room
+from crud.user import user_crud
 from schemas.room import *
 from models.room import *
 
@@ -62,12 +63,8 @@ async def delete_members(members: RoomMember):
 async def get_room(room_id: int):
     '''
     해당 id의 study room의 정보를 리턴
-        - 'room_id': 스터디룸 아이디
-        - 'name': 스터디룸 이름
-        - 'desc': 스터디룸 설명
-        - 'leader': 튜터
-        - 'members': 튜티 리스트
-        - 'exp': 전체 멤버 exp 총합
+
+    - room_id: 스터디룸 아이디
     '''
     return room.get_room(room_id)
 
@@ -79,8 +76,8 @@ async def myroom(user_id: str):
     '''
     return room.myroom(user_id)
 
-@router.post("/write-question/", tags=['room'])
-async def write_question(info: RoomQuestion):
+@router.post("/question/", tags=['room'])
+async def create_question(info: RoomQuestion):
     '''
     Study room의 질문 생성
     
@@ -92,17 +89,18 @@ async def write_question(info: RoomQuestion):
     '''
     return room.write_question(info)
 
-@router.get('/questions/{room_id}', tags=['room'])
-async def room_questions(room_id: int):
+@router.get('/question/{room_id}', tags=['room'])
+async def read_questions(room_id: int):
     '''
-    해당 study room에 등록된 질문 리스트 리턴
+    해당 study room에 등록된 질문 리스트 조회
     '''
     return room.room_questions(room_id)
 
-@router.post("/write-answer", tags=['room'])
-async def write_answer(info: RoomAnswer):
+@router.post("/answer", tags=['room'])
+async def create_answer(info: RoomAnswer):
     '''
     study room에 등록된 질문에 답변을 생성
+
     - info: answer 생성에 필요한 입력 데이터
         - room_id: 질문이 등록된 room id
         - q_id: 답변이 달릴 질문 id
@@ -112,53 +110,67 @@ async def write_answer(info: RoomAnswer):
     '''
     return room.write_answer(info)
 
- 
-@router.get("/userlist/", tags=["room"])
-async def userlist():
-    return room.userlist()
+@router.post("/roadmap", tags=['room'])
+async def create_roadmap(info: RoomRoadMap):
+    '''
+    Study room의 roadmap 생성
+    
+    - info: roadmap 생성에 필요한 입력 데이터
+        - room_id: room id
+        - name: roadmap 제목
+        - desc: roadmap 메인 설명
+        - task_id: 관련 문제 목록
+    '''
+    return room.create_roadmap(info)
 
+@router.get('/roadmap/{room_id}', tags=['room'], response_model=list[RoomRoadMap])
+async def read_roadmap(room_id: int):
+    '''
+    해당 study room에 등록된 모든 roadmap 조회
 
+    - room_id: room id
+    '''
+    return room.read_roadmap(room_id)
 
-@router.post("/search_user/", tags=["room"])
-async def search_user(info: UserID):
-    return room.search_user(info.user_id)
+@router.delete('/roadmap/{room_id}', tags=['room'])
+async def delete_roadmap(room_id: int,roadmap_id:int):
+    '''
+    해당 study room에 등록된 roadmap 삭제
 
-@router.post("/leave_room/", tags=["room"])
-async def leave_room(info: RoomMember):
-    return room.leave_room(info)
+    - room_id: room id
+    - roadmap_id: roadmap id
+    '''
+    return room.delete_roadmap(room_id,roadmap_id)
 
+@router.put('/roadmap/{room_id}/task', tags=['room'])
+async def insert_roadmap_task(room_id: int,roadmap_id:int,task_id:int):
+    '''
+    해당 id의 study room의 roadmap에 task를 추가
+        
+    - room_id : room id
+    - roadmap_id : roadmap id
+    - task_id : task id
+    '''
+    return room.insert_roadmap_task(room_id,roadmap_id,task_id)
 
+@router.delete('/roadmap/{room_id}/task', tags=['room'])
+async def delete_roadmap_task(room_id: int,roadmap_id:int,task_id:int):
+    '''
+    해당 id의 study room의 roadmap에 task를 삭제
 
-@router.post("/invite_member/", tags=["room"])
-async def invite_member(info: RoomMember):
-    return room.invite_member(info)
+    - room_id : room id
+    - roadmap_id : roadmap id
+    - task_id : task id
+    '''
+    return room.delete_roadmap_task(room_id,roadmap_id,task_id)
 
+@router.get('/search_user/', tags=['room'])
+async def search_user(user_id: str):
+    '''
+    찾고 싶은 user 조회
 
+    - user_id: 찾고 싶은 user의 id나 name
+    '''
 
-@router.get("/board/{room_id}", tags=["room"])
-async def room_boardlist(room_id: int):
-    return room.room_boardlist(room_id)
-
-@router.get("/room_workbooks/{room_id}", tags=["room"])
-async def room_workbooks(room_id: int):
-    return room.room_workbooks(room_id)
-
-@router.post("/add_problem", tags=["room"])
-async def add_problem(info: RoomProblem):
-    return room.add_problem(info)
-
-@router.post("/delete_problem", tags=["room"])
-async def delete_problem(info: RoomProblem):
-    return room.delete_problem(info)
-
-@router.post("/check_member/", tags=["room"])
-async def is_my_room(info: RoomMember):
-    return room.is_my_room(info)
-
-@router.post("/join_room/", tags=["room"])
-async def join_room(info: JoinRoom):
-    return room.join_room(info)
-
-# @router.get("/room_leader/{room_id}/", tags=["room"])
-# async def room_leader(room_id: int):
-#     return room.room_leader(room_id)
+    print(user_id)
+    return user_crud.search_user(user_id)
