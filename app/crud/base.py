@@ -4,16 +4,20 @@ import db
 db_server = db.db_server
 
 class Crudbase():
-    def select_sql(self, query:str,data:tuple=None):
+    def select_sql(self, query:str,data:tuple=None,return_dict:bool=True):
         """
         1개의 쿼리 실행 후 출력 값 리턴
         
         - query : 쿼리문
         - data : 쿼리문에 들어갈 데이터
+        - return_dict : 결과값을 dict 자료형으로 반환
         """
         con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,port=db_server.port,
                             db=db_server.db, charset='utf8')  # 한글처리 (charset = 'utf8')
-        cur = con.cursor(pymysql.cursors.DictCursor)
+        if return_dict:
+            cur = con.cursor(pymysql.cursors.DictCursor)
+        else:
+            cur = con.cursor()
         cur.execute(query,data)
         result = cur.fetchall()
         con.close()
