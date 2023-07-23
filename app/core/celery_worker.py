@@ -88,7 +88,7 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
                     time.sleep(0.1)
 
         task=CrudTask()
-        result=task.select_task(taskid)
+        result=task.read_task_limit(taskid)
 
         #sub 테이블 접근에 필요한 객체
         submit=CrudSubmission()
