@@ -4,47 +4,100 @@ from schemas.board import *
 from core import security
 router = APIRouter()
 
-@router.get('/board/', tags = ['board'])
-async def check_board():
-    return board_crud.check_board()
+router = APIRouter(prefix="/board")
 
-@router.get('/board/{board_id}', tags = ['board'] )
-async def detail_board(board_id: int):
-    return board_crud.board_detail(board_id)
+@router.post('/', tags=['board'])
+async def create_board(writeBoard: CreateBoard, token: dict = Depends(security.check_token)):
+    """
+    새로운 게시글을 생성
 
-@router.post('/board_likes/', tags = ['board'])
-async def board_likes(boardLikes: BoardLikes,token: dict = Depends(security.check_token)):
-    return {'code': board_crud.board_likes(boardLikes)}
+    - writeBoard : 게시글의 요소들
+        - user_id : user id
+        - title : 제목
+        - context : 내용
+        - category : 카테고리
+        - code : 코드
+    - token : 사용자 인증
+    """
+    return {'code': board_crud.create_board(writeBoard)}
+
+@router.get('/', tags = ['board'],response_model=list[BoardBase])
+async def read_board():
+    '''
+    게시글 정보 조회
+    '''
+    return board_crud.read_board()
+
+@router.get('/{board_id}', tags = ['board'],response_model=BoardDetail)
+async def detail_board(board_id: int,user_id:str=None):
+    '''
+    특정 게시글 상세 정보 조회
+
+    - board_id : 게시글 id
+    - user_id : 조회를 요청한 유저의 id
+    '''
+    return board_crud.board_detail(board_id,user_id)
+
+@router.delete('/', tags=['board'])
+async def delete_board(board_id: int,token: dict = Depends(security.check_token)):
+    """
+    게시글 삭제
+
+    - board_id : board id
+    - token : 사용자 인증
+    """
+    return {'code': board_crud.delete_board(board_id)}
+
+@router.patch('/likes/', tags = ['board'])
+async def update_board_likes(boardLikes: LikesBase,token: dict = Depends(security.check_token)):
+    """
+    게시글의 좋아요 업데이트
+
+    - boardLikes : 게시글의 요소들
+        - user_id : user id
+        - board_id : board id
+        - type: True = 감소 , False = 증가
+    - token : 사용자 인증
+    """
+    return {'code': board_crud.update_board_likes(boardLikes)}
 
 @router.post('/comment/', tags = ['board'])
-async def write_comment(commentInfo: CommentInfo,token: dict = Depends(security.check_token)):
-    return {'code': board_crud.write_comment(commentInfo)}
+async def create_comment(commentInfo: CreateComment,token: dict = Depends(security.check_token)):
+    """
+    새로운 댓글을 생성
 
-@router.post('/comment_likes/', tags = ['board'])
-async def comment_likes(commentLikes: CommentLikes,token: dict = Depends(security.check_token)):
-    return {'code': board_crud.comment_likes(commentLikes)}
+    - commentInfo : 댓글의 요소들
+        - user_id : user id
+        - context : 댓글 내용
+        - board_id : board id
+    - token : 사용자 인증
+    """
+    return {'code': board_crud.create_comment(commentInfo)}
 
-@router.post('/write_board/', tags=['board'])
-async def write_board(writeBoard: WriteBoard, token: dict = Depends(security.check_token)):
-    return {'code': board_crud.write_board(writeBoard)}
+@router.delete('/comment/', tags=['board'])
+async def delete_comment(board_id: int,comment_id: int,token: dict = Depends(security.check_token)):
+    """
+    댓글 삭제
 
-@router.post('/delete_content/', tags=['board'])
-async def delete_content(board_id: DeleteBoard,token: dict = Depends(security.check_token)):
-    return {'code': board_crud.delete_content(board_id)}
+    - board_id : board id
+    - comment_id : comment id
+    - token : 사용자 인증
+    """
+    return {'code': board_crud.delete_comment(board_id,comment_id)}
 
-@router.post('/delete_comment/', tags=['board'])
-async def delete_comment(comment_id: DeleteComment,token: dict = Depends(security.check_token)):
-    return {'code': board_crud.delete_comment(comment_id)}
+@router.patch('/comment/likes/', tags = ['board'])
+async def update_comment_likes(commentLikes: CommentLikes,token: dict = Depends(security.check_token)):
+    """
+    댓글의 좋아요 업데이트
 
-@router.get('/boardlist', tags=['manage'])
-async def boardlist():
-    return board_crud.check_board()
+    - commentLikes : 댓글의 요소들
+        - user_id : user id
+        - board_id : board id
+        - comment_id : comment id
+        - type: True = 감소 , False = 증가
+    - token : 사용자 인증
+    """
+    return {'code': board_crud.update_comment_likes(commentLikes)}
 
-@router.get('/deleteBoard/{board_id}', tags=['manage'])
-async def deletetask(board_id):
-    return board_crud.delete_content(board_id)
 
-@router.post('/update_board/', tags=['board'])
-async def update_board(updateBoard: UpdateBoard, token: dict = Depends(security.check_token)):
-    return {'code': board_crud.update_board(updateBoard)} 
 
