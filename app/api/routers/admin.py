@@ -1,6 +1,7 @@
+from schemas.task import TaskList, TaskListWithCount
 from schemas.login import Token
 from schemas.admin import Notice, Info
-from fastapi import APIRouter,Depends, HTTPException, status
+from fastapi import APIRouter,Depends, Form, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from core import security
 from core.admin import check
@@ -36,9 +37,16 @@ async def modify_admin_key(new_pw:Info,token:dict=Depends(security.check_token))
             detail="admin PW 수정중 오류 발생"
         )
 
-@router.get("/tasklist", tags = ['admin'])
-async def get_tasklist():
-    return task_crud.manage_tasklist()
+@router.get("/tasklist", tags = ['admin'],response_model=TaskListWithCount)
+async def read_task_with_count(size:int=Query(ge=1),page:int=Query(ge=0)):
+    """
+    간단한 문제 목록 조회 
+    문제별 제출 회수 포함
+
+    - size : 한 페이지의 크기
+    - page : 페이지 번호
+    """
+    return task_crud.read_task_with_count(size,page)
 
 @router.get("/notice",tags=["admin"])
 async def get_notice():
