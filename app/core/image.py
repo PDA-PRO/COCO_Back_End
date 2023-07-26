@@ -137,7 +137,10 @@ class Image():
             if os.path.exists(save_path):
                 save_imagelist=os.listdir(save_path)
                 for i in save_imagelist:
-                    if not i in imagelist:
+                    temp=i.split(".")
+                    if len(temp)<=1:
+                        continue
+                    if temp[-1]!="zip" and not i in imagelist:
                         os.remove(os.path.join(save_path,i))
 
         return new_data

@@ -1,10 +1,8 @@
-import json
-import time
+from fastapi.responses import FileResponse
 from core import security
 from crud.task import task_crud
 from fastapi import APIRouter, Depends, Form, HTTPException
 from schemas.task import *
-from pydantic import BaseModel
 
 router = APIRouter(prefix="/task")
 
@@ -62,6 +60,32 @@ async def task_detail(task_id: int):
     else:
         raise HTTPException(status_code=404, detail="Item not found")
 
+@router.put('/', tags=['task'])
+async def update_task(task_id:int,description:str=Form(...),task: Task = Depends(), token: dict = Depends(security.check_token)):
+    """ 
+    문제 수정
+
+    - task_id : 문제 id
+    - description: 문제 메인 설명
+    - task : 문제의 요소들
+        - title: 문제 제목
+        - inputDescription: 입력 예제 설명
+        - inputEx1: 입력 예제 1
+        - inputEx2: 입략 예제 2
+        - outputDescription: 출력 예제 설명
+        - outputEx1: 출력 예제 1
+        - outputEx2: 출력 예제 2
+        - testCase: 테스트 케이스 zip파일
+        - diff: 난이도
+        - timeLimit: 시간제한
+        - memLimit: 메모리제한
+        - category: 문제 카테고리 ','로 구분된 문자열
+    - token : 사용자 인증
+    """
+    return {
+        "result":  task_crud.update_task(task_id,description,task)
+    }
+    
 @router.delete('/', tags=['task'])
 async def delete_task(task_id:int, token: dict = Depends(security.check_token)):
     """
@@ -101,3 +125,12 @@ async def delete_category(category:str, token: dict = Depends(security.check_tok
     - token : 사용자 인증
     """
     return task_crud.delete_category(category)
+
+@router.get('/testcase/{task_id}', tags=['task'])
+async def get_testcase(task_id:int):
+    """
+    문제에 대한 테스트 케이스 조회
+
+    - task_id : 문제 id
+    """
+    return FileResponse(task_crud.get_testcase(task_id),media_type="application/x-zip-compressed")

@@ -121,6 +121,55 @@ class CrudTask(Crudbase):
             "tasks" : result
         }
 
+    def update_task(self,task_id:int,description:str,task:Task):
+        """ 
+        문제 수정
+            
+        - task_id : 문제 id
+        - description: 문제 메인 설명
+        - task : 문제의 요소들
+            - title: 문제 제목
+            - inputDescription: 입력 예제 설명
+            - inputEx1: 입력 예제 1
+            - inputEx2: 입략 예제 2
+            - outputDescription: 출력 예제 설명
+            - outputEx1: 출력 예제 1
+            - outputEx2: 출력 예제 2
+            - testCase: 테스트 케이스 zip파일
+            - diff: 난이도
+            - timeLimit: 시간제한
+            - memLimit: 메모리제한
+            - category: 문제 카테고리 ','로 구분된 문자열
+        - token : 사용자 인증
+        """
+
+        #task 테이블에서 정보 업데이트
+        sql="UPDATE `coco`.`task` SET `title` = %s , `sample` = json_object('input', %s, 'output',%s) ,`mem_limit` = %s, `time_limit` = %s, `diff` = %s WHERE (`id` = '%s')"
+        data=(task.title, f"[{task.inputEx1}, {task.inputEx2}]",f"[{task.outputEx1}, {task.outputEx2}]",task.memLimit,task.timeLimit,task.diff,task_id)
+        self.execute_sql(sql,data)
+
+        #카테고리 삭제
+        sql="DELETE FROM `coco`.`task_ids` WHERE (`task_id` = %s)"
+        data=(task_id)
+        self.execute_sql(sql,data)
+
+        #카테고리 연결
+        for i in map(lambda a:a.strip(),task.category.split(",")):
+            sql="INSERT INTO `coco`.`task_ids` (`task_id`, `category`) VALUES (%s, %s);"
+            data=(task_id,i)
+            self.execute_sql(sql,data)
+
+        #desc에서 임시 이미지 삭제 및 실제 이미지 저장
+        maindesc=image.save_update_image(os.path.join(os.getenv("TASK_PATH"),"temp"),os.path.join(os.getenv("TASK_PATH"),str(task_id)),description,task_id,"su")
+
+        #desc 및 테스트케이스 업데이트
+        sql="UPDATE `coco`.`descriptions` SET `main` = %s, `in` = %s, `out` = %s WHERE (`task_id` = %s);"
+        data=(maindesc,task.inputDescription,task.outputDescription,task_id)
+        self.execute_sql(sql,data)
+        self.save_testcase(task.testCase,task_id)
+
+        return 1
+
     def find_task(self, info):
         print(info)
         sql = "select * from coco.task_list where title like %s or id like %s"
@@ -196,19 +245,29 @@ class CrudTask(Crudbase):
         - zip :테스트 케이스 압축파일
         - task_id : 문제 id
         """
+
         zip_file_path = os.path.join(os.getenv("TASK_PATH"),str(task_id))
+        #이전 테스트케이스가 있다면 제거
+        zip_path=f"{zip_file_path}/testcase"+str(task_id)+".zip"
+        if os.path.exists(zip_path):
+            os.remove(zip_path)
+        if os.path.exists(os.path.join(zip_file_path,"input")):
+            shutil.rmtree(os.path.join(zip_file_path,"input"))
+        if os.path.exists(os.path.join(zip_file_path,"output")):
+            shutil.rmtree(os.path.join(zip_file_path,"output"))
         
         if not os.path.exists(zip_file_path):
             os.mkdir(zip_file_path)
 
-        with open(f"{zip_file_path}/temp.zip", 'wb') as upload_zip:
-                shutil.copyfileobj(zip.file, upload_zip)
-        with zipfile.ZipFile(f"{zip_file_path}/temp.zip") as encrypt_zip:
-                encrypt_zip.extractall(
-                    zip_file_path,
-                    None
-                )
-        os.remove(f"{zip_file_path}/temp.zip")
+        with open(zip_path, 'wb') as upload_zip:
+            shutil.copyfileobj(zip.file, upload_zip)
+        with zipfile.ZipFile(zip_path) as encrypt_zip:
+            encrypt_zip.extractall(
+                zip_file_path,
+                None
+            )
+        
+        # os.remove(f"{zip_file_path}/testcase"+str(task_id)+".zip")
 
     def task_detail(self,task_id:int):
         """
@@ -313,4 +372,13 @@ class CrudTask(Crudbase):
             "tasks":result
             }
 
+    def get_testcase(self,task_id:int):
+        """
+        문제에 대한 테스트 케이스 조회
+
+        - task_id : 문제 id
+        """
+        zip_file_path = os.path.join(os.getenv("TASK_PATH"),str(task_id),"testcase"+str(task_id)+".zip")
+        return zip_file_path
+    
 task_crud=CrudTask()
