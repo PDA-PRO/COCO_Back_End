@@ -38,6 +38,7 @@ class CrudRoom(Crudbase):
             `id` INT NOT NULL auto_increment,
             `name` VARCHAR(45) NULL,
             `desc` TEXT NULL,
+            `last_modify` DATETIME NULL,
             PRIMARY KEY (`id`));
         """)
         table_sql.append("""
@@ -209,14 +210,14 @@ class CrudRoom(Crudbase):
             - desc: roadmap 메인 설명
             - task_id: 관련 문제 목록
         '''
-        data = (info.room_id, info.name, info.desc)
+        data = (info.id, info.name, info.desc)
         sql = """
-            INSERT INTO `room`.`%s_roadmap` ( `name`, `desc`) 
-            VALUES (%s, %s);
+            INSERT INTO `room`.`%s_roadmap` ( `name`, `desc`,`last_modify`) 
+            VALUES (%s, %s,now());
         """
         last_idx=self.insert_last_id([sql], [data])
-        for i in info.task_id:
-            data = (info.room_id,last_idx, i)
+        for i in info.tasks:
+            data = (info.id,last_idx, i)
             sql = """
                 INSERT INTO `room`.`%s_roadmap_ids` ( `roadmap_id`, `task_id`) 
                 VALUES (%s, %s);
