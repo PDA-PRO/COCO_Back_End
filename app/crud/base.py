@@ -79,6 +79,33 @@ class Crudbase():
         con.commit()
         con.close()
 
+    def select_sql_with_pagination(self, query:str,data:tuple=tuple(),size:int=10, page:int=1,)->tuple[int,list]:
+        """
+        1개의 쿼리문을 페이지네이션으로 실행
+        
+        param
+        - query : 쿼리문 리스트
+        - data : 쿼리문에 들어갈 데이터 리스트
+        - size : 한 페이지의 크기
+        - page : 현재 페이지의 번호
+        ----------------------------------
+        return
+        - total : 기존 쿼리 결과의 전체 개수
+        - result : 페이지네이션된 결과값
+        """
+        
+        con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,port=db_server.port,
+                    db=db_server.db, charset='utf8')  # 한글처리 (charset = 'utf8')
+        cur = con.cursor(pymysql.cursors.DictCursor)
+        cur.execute(query,data)
+        total = len(cur.fetchall())
+        
+        query+=" limit %s offset %s;"
+        data = (*data, size,(page-1)*size)
+        cur.execute(query,data)
+        result = cur.fetchall()
+        con.close()
+        return total,result
         
 
 

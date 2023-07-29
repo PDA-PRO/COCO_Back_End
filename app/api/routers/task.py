@@ -32,7 +32,7 @@ async def create_task(description:str=Form(...),task: Task = Depends(), token: d
     }
 
 @router.get('/', tags=['task'], response_model=TaskList)
-async def read_task(query:ReadTask=Depends()):
+async def read_task_with_pagination(query:ReadTask=Depends()):
     """
     문제 리스트에서 쿼리에 맞는 문제들의 정보만 리턴
     keyword, diff, category는 AND 로 결합
@@ -45,7 +45,7 @@ async def read_task(query:ReadTask=Depends()):
         - size: 한페이지의 크기
         - page: 페이지 번호
     """
-    return task_crud.read_task(query)
+    return task_crud.read_task_with_pagination(query)
 
 @router.get('/{task_id}/', tags=['task'],response_model=TaskDetail)
 async def task_detail(task_id: int):

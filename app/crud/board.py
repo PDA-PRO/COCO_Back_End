@@ -43,9 +43,18 @@ class CrudBoard(Crudbase):
         '''
         게시글 정보 조회
         '''
-        sql = 'SELECT * FROM coco.boards order by id desc;'
+        sql = 'SELECT * FROM coco.boards order by id desc'
         result = self.select_sql(sql)
         return result
+    
+    def read_board_with_pagination(self,info:PaginationIn):
+        '''
+        게시글 정보 조회
+        '''
+        sql = 'SELECT * FROM coco.boards order by id desc'
+        total,result = self.select_sql_with_pagination(sql,size=info.size,page=info.page)
+
+        return {"total":total,"size":info.size,"boardlist":result}
 
     def board_detail(self, board_id:int,user_id:str=None):
         '''

@@ -1,5 +1,6 @@
 from datetime import datetime
 from pydantic import BaseModel
+from .common import *
 
 
 class BoardBase(BaseModel):
@@ -14,6 +15,8 @@ class BoardBase(BaseModel):
     comments: int
     code : str|None
 
+class BoardListOut(PaginationOut):
+    boardlist:list[BoardBase]
 class CommentBase(BaseModel):
     id: int
     context: str
