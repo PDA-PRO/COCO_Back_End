@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-
+from datetime import datetime
 class RoomBase(BaseModel):
     id:int
     name:str
@@ -54,4 +54,9 @@ class RoomRoadMap(BaseModel):
     id: int
     name: str
     desc: str
+    last_modify:datetime|None
     tasks: list[int]
+
+class RoomRoadMapList(BaseModel):
+    room_info :list[RoomRoadMap]
+    solved_task : list[int]

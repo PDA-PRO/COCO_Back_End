@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from core import security
 from crud.room import room
 from crud.user import user_crud
+from crud.submission import submission_crud
 from schemas.room import *
 from models.room import *
 
@@ -123,14 +124,22 @@ async def create_roadmap(info: RoomRoadMap):
     '''
     return room.create_roadmap(info)
 
-@router.get('/roadmap/{room_id}', tags=['room'], response_model=list[RoomRoadMap])
-async def read_roadmap(room_id: int):
+@router.get('/roadmap/{room_id}', tags=['room'], response_model=RoomRoadMapList)
+async def read_roadmap(room_id: int,user_id:str):
     '''
-    해당 study room에 등록된 모든 roadmap 조회
+    해당 study room에 등록된 모든 roadmap 정보 조회
+
+    
 
     - room_id: room id
+    - user_id: user id
     '''
-    return room.read_roadmap(room_id)
+    room_info=room.read_roadmap(room_id)
+    solved_task=submission_crud.get_solved(user_id)
+    return {
+        "room_info" :room_info,
+        "solved_task" : solved_task
+    }
 
 @router.delete('/roadmap/{room_id}', tags=['room'])
 async def delete_roadmap(room_id: int,roadmap_id:int):

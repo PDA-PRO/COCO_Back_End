@@ -65,5 +65,15 @@ class CrudSubmission(Crudbase):
             if i.get("status")==3:
                 right_sub+=1
         return round(right_sub/len(all_sub)*100,1)
+    
+    def get_solved(self,user_id):
+        sql="select group_concat(ids.task_id) as task_id from coco.submissions as sub, coco.sub_ids as ids where ids.user_id=%s and sub.status=3 and sub.sub_id=ids.sub_id"
+        data=(user_id)
+        
+        result=self.select_sql(sql,data)[0]["task_id"]
+        solved_task=[]
+        if result:
+            solved_task=list(set(result.split(",")))
+        return solved_task
 
 submission_crud=CrudSubmission()
