@@ -1,13 +1,13 @@
 import os
 from schemas.board import *
 import db
-from datetime import datetime
 from .base import Crudbase
 from core.image import image
+from models.board import Boards
 
 db_server = db.db_server
 
-class CrudBoard(Crudbase):
+class CrudBoard(Crudbase[Boards,int]):
 
     def create_board(self, writeBoard:CreateBoard):
         """
@@ -33,6 +33,7 @@ class CrudBoard(Crudbase):
 
         #게시글 내용에서 이미지의 url을 임시 url에서 진짜 url로 변경
         new_context=image.save_update_image(os.path.join(os.getenv("BOARD_PATH"),"temp",writeBoard.user_id),os.path.join(os.getenv("BOARD_PATH"),str(board_id)),writeBoard.context,board_id,"s")
+        
         sql="UPDATE `coco`.`boards` SET `context` = %s WHERE (`id` = %s);"
         data=(new_context,board_id)
         self.execute_sql(sql,data)
@@ -233,4 +234,4 @@ class CrudBoard(Crudbase):
         return 1
 
 
-board_crud=CrudBoard()
+board_crud=CrudBoard(Boards)

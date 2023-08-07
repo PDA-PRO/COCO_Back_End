@@ -8,7 +8,7 @@ import db
 
 db_server = db.db_server
 
-class CrudRoom(Crudbase):
+class CrudRoom(Crudbase[Room,int]):
     def create_room(self, info:CreateRoom):
         """
         study room 생성에 관련된 데이터, 테이블 생성
@@ -404,4 +404,4 @@ class CrudRoom(Crudbase):
 
             
 
-room = CrudRoom()
+room = CrudRoom(Room)

@@ -6,10 +6,11 @@ import zipfile
 from .base import Crudbase
 from core.image import image
 from schemas.task import *
+from models.task import *
 
 db_server = db.db_server
 
-class CrudTask(Crudbase):
+class CrudTask(Crudbase[Task,int]):
     def create_task(self,description:str,task:Task):
         """ 
         새로운 문제를 생성
@@ -361,4 +362,4 @@ class CrudTask(Crudbase):
         zip_file_path = os.path.join(os.getenv("TASK_PATH"),str(task_id),"testcase"+str(task_id)+".zip")
         return zip_file_path
     
-task_crud=CrudTask()
+task_crud=CrudTask(Task)

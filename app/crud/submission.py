@@ -4,10 +4,11 @@ import uuid
 from schemas.submission import StatusListIn, Submit
 import time
 from .base import Crudbase
+from models.submission import Submissions
 
 db_server = db.db_server
 
-class CrudSubmission(Crudbase):
+class CrudSubmission(Crudbase[Submissions,int]):
     def create_sub(self,submit:Submit):
         """
         status 1("대기") 상태로 새로운 제출 생성
@@ -56,7 +57,7 @@ class CrudSubmission(Crudbase):
         - sub_id
         - status : 채점 상태 1 - 대기, 2 - 채점중, 3 - 정답, 4 - 오답
         """
-        sql="UPDATE coco.submissions SET status=%s WHERE sub_id=%s;"
+        sql="UPDATE coco.submissions SET status=%s WHERE id=%s;"
         data=(status, sub_id)
         self.execute_sql(sql,data)
 
@@ -74,7 +75,7 @@ class CrudSubmission(Crudbase):
         - status_id : isolate 런타임 결과 RE - 런타임 오류, TO - 시간 초과, SG - 메모리 초과
         """
         
-        sql="UPDATE coco.submissions SET status_id=%s ,exit_code=%s, stdout=%s, stderr=%s, message=%s, number_of_runs=%s, status=%s WHERE sub_id=%s;"
+        sql="UPDATE coco.submissions SET status_id=%s ,exit_code=%s, stdout=%s, stderr=%s, message=%s, number_of_runs=%s, status=%s WHERE id=%s;"
         data=(
             status_id,
             exit_code,
@@ -107,7 +108,7 @@ class CrudSubmission(Crudbase):
 
         - user_id
         """
-        sql="select group_concat(ids.task_id) as task_id from coco.submissions as sub, coco.sub_ids as ids where ids.user_id=%s and sub.status=3 and sub.sub_id=ids.sub_id"
+        sql="select group_concat(ids.task_id) as task_id from coco.submissions as sub, coco.sub_ids as ids where ids.user_id=%s and sub.status=3 and sub.id=ids.sub_id"
         data=(user_id)
         
         result=self.select_sql(sql,data)[0]["task_id"]
@@ -165,4 +166,4 @@ class CrudSubmission(Crudbase):
             "statuslist" : result
         }
 
-submission_crud=CrudSubmission()
+submission_crud=CrudSubmission(Submissions)

@@ -3,11 +3,11 @@ import db
 from schemas.user import *
 from .base import Crudbase
 from core import security
+from models.user import User
 
 db_server = db.db_server
 
-class CrudUser(Crudbase):
-
+class CrudUser(Crudbase[User,str]):
     def get_user(self, user_id:int, user_pw:int):
         """
         해당 user가 존재하고 pw가 맞으면 
@@ -183,4 +183,4 @@ class CrudUser(Crudbase):
         total,result=self.select_sql_with_pagination(sql, data,info.size,info.page)
         return {"total":total,"size":info.size,"userlist":result}
 
-user_crud=CrudUser()
+user_crud=CrudUser(User)
