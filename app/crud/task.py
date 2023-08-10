@@ -166,7 +166,7 @@ class CrudTask(Crudbase[Task,int]):
 
         - task_id : 문제 id
         """
-        sql="DELETE FROM coco.submissions where sub_id in (SELECT sub_id FROM coco.sub_ids where task_id=%s)"
+        sql="DELETE FROM coco.submissions where id in (SELECT sub_id FROM coco.sub_ids where task_id=%s)"
         data=(task_id)
         self.execute_sql(sql,data)
         sql="DELETE FROM coco.task where id=%s"

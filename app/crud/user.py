@@ -183,4 +183,33 @@ class CrudUser(Crudbase[User,str]):
         total,result=self.select_sql_with_pagination(sql, data,info.size,info.page)
         return {"total":total,"size":info.size,"userlist":result}
 
+    def create_mytask(self, user_id,task_id):
+        data = (user_id, task_id)
+        check_sql = "select exists( select 1 from coco.my_tasks where user_id = %s and task_num = %s) as my_task;"
+        result = self.select_sql(check_sql, data)
+        check_result = result[0]['my_task']
+        if check_result == 0:
+            sql ="INSERT INTO `coco`.`my_tasks` (`user_id`, `task_num`, `solved`) VALUES (%s, %s, %s);"
+            data = (user_id, task_id, 0)
+            self.execute_sql(sql, data)
+            return True
+        else:
+            return False
+        
+    def read_mytask(self, user_id):
+        sql = """
+            SELECT t.*, m.solved
+            FROM coco.my_tasks as m, coco.task_list as t
+            WHERE user_id = %s and m.task_num = t.id;
+        """
+        data = (user_id)
+        result = self.select_sql(sql, data)
+        return result
+
+    def delete_mytask(self, user_id,task_id):
+        sql = "DELETE FROM `coco`.`my_tasks` WHERE (`user_id` = %s) and (`task_num` = %s);"
+        data = (user_id, task_id)
+        self.execute_sql(sql, data)
+        return True
+
 user_crud=CrudUser(User)

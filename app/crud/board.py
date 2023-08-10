@@ -40,6 +40,12 @@ class CrudBoard(Crudbase[Boards,int]):
     
         return 1
 
+    def read_myboard(self, user_id):
+        sql = "SELECT * FROM coco.view_board WHERE user_id = %s order by time desc;"
+        data = user_id
+        result = self.select_sql(sql, data)
+        return result
+    
     def read_board(self):
         '''
         게시글 정보 조회
