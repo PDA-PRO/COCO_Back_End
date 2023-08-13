@@ -400,6 +400,62 @@ class CrudRoom(Crudbase):
         result = self.select_sql(sql, room_id)
         return result[0]['leader']
     
+    def get_roadmap(self, room_id, roadmap_id):
+        '''
+            해당 id의 study room의 특정 roadmap 정보를 가져옴
+
+            - room_id: room id
+            - roadmap_id: roadmap id
+        '''
+        # 스룸 로드맵 정보
+        roadmap_sql = "SELECT * FROM room.%s_roadmap where id = %s;"
+        roadmap_data = (room_id, roadmap_id)
+        roadmap_result = self.select_sql(roadmap_sql, roadmap_data)
+
+        # 로드맵에 속한 문제 리스트
+        problem_sql = '''
+            select * from coco.task_list where id in ( SELECT i.task_id 
+            FROM room.%s_roadmap as r, room.%s_roadmap_ids as i where r.id = %s and r.id = i.roadmap_id);
+        '''
+        problem_data = (room_id, room_id, roadmap_id)
+        problem_result = self.select_sql(problem_sql, problem_data)
+        
+        # 문제 번호만 추출
+        problems = []
+        for result in problem_result:
+            problems.append(result['id'])
+
+        # 스룸 멤버 아이디만 추출
+        users = []
+        user_sql = "SELECT i.user_id FROM coco.room as r, coco.room_ids as i where r.id = %s and r.id = i.room_id;"
+        user_data = (room_id)
+        user_result = self.select_sql(user_sql, user_data)
+        for result in user_result:
+            users.append(result['user_id'])
+
+        # 스룸 멤버가 로드맵 문제 풀었는지 안풀었는지
+        solved_result = {}
+        for user in users:
+            solved = []
+            for problem in problems:
+                sql = "SELECT user_id, task_id, status FROM coco.user_problem WHERE user_id = %s AND task_id = %s and status = 3;"
+                data = (user, problem)
+                result = self.select_sql(sql, data)
+                if not result:
+                    continue
+                else:
+                    solved.append(problem)
+            solved_result[user] = solved
+
+        return{
+            'roadmap': roadmap_result,
+            'problem_list': problem_result,
+            'solved_list': solved_result
+        }
+
+        
+
+
 
 
             
