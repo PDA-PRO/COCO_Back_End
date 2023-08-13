@@ -183,3 +183,13 @@ async def search_user(user_id: str):
 
     print(user_id)
     return user_crud.search_user(user_id)
+
+@router.get('/roadmap/{room_id}/{roadmap_id}', tags=['room'])
+async def get_roadmap(room_id: int, roadmap_id: int):
+    '''
+        해당 id의 study room의 특정 roadmap 정보를 가져옴
+
+        - room_id: room id
+        - roadmap_id: roadmap id
+    '''
+    return room.get_roadmap(room_id, roadmap_id)
