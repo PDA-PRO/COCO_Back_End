@@ -408,8 +408,8 @@ class CrudRoom(Crudbase):
             - roadmap_id: roadmap id
         '''
         # 스룸 로드맵 정보
-        roadmap_sql = "SELECT * FROM room.%s_roadmap where id = %s;"
-        roadmap_data = (room_id, roadmap_id)
+        roadmap_sql = "SELECT r.*, c.leader FROM room.%s_roadmap as r, coco.room as c where c.id = %s and r.id = %s;"
+        roadmap_data = (room_id, room_id, roadmap_id)
         roadmap_result = self.select_sql(roadmap_sql, roadmap_data)
 
         # 로드맵에 속한 문제 리스트
@@ -448,7 +448,7 @@ class CrudRoom(Crudbase):
             solved_result[user] = solved
 
         return{
-            'roadmap': roadmap_result,
+            'roadmap': roadmap_result[0],
             'problem_list': problem_result,
             'solved_list': solved_result
         }
