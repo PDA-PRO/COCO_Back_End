@@ -5,8 +5,8 @@ import subprocess
 from contextlib import contextmanager
 import os
 import glob
-from crud.task import CrudTask
-from crud.submission import CrudSubmission
+from crud.task import task_crud
+from crud.submission import submission_crud
 from crud.user import user_crud
 from dotenv import load_dotenv
 
@@ -60,7 +60,6 @@ def ready_C(code,box_id,sub_id):
     - box_id : isolate box id
     - sub_id : 제출 id
     """
-    submit=CrudSubmission()
     with open('/var/local/lib/isolate/'+str(box_id)+'/box/src.c','w') as code_file:
         code_file.write(code)
     #error data 저장공간
@@ -81,9 +80,50 @@ def ready_C(code,box_id,sub_id):
         error_file=open(error_path,'r')
         error=error_file.readlines()
         print(error)
-        submit.update_sub(sub_id,int(exec_result["exitcode"]),message="컴파일 에러",status_id=exec_result["status"],stderr="".join(error),status=4)
+        submission_crud.update_sub(sub_id,int(exec_result["exitcode"]),message="컴파일 에러",status_id=exec_result["status"],stderr="".join(error),status=4)
         return False
 
+@contextmanager
+def get_isolate(timelimit:int)->int|None:
+    """
+    현재 사용가능한 isolate box id context를 폴링으로 획득 및 isolate box 초기화
+    사용 종료 시 isolate box 삭제 및 box id 를 사용가능으로 변경
+
+    redis는 기본적으로 싱글 쓰레드로 동작하기 때문에 해당 사용중인 box id를 redis에 저장해두고 해당 id가 존재하는지 확인함으로써
+    사용중인 isolate box를 다른 celery worker가 공유하지 않도록 구현
+
+    params
+    - timelimit : 최대 polling 시간
+    -----------------------------------------------------
+    return
+    - 사용가능한 isolate box id 리턴
+    - timelimit 동안 획득 실패시 None 리턴
+    """
+    box_id=1
+    timeover=0
+    with redis.StrictRedis(host='127.0.0.1', port=6379, db=0) as conn:
+        try:
+            while timeover<timelimit:#폴링으로 box가 사용가능한지 계속 확인
+                if conn.set(str(box_id),1,nx=True):
+                    #isolate box 초기화
+                    subprocess.run(['isolate', '--cg', '-b',str(box_id),'--init'],capture_output=True,text=True)
+                    time.sleep(0.2)#격리 공간 생기는 거 기다리기
+                    yield box_id
+                    break
+                box_id=((box_id+1)%9)
+                if box_id==0:
+                    box_id=1
+                time.sleep(0.1)
+                timeover+=1
+            else:
+                box_id=None
+                yield box_id
+        finally:
+            if box_id:
+                #사용가능한 box id를 획득했다면 사용종료 후 isolate box 삭제
+                subprocess.run(['isolate', '--cg', '-b',str(box_id),'--cleanup'],capture_output=True)
+            #isolate box id 사용가능으로 설정하기 위해 box id를 삭제
+            conn.delete(str(box_id))
 
 
 @celery_task.task(ignore_result=True)
@@ -102,32 +142,15 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
     - lang : 파이썬 0 | c언어 1
     - user_id : 제출한 유저의 id
     """
-    box_id=1
-    with redis.StrictRedis(host='127.0.0.1', port=6379, db=0) as conn:
-        #isolate box 1~8 중에서 현재 쓰고있지 않은 box의 id를 얻고 다른 worker에서 사용하지 못하도록 redis를 이용하여 세마포어 lock 
-        while True:#폴링으로 worker가 남았는지 계속 확인
-            with redis_lock('lock') as acquired:
-                if acquired:#남았으면 lock 잡고 채점
-                    data = conn.get(str(box_id))
-                    if int(data)==0:
-                        conn.set(str(box_id),1)
-                        break
-                    box_id=((box_id+1)%9)
-                    if box_id==0:
-                        box_id=1
-                else:#lock을 다른 worker가 잡고있으면 0.1초 후에 다시 확인
-                    time.sleep(0.1)
-
+    with get_isolate(600) as box_id:
+        if not box_id:
+            return
+                
         #문제의 제한사항 조회
-        task=CrudTask()
-        result=task.read_task_limit(taskid)
+        result=task_crud.read_task_limit(taskid)
 
         #제출 현재 상태를 2("채점중")으로 변경
-        submit=CrudSubmission()
-        submit.update_status(sub_id,2)
-        #isolate id별로 초기화
-        subprocess.run(['isolate', '--cg', '-b',str(box_id),'--init'],capture_output=True,text=True)
-        time.sleep(0.2)#격리 공간 생기는 거 기다리기
+        submission_crud.update_status(sub_id,2)
 
 
         #채점
@@ -167,7 +190,7 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
                     #실행결과 분석
                     exec_result=txt_to_dic(meta_path)
                     if exec_result.get("exitcode")==None:#샌드박스에 의해서 종료됨 -> 문제의 제한사항에 걸려서 종료됨
-                        submit.update_sub(sub_id,2,message="제한사항에 걸림",status_id=exec_result["status"])
+                        submission_crud.update_sub(sub_id,2,message="제한사항에 걸림",status_id=exec_result["status"])
                         task_result=0
                         break
                     else:
@@ -180,13 +203,13 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
                             if len(output):
                                 for line_num in range(len(answer)):
                                     if output[line_num].rstrip()!=answer[line_num].rstrip():
-                                        submit.update_sub(sub_id,int(exec_result["exitcode"]),stdout="".join(output),number_of_runs=TC_num,message="TC 실패")
+                                        submission_crud.update_sub(sub_id,int(exec_result["exitcode"]),stdout="".join(output),number_of_runs=TC_num,message="TC 실패")
                                         task_result=0
                                         output_file.close()
                                         answer_file.close()
                                         break
                             else:
-                                submit.update_sub(sub_id,int(exec_result["exitcode"]),number_of_runs=TC_num,message="TC 실패")
+                                submission_crud.update_sub(sub_id,int(exec_result["exitcode"]),number_of_runs=TC_num,message="TC 실패")
                                 task_result=0
                                 output_file.close()
                                 answer_file.close()
@@ -198,12 +221,12 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
                             
                             error=error_file.readlines()
                             print(error)
-                            submit.update_sub(sub_id,int(exec_result["exitcode"]),message="런타임 에러",number_of_runs=TC_num,status_id=exec_result["status"],stderr="".join(error))
+                            submission_crud.update_sub(sub_id,int(exec_result["exitcode"]),message="런타임 에러",number_of_runs=TC_num,status_id=exec_result["status"],stderr="".join(error))
                             task_result=0
                             break
 
                 if task_result==1:#모든 TC를 통과했다면 정답처리
-                    submit.update_sub(sub_id,int(exec_result["exitcode"]),message="정답!",status=3)
+                    submission_crud.update_sub(sub_id,int(exec_result["exitcode"]),message="정답!",status=3)
                     user_crud.update_exp(user_id)
             except:
                 print("채점 중 오류 발생")
@@ -223,9 +246,5 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
             os.remove(i)
 
         #정답률 수정
-        rate=submit.calc_rate(taskid)
-        task.update_rate(taskid,rate)
-        
-        #isolate id 삭제 및 redis를 통한 lock 해제
-        subprocess.run(['isolate', '--cg', '-b',str(box_id),'--cleanup'],capture_output=True)
-        conn.set(str(box_id),"0")
+        rate=submission_crud.calc_rate(taskid)
+        task_crud.update_rate(taskid,rate)
