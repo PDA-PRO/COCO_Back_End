@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from schemas.user import UserListIn, UserListOut
 from core import security
 from crud.room import room
 from crud.user import user_crud
@@ -173,16 +174,19 @@ async def delete_roadmap_task(room_id: int,roadmap_id:int,task_id:int):
     '''
     return room.delete_roadmap_task(room_id,roadmap_id,task_id)
 
-@router.get('/search_user/', tags=['room'])
-async def search_user(user_id: str):
-    '''
-    찾고 싶은 user 조회
+@router.get('/search_user/', tags=['room'],response_model=UserListOut)
+async def search_user(info: UserListIn=Depends()):
+    """
+    user의 id나 name으로 검색
+    id, name, role 값 리턴
 
-    - user_id: 찾고 싶은 user의 id나 name
-    '''
-
-    print(user_id)
-    return user_crud.search_user(user_id)
+    - info
+        - keyword : user의 id나 name | 값이 없을 시 모든 user 리스트 리턴
+        - size : 한 페이지의 크기
+        - page : 페이지
+        - role : 0 -> 일반 유저 1-> 관리자
+    """
+    return user_crud.search_user(info)
 
 @router.get('/roadmap/{room_id}/{roadmap_id}', tags=['room'])
 async def get_roadmap(room_id: int, roadmap_id: int):

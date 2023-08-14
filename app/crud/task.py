@@ -6,10 +6,11 @@ import zipfile
 from .base import Crudbase
 from core.image import image
 from schemas.task import *
+from models.task import *
 
 db_server = db.db_server
 
-class CrudTask(Crudbase):
+class CrudTask(Crudbase[Task,int]):
     def create_task(self,description:str,task:Task):
         """ 
         새로운 문제를 생성
@@ -53,7 +54,7 @@ class CrudTask(Crudbase):
 
         return 1
 
-    def read_task(self, query:ReadTask):
+    def read_task_with_pagination(self, query:ReadTask):
         """
         문제 리스트에서 쿼리에 맞는 문제들의 정보만 리턴
         keyword, diff, category는 AND 로 결합
@@ -69,7 +70,6 @@ class CrudTask(Crudbase):
 
         #기본 sql 뼈대.
         sql="SELECT * FROM coco.task_list"
-        total_sql="SELECT count(id) as total FROM coco.task_list"
         data=[]
         
         #where 조건 추가
@@ -77,8 +77,7 @@ class CrudTask(Crudbase):
         #난이도 조건
         if query.diff:
             query.diff=map(int,query.diff.split(","))
-            condition.append(" diff in(%s)")
-            data.append(",".join(map(str,query.diff)))
+            condition.append(" diff in("+",".join(map(str,query.diff))+")")
         #카테고리 조건
         if query.category:
             query.category=map(lambda a:a.strip(),query.category.split(","))
@@ -96,24 +95,14 @@ class CrudTask(Crudbase):
         #where 조건이 존재한다면 sql에 추가
         if len(condition):
             sql+=" WHERE "+"AND".join(condition)
-            total_sql+=" WHERE "+"AND".join(condition)
 
         #정렬 기준 추가
         if query.rateSort==1:
             sql+=" ORDER BY rate"
-            total_sql+=" ORDER BY rate"
         elif query.rateSort==2:
             sql+=" ORDER BY rate desc"
-            total_sql+=" ORDER BY rate desc"
 
-        total=total=self.select_sql(total_sql,tuple(data))[0].get("total")
-
-        #페이지네이션
-        sql+=" limit %s offset %s;"
-        data.append(query.size)
-        data.append((query.page-1)*query.size)
-
-        result=self.select_sql(sql,tuple(data))
+        total,result=self.select_sql_with_pagination(sql,tuple(data),query.size,query.page)
         
         return  {
             "total" : total,
@@ -170,13 +159,6 @@ class CrudTask(Crudbase):
 
         return 1
 
-    def find_task(self, info):
-        print(info)
-        sql = "select * from coco.task_list where title like %s or id like %s"
-        data = ('%'+info+'%', '%'+info+'%')
-        result = self.select_sql(sql, data)
-        return result
-
     def delete_task(self,task_id:int):
         """
         문제 삭제
@@ -184,7 +166,7 @@ class CrudTask(Crudbase):
 
         - task_id : 문제 id
         """
-        sql="DELETE FROM coco.submissions where sub_id in (SELECT sub_id FROM coco.sub_ids where task_id=%s)"
+        sql="DELETE FROM coco.submissions where id in (SELECT sub_id FROM coco.sub_ids where task_id=%s)"
         data=(task_id)
         self.execute_sql(sql,data)
         sql="DELETE FROM coco.task where id=%s"
@@ -353,22 +335,21 @@ class CrudTask(Crudbase):
         result = self.select_sql(sql,data)
         return result[0]
     
-    def read_task_with_count(self,size:int, page:int):
+    def read_task_with_count(self,info : PaginationIn):
         """
         간단한 문제 목록 조회 
         문제별 제출 회수 포함
 
-        - size : 한 페이지의 크기
-        - page : 페이지 번호
+        - info
+            - size : 한 페이지의 크기
+            - page : 페이지 번호
         """
-        sql="SELECT t.id,t.title,t.rate,t.diff,s.count FROM coco.task t left outer join coco.sub_per_task s on t.id=s.task_id limit %s offset %s;"
-        data=(size,(page-1)*size)
-        result = self.select_sql(sql,data)
-        total=self.select_sql("SELECT count(id) as total FROM coco.task;")[0].get("total")
+        sql="SELECT t.id,t.title,t.rate,t.diff,s.count FROM coco.task t left outer join coco.sub_per_task s on t.id=s.task_id"
+        total,result=self.select_sql_with_pagination(sql,size=info.size,page=info.page)
 
         return {
             "total":total,
-            "size":size,
+            "size":info.size,
             "tasks":result
             }
 
@@ -381,4 +362,4 @@ class CrudTask(Crudbase):
         zip_file_path = os.path.join(os.getenv("TASK_PATH"),str(task_id),"testcase"+str(task_id)+".zip")
         return zip_file_path
     
-task_crud=CrudTask()
+task_crud=CrudTask(Task)

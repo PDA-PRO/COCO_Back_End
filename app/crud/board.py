@@ -1,13 +1,13 @@
 import os
 from schemas.board import *
 import db
-from datetime import datetime
 from .base import Crudbase
 from core.image import image
+from models.board import Boards
 
 db_server = db.db_server
 
-class CrudBoard(Crudbase):
+class CrudBoard(Crudbase[Boards,int]):
 
     def create_board(self, writeBoard:CreateBoard):
         """
@@ -33,19 +33,35 @@ class CrudBoard(Crudbase):
 
         #게시글 내용에서 이미지의 url을 임시 url에서 진짜 url로 변경
         new_context=image.save_update_image(os.path.join(os.getenv("BOARD_PATH"),"temp",writeBoard.user_id),os.path.join(os.getenv("BOARD_PATH"),str(board_id)),writeBoard.context,board_id,"s")
+        
         sql="UPDATE `coco`.`boards` SET `context` = %s WHERE (`id` = %s);"
         data=(new_context,board_id)
         self.execute_sql(sql,data)
     
         return 1
 
+    def read_myboard(self, user_id):
+        sql = "SELECT * FROM coco.view_board WHERE user_id = %s order by time desc;"
+        data = user_id
+        result = self.select_sql(sql, data)
+        return result
+    
     def read_board(self):
         '''
         게시글 정보 조회
         '''
-        sql = 'SELECT * FROM coco.boards order by id desc;'
+        sql = 'SELECT * FROM coco.boards order by id desc'
         result = self.select_sql(sql)
         return result
+    
+    def read_board_with_pagination(self,info:PaginationIn):
+        '''
+        게시글 정보 조회
+        '''
+        sql = 'SELECT * FROM coco.boards order by id desc'
+        total,result = self.select_sql_with_pagination(sql,size=info.size,page=info.page)
+
+        return {"total":total,"size":info.size,"boardlist":result}
 
     def board_detail(self, board_id:int,user_id:str=None):
         '''
@@ -224,4 +240,4 @@ class CrudBoard(Crudbase):
         return 1
 
 
-board_crud=CrudBoard()
+board_crud=CrudBoard(Boards)

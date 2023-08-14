@@ -11,7 +11,7 @@ load_dotenv(verbose=True)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-def create_access_token(data: dict,is_admin=False,exp_time:int=148):
+def create_access_token(data: dict,is_admin=False,exp_time:int=168):
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(hours=exp_time)
     to_encode.update({"exp": expire})
