@@ -1,5 +1,6 @@
 from pydantic import BaseModel, conint
 from fastapi import  UploadFile
+from .common import *
 
 class Task(BaseModel):
     title: str
@@ -15,13 +16,11 @@ class Task(BaseModel):
     memLimit: int
     category:str
     
-class ReadTask(BaseModel):
+class ReadTask(PaginationIn):
     keyword:str|None
     diff:str|None
     category:str|None
     rateSort:conint(ge=0,le=2)|None
-    size:conint(ge=1)
-    page:conint(ge=0)
 
 class TaskMeta(BaseModel):
     id : int
@@ -32,14 +31,10 @@ class TaskMeta(BaseModel):
 class TaskMetaWithCount(TaskMeta):
     count:int|None
 
-class TaskList(BaseModel):
-    total : int
-    size:int
+class TaskList(PaginationOut):
     tasks : list[TaskMeta]
 
-class TaskListWithCount(BaseModel):
-    total : int
-    size:int
+class TaskListWithCount(PaginationOut):
     tasks : list[TaskMetaWithCount]
 
 class TaskDetail(BaseModel):

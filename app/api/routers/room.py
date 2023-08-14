@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends
+from schemas.user import UserListIn, UserListOut
 from core import security
 from crud.room import room
 from crud.user import user_crud
+from crud.submission import submission_crud
 from schemas.room import *
 from models.room import *
 
@@ -123,14 +125,22 @@ async def create_roadmap(info: RoomRoadMap):
     '''
     return room.create_roadmap(info)
 
-@router.get('/roadmap/{room_id}', tags=['room'], response_model=list[RoomRoadMap])
-async def read_roadmap(room_id: int):
+@router.get('/roadmap/{room_id}', tags=['room'], response_model=RoomRoadMapList)
+async def read_roadmap(room_id: int,user_id:str):
     '''
-    해당 study room에 등록된 모든 roadmap 조회
+    해당 study room에 등록된 모든 roadmap 정보 조회
+
+    
 
     - room_id: room id
+    - user_id: user id
     '''
-    return room.read_roadmap(room_id)
+    room_info=room.read_roadmap(room_id)
+    solved_task=submission_crud.get_solved(user_id)
+    return {
+        "room_info" :room_info,
+        "solved_task" : solved_task
+    }
 
 @router.delete('/roadmap/{room_id}', tags=['room'])
 async def delete_roadmap(room_id: int,roadmap_id:int):
@@ -164,13 +174,26 @@ async def delete_roadmap_task(room_id: int,roadmap_id:int,task_id:int):
     '''
     return room.delete_roadmap_task(room_id,roadmap_id,task_id)
 
-@router.get('/search_user/', tags=['room'])
-async def search_user(user_id: str):
-    '''
-    찾고 싶은 user 조회
+@router.get('/search_user/', tags=['room'],response_model=UserListOut)
+async def search_user(info: UserListIn=Depends()):
+    """
+    user의 id나 name으로 검색
+    id, name, role 값 리턴
 
-    - user_id: 찾고 싶은 user의 id나 name
-    '''
+    - info
+        - keyword : user의 id나 name | 값이 없을 시 모든 user 리스트 리턴
+        - size : 한 페이지의 크기
+        - page : 페이지
+        - role : 0 -> 일반 유저 1-> 관리자
+    """
+    return user_crud.search_user(info)
 
-    print(user_id)
-    return user_crud.search_user(user_id)
+@router.get('/roadmap/{room_id}/{roadmap_id}', tags=['room'])
+async def get_roadmap(room_id: int, roadmap_id: int):
+    '''
+        해당 id의 study room의 특정 roadmap 정보를 가져옴
+
+        - room_id: room id
+        - roadmap_id: roadmap id
+    '''
+    return room.get_roadmap(room_id, roadmap_id)
