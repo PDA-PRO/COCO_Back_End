@@ -97,7 +97,7 @@ class CrudSubmission(Crudbase):
 
         - sub_id
         """
-        sql="SELECT * FROM coco.submissions WHERE sub_id=%s;"
+        sql="SELECT * FROM coco.submissions WHERE id=%s;"
         data=(sub_id)
         row=self.select_sql(sql,data)
         return row
