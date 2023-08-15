@@ -1,4 +1,3 @@
-import pymysql
 import db
 import uuid
 from schemas.submission import StatusListIn, Submit
@@ -7,6 +6,7 @@ from .base import Crudbase
 import os
 import json
 from googletrans import Translator
+from models.submission import Submissions
 
 db_server = db.db_server
 
@@ -319,7 +319,5 @@ class CrudSubmission(Crudbase):
             'growth': sorted(growth, reverse=True),
             'rate': round((total_solved/total_submit)*100, 1)
         }
-
-
 
 submission_crud=CrudSubmission(Submissions)
