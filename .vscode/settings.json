@@ -1,0 +1,15 @@
+{
+    "python.linting.enabled": true,
+    "python.linting.pylintArgs": [
+        // "--disable=bad-indentation",
+        // "--disable=missing-module-docstring",
+        // "--disable=trailing-newlines",
+        // "--disable=import-error",
+        // "--disable=missing-class-docstring",
+        // "--disable=unused-import",
+        // "--disable=W0311",
+        // "--disable=C0103",
+        "--disable=W,R,C,F,I,E"
+    ],
+    "python.linting.pylintEnabled": true
+}

@@ -9,7 +9,7 @@ class Submit(BaseModel):
     lang:int
 
 class subDetail(BaseModel):
-    sub_id:int
+    id:int
     status_id:str|None
     code:str
     stdout:str|None

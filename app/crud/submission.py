@@ -1,14 +1,66 @@
-import pymysql
 import db
 import uuid
 from schemas.submission import StatusListIn, Submit
 import time
 from .base import Crudbase
+import os
+import json
+from googletrans import Translator
 from models.submission import Submissions
 
 db_server = db.db_server
 
-class CrudSubmission(Crudbase[Submissions,int]):
+class CrudSubmission(Crudbase):   
+    def code_pylint(self, name, sourcecode):
+        py_file = f'C:\\Users\\sdjmc\\vscode\\COCO_Back_End\\code\\{name}.py'
+        json_path = ''
+        f = open(py_file, 'w')
+        f.write(sourcecode)
+        f.close()
+        if(str(os.path.isfile(py_file))):   
+            translator = Translator()             
+            json_path = f'C:\\Users\\sdjmc\\vscode\\COCO_Back_End\\msg\\{name}_msg.json'
+            os.system(f'pylint {py_file} --disable=W,C --output-format=json:{json_path}')     
+            err_msg = []
+            with open(json_path, 'r') as file:
+                datas = json.load(file)
+                for data in datas:
+                    type = data['type']
+                    line = data['line']
+                    symbol = data['symbol']
+                    msg = data['message']
+                    err_msg.append({
+                        'type': type,
+                        'line': line,
+                        'symbol': symbol,
+                        'msg': translator.translate(msg, 'ko').text
+                    })
+            return err_msg
+        else:
+            return False
+
+    def init_submit(self,submit:Submit):
+        self.code_pylint(submit.taskid, submit.sourcecode)
+        now = time
+        a=uuid.uuid1()
+        sql=[]
+        data=[]
+        sql.append("INSERT into coco.submissions (code,time,token,callback_url,status,lang ) values(%s, %s, %s, %s, %s,%s);")
+        sql.append("insert into coco.sub_ids values (%s,%s,LAST_INSERT_ID());")
+        data.append((
+            submit.sourcecode,
+            now.strftime('%Y-%m-%d %H:%M:%S'),
+            a.hex,
+            submit.callbackurl,
+            1,
+            submit.lang))
+        data.append((
+            submit.userid,
+            submit.taskid
+        ))
+        id=self.insert_last_id(sql,data)
+        return id
+
     def create_sub(self,submit:Submit):
         """
         status 1("대기") 상태로 새로운 제출 생성
@@ -45,7 +97,7 @@ class CrudSubmission(Crudbase[Submissions,int]):
 
         - sub_id
         """
-        sql="SELECT * FROM coco.submissions WHERE sub_id=%s;"
+        sql="SELECT * FROM coco.submissions WHERE id=%s;"
         data=(sub_id)
         row=self.select_sql(sql,data)
         return row
@@ -267,7 +319,5 @@ class CrudSubmission(Crudbase[Submissions,int]):
             'growth': sorted(growth, reverse=True),
             'rate': round((total_solved/total_submit)*100, 1)
         }
-
-
 
 submission_crud=CrudSubmission(Submissions)
