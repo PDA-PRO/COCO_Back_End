@@ -2,7 +2,7 @@ from jose import jwt, JWTError
 from datetime import datetime, timedelta
 from passlib.context import CryptContext
 import os
-from fastapi import APIRouter,Depends,HTTPException,status
+from fastapi import Depends,HTTPException,status
 from dotenv import load_dotenv
 from fastapi.security import OAuth2PasswordBearer
 

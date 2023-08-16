@@ -9,10 +9,13 @@ from crud.task import task_crud
 from crud.submission import submission_crud
 from crud.user import user_crud
 from dotenv import load_dotenv
+from api.deps import get_cursor
 
 redis_client = redis.Redis(host='127.0.0.1', port=6379)
 
 load_dotenv(verbose=True)
+
+get_cursor=contextmanager(get_cursor)
 
 def txt_to_dic(file_path):
     """
@@ -52,7 +55,7 @@ def redis_lock(lock_name):
     finally:
         redis_client.delete(lock_name)
 
-def ready_C(code,box_id,sub_id):
+def ready_C(db_cursor,code,box_id,sub_id):
     """
     C언어 채점 준비 -> 소스코드 컴파일
 
@@ -80,7 +83,7 @@ def ready_C(code,box_id,sub_id):
         error_file=open(error_path,'r')
         error=error_file.readlines()
         print(error)
-        submission_crud.update_sub(sub_id,int(exec_result["exitcode"]),message="컴파일 에러",status_id=exec_result["status"],stderr="".join(error),status=4)
+        submission_crud.update_sub(db_cursor,sub_id,int(exec_result["exitcode"]),message="컴파일 에러",status_id=exec_result["status"],stderr="".join(error),status=4)
         return False
 
 @contextmanager
@@ -142,15 +145,15 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
     - lang : 파이썬 0 | c언어 1
     - user_id : 제출한 유저의 id
     """
-    with get_isolate(600) as box_id:
+    with get_isolate(600) as box_id,get_cursor() as db_cursor:
         if not box_id:
             return
                 
         #문제의 제한사항 조회
-        result=task_crud.read_task_limit(taskid)
+        result=task_crud.read_task_limit(db_cursor,taskid)
 
         #제출 현재 상태를 2("채점중")으로 변경
-        submission_crud.update_status(sub_id,2)
+        submission_crud.update_status(db_cursor,sub_id,2)
 
 
         #채점
@@ -190,7 +193,7 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
                     #실행결과 분석
                     exec_result=txt_to_dic(meta_path)
                     if exec_result.get("exitcode")==None:#샌드박스에 의해서 종료됨 -> 문제의 제한사항에 걸려서 종료됨
-                        submission_crud.update_sub(sub_id,2,message="제한사항에 걸림",status_id=exec_result["status"])
+                        submission_crud.update_sub(db_cursor,sub_id,2,message="제한사항에 걸림",status_id=exec_result["status"])
                         task_result=0
                         break
                     else:
@@ -203,13 +206,13 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
                             if len(output):
                                 for line_num in range(len(answer)):
                                     if output[line_num].rstrip()!=answer[line_num].rstrip():
-                                        submission_crud.update_sub(sub_id,int(exec_result["exitcode"]),stdout="".join(output),number_of_runs=TC_num,message="TC 실패")
+                                        submission_crud.update_sub(db_cursor,sub_id,int(exec_result["exitcode"]),stdout="".join(output),number_of_runs=TC_num,message="TC 실패")
                                         task_result=0
                                         output_file.close()
                                         answer_file.close()
                                         break
                             else:
-                                submission_crud.update_sub(sub_id,int(exec_result["exitcode"]),number_of_runs=TC_num,message="TC 실패")
+                                submission_crud.update_sub(db_cursor,sub_id,int(exec_result["exitcode"]),number_of_runs=TC_num,message="TC 실패")
                                 task_result=0
                                 output_file.close()
                                 answer_file.close()
@@ -221,13 +224,13 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
                             
                             error=error_file.readlines()
                             print(error)
-                            submission_crud.update_sub(sub_id,int(exec_result["exitcode"]),message="런타임 에러",number_of_runs=TC_num,status_id=exec_result["status"],stderr="".join(error))
+                            submission_crud.update_sub(db_cursor,sub_id,int(exec_result["exitcode"]),message="런타임 에러",number_of_runs=TC_num,status_id=exec_result["status"],stderr="".join(error))
                             task_result=0
                             break
 
                 if task_result==1:#모든 TC를 통과했다면 정답처리
-                    submission_crud.update_sub(sub_id,int(exec_result["exitcode"]),message="정답!",status=3)
-                    user_crud.update_exp(user_id)
+                    submission_crud.update_sub(db_cursor,sub_id,int(exec_result["exitcode"]),message="정답!",status=3)
+                    user_crud.update_exp(db_cursor,user_id)
             except:
                 print("채점 중 오류 발생")
         
@@ -246,5 +249,5 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
             os.remove(i)
 
         #정답률 수정
-        rate=submission_crud.calc_rate(taskid)
-        task_crud.update_rate(taskid,rate)
+        rate=submission_crud.calc_rate(db_cursor,taskid)
+        task_crud.update_rate(db_cursor,taskid,rate)

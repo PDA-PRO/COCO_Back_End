@@ -3,7 +3,6 @@ from fastapi.responses import FileResponse
 from core import security
 from core.image import image
 
-
 router = APIRouter(prefix="/image")
     
 @router.post("/upload-temp",tags=["image"],)
