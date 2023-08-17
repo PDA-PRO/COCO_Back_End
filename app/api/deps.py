@@ -1,9 +1,14 @@
 import pymysql
 import db
 from db.base import DBCursor
+
 db_server = db.db_server
 
-def get_cursor() -> DBCursor:
+def get_cursor():
+    """
+    db 연결 및 db cursor 획득
+    정상 종료시 db 변경사항 commit 및 db 연결 종료
+    """
     con = pymysql.connect(host=db_server.host, user=db_server.user, password=db_server.password,port=db_server.port,
                         db=db_server.db, charset='utf8')  # 한글처리 (charset = 'utf8')
     cur = con.cursor(pymysql.cursors.DictCursor)
