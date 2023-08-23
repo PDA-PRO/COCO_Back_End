@@ -3,11 +3,12 @@ from fastapi import APIRouter,Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from core import security
 from crud.user import user_crud
+from api.deps import get_cursor,DBCursor
 
 router = APIRouter()
 
 @router.post("/signup/", tags=["login"])
-async def create_user(user: SignUp):
+async def create_user(user: SignUp,db_cursor:DBCursor=Depends(get_cursor)):
     """
     새로운 회원 생성
     pw해쉬값 저장
@@ -18,23 +19,23 @@ async def create_user(user: SignUp):
         - pw : 비밀번호는 영어, 숫자, 특수기호를 포함하고 8-15 길이
         - email : 이메일
     """
-    return {"code": user_crud.create_user(user)}
+    return {"code": user_crud.create_user(db_cursor,user)}
 
 @router.get("/checkids/", tags=["login"])
-async def check_id(id: str):
+async def check_id(id: str,db_cursor:DBCursor=Depends(get_cursor)):
     """
     회원가입시 아이디 중복 검사
 
     - id : user id
     """
     try:
-        user_crud.exist_id(id)
+        user_crud.exist_id(db_cursor,id)
         return {"code": 0}
     except:
         return {"code":1}
 
 @router.get("/findid/", tags=["login"])
-async def get_id(info: FindId=Depends()):
+async def get_id(info: FindId=Depends(),db_cursor:DBCursor=Depends(get_cursor)):
     """
     id 찾기
     존재하지 않으면 0 리턴
@@ -43,10 +44,10 @@ async def get_id(info: FindId=Depends()):
         - name : 실명
         - email : 이메일
     """
-    return {"code": user_crud.get_id(info)}
+    return {"code": user_crud.get_id(db_cursor,info)}
 
 @router.patch("/pw/", tags=["login"])
-async def update_pw(pw:str,id=Depends(user_crud.exist_id)):
+async def update_pw(pw:str,id:str,db_cursor:DBCursor=Depends(get_cursor)):
     """
     해당 user의 pw 업데이트
     id가 존재하지 않으면 오류
@@ -55,7 +56,7 @@ async def update_pw(pw:str,id=Depends(user_crud.exist_id)):
     - pw : 새로운 pw
     """
     try:
-        user_crud.update_pw(Login(id=id,pw=pw))
+        user_crud.update_pw(db_cursor,Login(id=id,pw=pw))
         return {"code": 1}
     except ValueError:
         raise HTTPException(            
@@ -70,7 +71,7 @@ async def update_pw(pw:str,id=Depends(user_crud.exist_id)):
             )
 
 @router.patch("/email/", tags=["login"])
-async def update_email(email:str,id=Depends(user_crud.exist_id)):
+async def update_email(email:str,id:str,db_cursor:DBCursor=Depends(get_cursor)):
     """
     해당 user의 email 업데이트
  
@@ -78,7 +79,7 @@ async def update_email(email:str,id=Depends(user_crud.exist_id)):
     - email : email
     """
     try:
-        user_crud.update_email(UpdateEmail(id=id,email=email))
+        user_crud.update_email(db_cursor,UpdateEmail(id=id,email=email))
         return {"code": 1}
     except ValueError :
         raise HTTPException(            
@@ -97,7 +98,7 @@ async def update_email(email:str,id=Depends(user_crud.exist_id)):
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 @router.post("/login", response_model=Token,tags=["login"])
-async def login_for_access_token(autologin:bool=False,form_data: OAuth2PasswordRequestForm = Depends()):
+async def login_for_access_token(autologin:bool=False,form_data: OAuth2PasswordRequestForm = Depends(),db_cursor:DBCursor=Depends(get_cursor)):
     """
     로그인
     자동로그인 체크시 토큰 일주일 유지 체크해제시 2시간 유지
@@ -116,7 +117,7 @@ async def login_for_access_token(autologin:bool=False,form_data: OAuth2PasswordR
         - client_secret: optional string. OAuth2 recommends sending the client_id and client_secret (if any)
         using HTTP Basic auth, as: client_id:client_secret
     """
-    user = user_crud.get_user(form_data.username, form_data.password)
+    user = user_crud.get_user(db_cursor,form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

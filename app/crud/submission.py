@@ -1,4 +1,3 @@
-import db
 import uuid
 from schemas.submission import StatusListIn, Submit
 import time
@@ -7,8 +6,7 @@ import os
 import json
 from googletrans import Translator
 from models.submission import Submissions
-
-db_server = db.db_server
+from db.base import DBCursor
 
 class CrudSubmission(Crudbase):   
     def code_pylint(self, name, sourcecode):
@@ -39,7 +37,7 @@ class CrudSubmission(Crudbase):
         else:
             return False
 
-    def init_submit(self,submit:Submit):
+    def init_submit(self,db_cursor:DBCursor,submit:Submit):
         self.code_pylint(submit.taskid, submit.sourcecode)
         now = time
         a=uuid.uuid1()
@@ -58,10 +56,10 @@ class CrudSubmission(Crudbase):
             submit.userid,
             submit.taskid
         ))
-        id=self.insert_last_id(sql,data)
+        id=db_cursor.insert_last_id(sql,data)
         return id
 
-    def create_sub(self,submit:Submit):
+    def create_sub(self,db_cursor:DBCursor,submit:Submit):
         """
         status 1("대기") 상태로 새로운 제출 생성
         생성된 제출의 id 리턴
@@ -88,10 +86,10 @@ class CrudSubmission(Crudbase):
             submit.userid,
             submit.taskid
         ))
-        id=self.insert_last_id(sql,data)
+        id=db_cursor.insert_last_id(sql,data)
         return id
 
-    def read_sub(self,sub_id:int):
+    def read_sub(self,db_cursor:DBCursor,sub_id:int):
         """
         제출 정보 조회
 
@@ -99,10 +97,10 @@ class CrudSubmission(Crudbase):
         """
         sql="SELECT * FROM coco.submissions WHERE id=%s;"
         data=(sub_id)
-        row=self.select_sql(sql,data)
+        row=db_cursor.select_sql(sql,data)
         return row
 
-    def update_status(self, sub_id:int, status:int):
+    def update_status(self, db_cursor:DBCursor,sub_id:int, status:int):
         """
         status만 업데이트
 
@@ -111,9 +109,9 @@ class CrudSubmission(Crudbase):
         """
         sql="UPDATE coco.submissions SET status=%s WHERE id=%s;"
         data=(status, sub_id)
-        self.execute_sql(sql,data)
+        db_cursor.execute_sql(sql,data)
 
-    def update_sub(self,sub_id:int,exit_code:int,status:int=4,stdout:str=None,stderr:str=None,message:str=None,number_of_runs:int=100,status_id:str=None):
+    def update_sub(self, db_cursor:DBCursor,sub_id:int,exit_code:int,status:int=4,stdout:str=None,stderr:str=None,message:str=None,number_of_runs:int=100,status_id:str=None):
         """
         제출 정보 업데이트
 
@@ -137,9 +135,9 @@ class CrudSubmission(Crudbase):
             number_of_runs,
             status,
             sub_id)
-        self.execute_sql(sql,data)
+        db_cursor.execute_sql(sql,data)
     
-    def calc_rate(self,task_id:int):
+    def calc_rate(self, db_cursor:DBCursor,task_id:int):
         """
         문제의 정답률 수정을 위해 제출 회수 대비 맞은 제출 비율 조회
 
@@ -147,14 +145,14 @@ class CrudSubmission(Crudbase):
         """
         sql="SELECT status FROM coco.status_list where task_id=%s;"
         data=(task_id)
-        all_sub=self.select_sql(sql,data)
+        all_sub=db_cursor.select_sql(sql,data)
         right_sub=0
         for i in all_sub:
             if i.get("status")==3:
                 right_sub+=1
         return round(right_sub/len(all_sub)*100,1)
     
-    def get_solved(self,user_id:str):
+    def get_solved(self, db_cursor:DBCursor,user_id:str):
         """
         유저가 맞힌 문제 id 조회
 
@@ -163,13 +161,13 @@ class CrudSubmission(Crudbase):
         sql="select group_concat(ids.task_id) as task_id from coco.submissions as sub, coco.sub_ids as ids where ids.user_id=%s and sub.status=3 and sub.id=ids.sub_id"
         data=(user_id)
         
-        result=self.select_sql(sql,data)[0]["task_id"]
+        result=db_cursor.select_sql(sql,data)[0]["task_id"]
         solved_task=[]
         if result:
             solved_task=list(set(result.split(",")))
         return solved_task
     
-    def read_status(self, info : StatusListIn):
+    def read_status(self,  db_cursor:DBCursor,info : StatusListIn):
         """
         제출 조회
 
@@ -202,7 +200,7 @@ class CrudSubmission(Crudbase):
             sql+=" WHERE "+"AND".join(condition)
         sql+=" ORDER BY time desc"
 
-        total,result=self.select_sql_with_pagination(sql,tuple(data),info.size,info.page)
+        total,result=db_cursor.select_sql_with_pagination(sql,tuple(data),info.size,info.page)
         
         if info.user_id:
             solved_list=self.get_solved(info.user_id)
@@ -218,7 +216,7 @@ class CrudSubmission(Crudbase):
             "statuslist" : result
         }
 
-    def read_mysub(self, user_id):
+    def read_mysub(self,  db_cursor:DBCursor,user_id):
         data = user_id
         total_submit, total_solved = 1, 1
         #월별 제출수
@@ -227,7 +225,7 @@ class CrudSubmission(Crudbase):
             where user_id = %s
             GROUP BY time ORDER BY time DESC;     
         """
-        submit_cnt_result = self.select_sql(submit_cnt_sql, data)
+        submit_cnt_result = db_cursor.select_sql(submit_cnt_sql, data)
         submit_cnt = []
         for i in submit_cnt_result:
             total_submit += i['cnt']
@@ -247,7 +245,7 @@ class CrudSubmission(Crudbase):
             WHERE user_id = %s AND status = '3'
             GROUP BY time ORDER BY time DESC;
         """
-        solved_cnt_result = self.select_sql(solved_cnt_sql, data)
+        solved_cnt_result = db_cursor.select_sql(solved_cnt_sql, data)
         solved_cnt = []
         for i in solved_cnt_result:
             total_solved += i['cnt']
@@ -266,7 +264,7 @@ class CrudSubmission(Crudbase):
             WHERE user_id = %s AND status = 3
             GROUP BY task_id, time ORDER BY time DESC;   
         """
-        solved_list_result = self.select_sql(solved_list_sql, data)
+        solved_list_result = db_cursor.select_sql(solved_list_sql, data)
         solved_list = [] #맞은 문제 리스트
         growth = [] #성장 그래프
         for i in range(len(solved_list_result)-1, -1, -1):
@@ -289,7 +287,7 @@ class CrudSubmission(Crudbase):
             WHERE user_id = %s
             GROUP BY task_id, time ORDER BY time DESC;  
         """
-        submit_list_result = self.select_sql(submit_list_sql, data)
+        submit_list_result = db_cursor.select_sql(submit_list_sql, data)
         submit_list = []
         for i in range(len(submit_list_result)-1, -1, -1):
             submit_list.append(submit_list_result[i]['task_id'])

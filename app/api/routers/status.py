@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends
 from schemas.submission import StatusListIn,StatusListOut
 from crud.submission import submission_crud
+from api.deps import get_cursor,DBCursor
 
 router = APIRouter()
 
 @router.get("/status/", tags=["status"],response_model=StatusListOut)
-async def read_status(info:StatusListIn=Depends()):
+async def read_status(info:StatusListIn=Depends(),db_cursor:DBCursor=Depends(get_cursor)):
     """
     제출 조회
 
@@ -18,4 +19,4 @@ async def read_status(info:StatusListIn=Depends()):
         - answer: status가 3("정답") 인지 여부
     """
     
-    return submission_crud.read_status(info)
+    return submission_crud.read_status(db_cursor,info)

@@ -1,14 +1,12 @@
 from fastapi import HTTPException,status
-import db
 from schemas.user import *
 from .base import Crudbase
 from core import security
 from models.user import User
-
-db_server = db.db_server
+from db.base import DBCursor
 
 class CrudUser(Crudbase[User,str]):
-    def get_user(self, user_id:int, user_pw:int):
+    def get_user(self, db_cursor:DBCursor,user_id:int, user_pw:int):
         """
         해당 user가 존재하고 pw가 맞으면 
         유저 정보 조회
@@ -19,7 +17,7 @@ class CrudUser(Crudbase[User,str]):
         """
         sql = "SELECT id, pw, name, role, exp, level FROM `coco`.`user` where id = %s;"
         data=(user_id)
-        result = self.select_sql(sql,data)
+        result = db_cursor.select_sql(sql,data)
         if len(result) == 0:#로그인 정보가 없다면
             return None
         else:#로그인 정보가 있다면
@@ -27,7 +25,7 @@ class CrudUser(Crudbase[User,str]):
                 return result[0]
             return None
 
-    def create_user(self, user:SignUp):
+    def create_user(self,db_cursor:DBCursor, user:SignUp):
         """
         새로운 회원 생성
         pw해쉬값 저장
@@ -40,11 +38,11 @@ class CrudUser(Crudbase[User,str]):
         """
         sql = "INSERT INTO `coco`.`user` (`id`, `pw`, `name`, `role`, `email`) VALUES (%s,%s,%s,%s,%s)"
         data=(user.id, security.get_password_hash(user.pw), user.name, 0, user.email)
-        self.execute_sql(sql,data)
+        db_cursor.execute_sql(sql,data)
         return 1
 
 
-    def exist_id(self, id:str):
+    def exist_id(self,db_cursor:DBCursor, id:str):
         """
         아이디 조회
         존재하면 1 존재하지 않으면 0
@@ -53,7 +51,7 @@ class CrudUser(Crudbase[User,str]):
         """
         sql = "SELECT id FROM `coco`.`user` where id = %s;"
         data=(id)
-        result = self.select_sql(sql,data)
+        result = db_cursor.select_sql(sql,data)
         if len(result):
             return id
         else:
@@ -61,7 +59,7 @@ class CrudUser(Crudbase[User,str]):
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="id가 존재하지 않습니다.")
 
-    def get_id(self, info:FindId):
+    def get_id(self, db_cursor:DBCursor,info:FindId):
         """
         id 찾기
 
@@ -71,13 +69,13 @@ class CrudUser(Crudbase[User,str]):
         """
         sql = "SELECT id FROM `coco`.`user` WHERE name = %s AND email = %s"
         data=(info.name,info.email)
-        result = self.select_sql(sql,data)
+        result = db_cursor.select_sql(sql,data)
         if len(result) == 0:
             return 0
         else:
             return result[0]["id"]
 
-    def update_pw(self, info:Login):
+    def update_pw(self, db_cursor:DBCursor,info:Login):
         """
         해당 user의 pw 업데이트
 
@@ -87,9 +85,9 @@ class CrudUser(Crudbase[User,str]):
         """
         sql = "UPDATE coco.user SET pw = %s WHERE id = %s;"
         data = (security.get_password_hash(info.pw), info.id)
-        self.execute_sql(sql, data)
+        db_cursor.execute_sql(sql, data)
         
-    def update_email(self, info:UpdateEmail):
+    def update_email(self, db_cursor:DBCursor,info:UpdateEmail):
         """
         해당 user의 email 업데이트
 
@@ -100,10 +98,10 @@ class CrudUser(Crudbase[User,str]):
         
         sql = "UPDATE coco.user SET email = %s WHERE id = %s;"
         data = (info.email, info.id)
-        self.execute_sql(sql, data)
+        db_cursor.execute_sql(sql, data)
         return 1
     
-    def update_role(self, info:UpdateRole):
+    def update_role(self, db_cursor:DBCursor,info:UpdateRole):
         """
         해당 user의 role 업데이트
 
@@ -114,10 +112,10 @@ class CrudUser(Crudbase[User,str]):
         
         sql = "UPDATE coco.user SET role = %s WHERE id = %s;"
         data = (info.role, info.id)
-        self.execute_sql(sql, data)
+        db_cursor.execute_sql(sql, data)
         return 1
     
-    def update_exp(self,user_id:str):
+    def update_exp(self,db_cursor:DBCursor,user_id:str):
         """
         user 경험치 업데이트
 
@@ -125,16 +123,16 @@ class CrudUser(Crudbase[User,str]):
         """
         sql="SELECT distinct user_id,task_id,diff FROM coco.user_problem where user_id=%s and status=3;"
         data=(user_id)
-        result=self.select_sql(sql,data)
+        result=db_cursor.select_sql(sql,data)
 
         new_exp=0
         for i in result:
             new_exp+=i.get("diff")*100
         sql="UPDATE coco.user SET exp = %s WHERE (id = %s);"
         data=(new_exp,user_id)
-        self.execute_sql(sql,data)
+        db_cursor.execute_sql(sql,data)
     
-    def add_manager(self, user_id:str):
+    def add_manager(self, db_cursor:DBCursor,user_id:str):
         """
         일반 user에서 관리자로 업데이트
 
@@ -142,18 +140,18 @@ class CrudUser(Crudbase[User,str]):
         """
         sql = "UPDATE `coco`.`user` SET `role` = '1' WHERE (`id` = %s);"
         data = (user_id)
-        self.execute_sql(sql, data)
+        db_cursor.execute_sql(sql, data)
         return True
     
-    def read_manager(self):
+    def read_manager(self,db_cursor:DBCursor):
         """
         모든 관리자 조회
 
         """
         sql = "select id, name, role from `coco`.`user` where `role` = 1"
-        return self.select_sql(sql)
+        return db_cursor.select_sql(sql)
 
-    def search_user(self, info:UserListIn):
+    def search_user(self, db_cursor:DBCursor,info:UserListIn):
         """
         user의 id나 name으로 검색
         id, name, role 값 리턴
@@ -180,36 +178,36 @@ class CrudUser(Crudbase[User,str]):
         else:
             sql = "SELECT id, name, role FROM coco.user"
             data = ()
-        total,result=self.select_sql_with_pagination(sql, data,info.size,info.page)
+        total,result=db_cursor.select_sql_with_pagination(sql, data,info.size,info.page)
         return {"total":total,"size":info.size,"userlist":result}
 
-    def create_mytask(self, user_id,task_id):
+    def create_mytask(self,db_cursor:DBCursor, user_id,task_id):
         data = (user_id, task_id)
         check_sql = "select exists( select 1 from coco.my_tasks where user_id = %s and task_num = %s) as my_task;"
-        result = self.select_sql(check_sql, data)
+        result = db_cursor.select_sql(check_sql, data)
         check_result = result[0]['my_task']
         if check_result == 0:
             sql ="INSERT INTO `coco`.`my_tasks` (`user_id`, `task_num`, `solved`) VALUES (%s, %s, %s);"
             data = (user_id, task_id, 0)
-            self.execute_sql(sql, data)
+            db_cursor.execute_sql(sql, data)
             return True
         else:
             return False
         
-    def read_mytask(self, user_id):
+    def read_mytask(self, db_cursor:DBCursor,user_id):
         sql = """
             SELECT t.*, m.solved
             FROM coco.my_tasks as m, coco.task_list as t
             WHERE user_id = %s and m.task_num = t.id;
         """
         data = (user_id)
-        result = self.select_sql(sql, data)
+        result = db_cursor.select_sql(sql, data)
         return result
 
-    def delete_mytask(self, user_id,task_id):
+    def delete_mytask(self, db_cursor:DBCursor,user_id,task_id):
         sql = "DELETE FROM `coco`.`my_tasks` WHERE (`user_id` = %s) and (`task_num` = %s);"
         data = (user_id, task_id)
-        self.execute_sql(sql, data)
+        db_cursor.execute_sql(sql, data)
         return True
 
 user_crud=CrudUser(User)

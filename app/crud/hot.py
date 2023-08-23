@@ -1,17 +1,14 @@
-import pymysql
-import db
 from .base import Crudbase
-
-db_server = db.db_server
+from db.base import DBCursor
 
 class CrudHot(Crudbase):
-    def hot_list(self):
+    def hot_list(self,db_cursor:DBCursor):
         board_sql = """
             select b.*, i.user_id from coco.boards as b, coco.boards_ids as i 
             where b.id = i.board_id
             order by likes desc limit 1;
         """
-        board_result = self.select_sql(board_sql)
+        board_result = db_cursor.select_sql(board_sql)
         board_result = board_result[0]
         task_sql = """
             select count(*), i.task_id, t.title, t.rate, t.mem_limit, t.time_limit, t.diff 
@@ -19,7 +16,7 @@ class CrudHot(Crudbase):
             where i.task_id = t.id group by i.task_id order by count(*) 
             desc limit 1;
         """
-        task_result = self.select_sql(task_sql)
+        task_result = db_cursor.select_sql(task_sql)
         task_result = task_result[0]
         return {
             'board_id': board_result["id"],
@@ -39,7 +36,7 @@ class CrudHot(Crudbase):
             'problem_diff': task_result["diff"]
         }
 
-    def my_status(self, user_id):
+    def my_status(self, db_cursor:DBCursor,user_id):
         data = user_id
         solved_list_sql = """
             SELECT time, task_id, diff
@@ -47,7 +44,7 @@ class CrudHot(Crudbase):
             WHERE user_id = %s AND status = 3
             GROUP BY task_id, time ORDER BY time DESC;   
         """
-        solved_list_result = self.select_sql(solved_list_sql, data)
+        solved_list_result = db_cursor.select_sql(solved_list_sql, data)
         growth = [] #성장 그래프
         for i in range(len(solved_list_result)-1, -1, -1):
             if not growth: #성장 그래프 리스트가 비어있으면
@@ -70,7 +67,7 @@ class CrudHot(Crudbase):
             SELECT diff, count(*) as cnt FROM coco.status_all as s, coco.view_task as t
             where s.user_id = %s and s.status = 3 and s.task_id = t.id group by diff;
         """
-        problem_diff_result = self.select_sql(problem_diff_sql, data)
+        problem_diff_result = db_cursor.select_sql(problem_diff_sql, data)
         for i in problem_diff_result:
             diff[i['diff']] = i['cnt']
         return {

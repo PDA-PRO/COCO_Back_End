@@ -3,17 +3,17 @@ from schemas.user import UpdateRole, UserList, UserListIn, UserListOut
 from schemas.task import  TaskListWithCount
 from schemas.board import  BoardListOut
 from schemas.admin import Notice
-from fastapi import APIRouter,Depends, Form, HTTPException, Query, status
-from core import security
+from fastapi import APIRouter,Depends, HTTPException, status
 from core.admin import check
 from crud.task import task_crud
 from crud.user import user_crud
 from crud.board import board_crud
+from api.deps import get_cursor,DBCursor
 
 router = APIRouter(prefix="/manage")
 
 @router.get("/tasklist", tags = ['admin'],response_model=TaskListWithCount)
-async def read_task_with_count(info:PaginationIn=Depends()):
+async def read_task_with_count(info:PaginationIn=Depends(),db_cursor:DBCursor=Depends(get_cursor)):
     """
     간단한 문제 목록 조회
     문제별 제출 회수 포함
@@ -22,7 +22,7 @@ async def read_task_with_count(info:PaginationIn=Depends()):
         - size : 한 페이지의 크기
         - page : 페이지 번호
     """
-    return task_crud.read_task_with_count(info)
+    return task_crud.read_task_with_count(db_cursor,info)
 
 @router.get("/notice",tags=["admin"])
 async def get_notice():
@@ -53,7 +53,7 @@ async def update_notice(content: Notice):
         )
     
 @router.get("/user/", tags=['admin'],response_model=UserListOut)
-async def search_user(info : UserListIn=Depends()):
+async def search_user(info : UserListIn=Depends(),db_cursor:DBCursor=Depends(get_cursor)):
     """
     user의 id나 name으로 검색
     id, name, role 값 리턴
@@ -64,10 +64,10 @@ async def search_user(info : UserListIn=Depends()):
         - page : 페이지
         - role : 0 -> 일반 유저 1-> 관리자
     """
-    return user_crud.search_user(info)
+    return user_crud.search_user(db_cursor,info)
 
 @router.patch("/role", tags=["admin"])
-async def update_role(info : UpdateRole):
+async def update_role(info : UpdateRole,db_cursor:DBCursor=Depends(get_cursor)):
     """
     해당 user의 role 업데이트
 
@@ -75,18 +75,18 @@ async def update_role(info : UpdateRole):
         - id : id
         - role : role | 0 -> 일반 유저 1 -> 관리자
     """
-    return user_crud.update_role(info)
+    return user_crud.update_role(db_cursor,info)
 
 @router.get("/manager/", tags=["admin"],response_model=list[UserList])
-async def read_manager():
+async def read_manager(db_cursor:DBCursor=Depends(get_cursor)):
     """
     모든 관리자 조회
 
     """
-    return user_crud.read_manager()
+    return user_crud.read_manager(db_cursor)
         
 @router.get('/post', tags = ['admin'],response_model=BoardListOut)
-async def read_board_with_pagination(info:PaginationIn=Depends()):
+async def read_board_with_pagination(info:PaginationIn=Depends(),db_cursor:DBCursor=Depends(get_cursor)):
     '''
     게시글 정보 조회
     
@@ -94,4 +94,4 @@ async def read_board_with_pagination(info:PaginationIn=Depends()):
         - size : 한 페이지의 크기
         - page : 현재 페이지의 번호
     '''
-    return board_crud.read_board_with_pagination(info)
+    return board_crud.read_board_with_pagination(db_cursor,info)
