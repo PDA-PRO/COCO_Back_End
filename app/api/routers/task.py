@@ -33,7 +33,7 @@ async def create_task(description:str=Form(...),task: Task = Depends(), token: d
         "result":  task_crud.create_task(db_cursor,description,task)
     }
 
-@router.get('/', tags=['task'], response_model=TaskList)
+@router.get('/', tags=['task'])
 async def read_task_with_pagination(query:ReadTask=Depends(),db_cursor:DBCursor=Depends(get_cursor)):
     """
     문제 리스트에서 쿼리에 맞는 문제들의 정보만 리턴
