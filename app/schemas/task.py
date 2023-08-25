@@ -21,6 +21,7 @@ class ReadTask(PaginationIn):
     diff:str|None
     category:str|None
     rateSort:conint(ge=0,le=2)|None
+    user_id: str
 
 class TaskMeta(BaseModel):
     id : int
