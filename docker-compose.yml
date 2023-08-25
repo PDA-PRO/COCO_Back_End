@@ -1,0 +1,33 @@
+version: "3.8"
+services:
+  mysql:
+    image: mysql:8.1.0
+    container_name: con_mysql
+    build: ./mysql/
+    ports:
+      - 3306:3306
+    volumes:
+      - ./mysql/db:/var/lib/mysql
+      - ./mysql/conf.d:/etc/mysql/conf.d
+    env_file:
+      - .env
+    tty: true
+    environment:
+      TZ: Asia/Seoul
+    command: # 명령어 실행
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    restart: always
+  
+  fastapi:
+    depends_on:
+      - mysql
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    environment:
+      DB_URL: mysql+mysqldb://root:localhost@db:3306/coco?charset=utf8mb4
+    container_name: con_fastapi
+    ports:
+      - "1000:8000"
+    restart: always

@@ -2,7 +2,7 @@
 FROM python:3.10.8
 
 # 현재 실행 디렉토리 설정, requirement.txt. app 폴더가 있는 곳
-WORKDIR /COCO_Back_End/app
+WORKDIR /COCO_Back_End
 
 # requirements.txt를 /COCO_Back_End 디렉토리에 복사
 COPY ./requirements.txt /COCO_Back_End/app/requirements.txt
