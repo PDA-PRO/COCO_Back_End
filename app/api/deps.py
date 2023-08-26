@@ -15,6 +15,7 @@ def get_cursor():
     try:
         print("db 연결 생성")
         yield DBCursor(cursor=cur)
+        print("db 변경사항 적용")
         con.commit()
     except :
         print("sql 오류로 연결을 종료합니다")

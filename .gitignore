@@ -8,5 +8,7 @@ __pycache__/
 /board/*
 /profile/*
 /notice/*
+/roadmap/*
+/lint/*
 !.keep
 .env

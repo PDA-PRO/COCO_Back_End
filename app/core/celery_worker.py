@@ -10,6 +10,8 @@ from crud.submission import submission_crud
 from crud.user import user_crud
 from dotenv import load_dotenv
 from api.deps import get_cursor
+import json
+from googletrans import Translator
 
 redis_client = redis.Redis(host='127.0.0.1', port=6379)
 
@@ -36,26 +38,7 @@ def txt_to_dic(file_path):
                 result[name]=value.rstrip()
     return result
 
-
-@contextmanager
-def redis_lock(lock_name):
-    """Yield 1 if specified lock_name is not already set in redis. Otherwise returns 0.
-
-    Enables sort of lock functionality.
-    키값이 존재하지 않을때만 키를 만든다.    
-    만들수 있다면 1을 출력 없다면 0을 출력    
-    레디스는 자체적으로 한시점에서 한가지의 명령만 수행하기 때문에 이를 이용하여 뮤텍스 구현
-    
-    - lock_name : lock 할 isolate box의 id값
-    """
-    
-    status = redis_client.set(lock_name, 'lock', nx=True)
-    try:
-        yield status
-    finally:
-        redis_client.delete(lock_name)
-
-def ready_C(db_cursor,code,box_id,sub_id):
+def ready_C(db_cursor,box_id,sub_id):
     """
     C언어 채점 준비 -> 소스코드 컴파일
 
@@ -63,8 +46,6 @@ def ready_C(db_cursor,code,box_id,sub_id):
     - box_id : isolate box id
     - sub_id : 제출 id
     """
-    with open('/var/local/lib/isolate/'+str(box_id)+'/box/src.c','w') as code_file:
-        code_file.write(code)
     #error data 저장공간
     error_path=os.getenv("SANDBOX_PATH")+str(box_id)+'/error/compile.txt'
     #meta data 저장공간
@@ -128,6 +109,25 @@ def get_isolate(timelimit:int)->int|None:
             #isolate box id 사용가능으로 설정하기 위해 box id를 삭제
             conn.delete(str(box_id))
 
+def run_pylint(py_file_path, sub_id):
+    translator = Translator()             
+    json_path = os.path.join(os.getenv("LINT_PATH"),f"{sub_id}.json")
+    os.system(f'pylint {py_file_path} --disable=W,C --output-format=json:{json_path}')     
+    # err_msg = []
+    # with open(json_path, 'r') as file:
+    #     datas = json.load(file)
+    #     for data in datas:
+    #         type = data['type']
+    #         line = data['line']
+    #         symbol = data['symbol']
+    #         msg = data['message']
+    #         err_msg.append({
+    #             'type': type,
+    #             'line': line,
+    #             'symbol': symbol,
+    #             'msg': translator.translate(msg, 'ko').text
+    #         })
+    # return err_msg
 
 @celery_task.task(ignore_result=True)
 def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
@@ -155,18 +155,22 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
         #제출 현재 상태를 2("채점중")으로 변경
         submission_crud.update_status(db_cursor,sub_id,2)
 
-
         #채점
         #TC data 저장공간
         task_path=os.getenv("TASK_PATH")+str(taskid)+'/input/'
+        code_file_path='/var/local/lib/isolate/'+str(box_id)+'/box/'
         TC_list=os.listdir(task_path)
         compile_res=False
 
-        #C언어 컴파일
-        if lang==1:
-            compile_res=ready_C(sourcecode,box_id,sub_id)
+        
+        if lang==1:#C언어 컴파일
+            code_file_path+="src.c"
+            with open(code_file_path,'w') as code_file:
+                code_file.write(sourcecode)
+            compile_res=ready_C(box_id,sub_id)
         else:#파이썬이라면 실행파일만 생성
-            with open('/var/local/lib/isolate/'+str(box_id)+'/box/src.py','w') as code_file:
+            code_file_path+="src.py"
+            with open(code_file_path,'w') as code_file:
                 code_file.write(sourcecode)
             compile_res=True
 
@@ -231,6 +235,9 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
                 if task_result==1:#모든 TC를 통과했다면 정답처리
                     submission_crud.update_sub(db_cursor,sub_id,int(exec_result["exitcode"]),message="정답!",status=3)
                     user_crud.update_exp(db_cursor,user_id)
+                else:
+                    if lang==0:
+                        run_pylint(code_file_path,sub_id)
             except:
                 print("채점 중 오류 발생")
         
