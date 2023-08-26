@@ -1,15 +1,13 @@
 import os
 from schemas.board import *
-import db
-from datetime import datetime
 from .base import Crudbase
 from core.image import image
+from models.board import Boards
+from db.base import DBCursor
 
-db_server = db.db_server
+class CrudBoard(Crudbase[Boards,int]):
 
-class CrudBoard(Crudbase):
-
-    def create_board(self, writeBoard:CreateBoard):
+    def create_board(self,db_cursor:DBCursor, writeBoard:CreateBoard):
         """
         새로운 게시글을 생성
 
@@ -20,34 +18,47 @@ class CrudBoard(Crudbase):
             - category : 카테고리
             - code : 코드
         """
-        sql=[]
-        data=[]
-
-        sql.append("INSERT INTO `coco`.`boards` (`context`, `title`, `time`, `category`, `code`) VALUES (%s,%s,now(), %s, %s);")
-        data.append((writeBoard.context, writeBoard.title, writeBoard.category, writeBoard.code))
-        board_id=self.insert_last_id(sql,data)
+        sql="INSERT INTO `coco`.`boards` (`context`, `title`, `time`, `category`, `code`) VALUES (%s,%s,now(), %s, %s);"
+        data=(writeBoard.context, writeBoard.title, writeBoard.category, writeBoard.code)
+        board_id=db_cursor.insert_last_id(sql,data)
 
         sql = "INSERT INTO `coco`.`boards_ids` (`board_id`, `user_id`) VALUES (%s, %s);"
         data=(board_id, writeBoard.user_id)
-        self.execute_sql(sql,data)
+        db_cursor.execute_sql(sql,data)
 
         #게시글 내용에서 이미지의 url을 임시 url에서 진짜 url로 변경
         new_context=image.save_update_image(os.path.join(os.getenv("BOARD_PATH"),"temp",writeBoard.user_id),os.path.join(os.getenv("BOARD_PATH"),str(board_id)),writeBoard.context,board_id,"s")
+        
         sql="UPDATE `coco`.`boards` SET `context` = %s WHERE (`id` = %s);"
         data=(new_context,board_id)
-        self.execute_sql(sql,data)
+        db_cursor.execute_sql(sql,data)
     
         return 1
 
-    def read_board(self):
+    def read_myboard(self,db_cursor:DBCursor, user_id):
+        sql = "SELECT * FROM coco.view_board WHERE user_id = %s order by time desc;"
+        data = user_id
+        result = db_cursor.select_sql(sql, data)
+        return result
+    
+    def read_board(self,db_cursor:DBCursor):
         '''
         게시글 정보 조회
         '''
-        sql = 'SELECT * FROM coco.boards order by id desc;'
-        result = self.select_sql(sql)
+        sql = 'SELECT * FROM coco.boards order by id desc'
+        result = db_cursor.select_sql(sql)
         return result
+    
+    def read_board_with_pagination(self,db_cursor:DBCursor,info:PaginationIn):
+        '''
+        게시글 정보 조회
+        '''
+        sql = 'SELECT * FROM coco.boards order by id desc'
+        total,result = db_cursor.select_sql_with_pagination(sql,size=info.size,page=info.page)
 
-    def board_detail(self, board_id:int,user_id:str=None):
+        return {"total":total,"size":info.size,"boardlist":result}
+
+    def board_detail(self, db_cursor:DBCursor,board_id:int,user_id:str=None):
         '''
         특정 게시글 상세 정보 조회
 
@@ -58,7 +69,7 @@ class CrudBoard(Crudbase):
         #게시글 조회수 증가
         update_views = "UPDATE `coco`.`boards` SET `views` = views+1 WHERE (`id` = %s);"
         data=(board_id)
-        self.execute_sql(update_views,data)
+        db_cursor.execute_sql(update_views,data)
 
         #게시글 정보 및 게시글 작성자 조회
         sql = """
@@ -68,7 +79,7 @@ class CrudBoard(Crudbase):
             WHERE b.id = i.board_id AND b.id = %s ;
         """
         data=(board_id)
-        result = self.select_sql(sql,data)
+        result = db_cursor.select_sql(sql,data)
 
         #게시글 댓글 정보 및 댓글 작성자 조회
         comments_sql = """
@@ -78,7 +89,7 @@ class CrudBoard(Crudbase):
             order by write_time desc;
         """
         data=(board_id)
-        comments_result = self.select_sql(comments_sql,data)
+        comments_result = db_cursor.select_sql(comments_sql,data)
 
         #조회를 요청한 유저가 댓글을 좋아요했는지 여부
         my_comment_like=[]
@@ -89,7 +100,7 @@ class CrudBoard(Crudbase):
             WHERE l.comment_id = i.comment_id AND b.id = %s AND l.user_id=%s group by l.user_id;
             """
             data = (board_id,user_id)
-            comment_liked_result = self.select_sql(comment_liked_sql, data)
+            comment_liked_result = db_cursor.select_sql(comment_liked_sql, data)
             if comment_liked_result:
                 my_comment_like=list(map(int,comment_liked_result[0]["liked"].split(",")))
         for i in comments_result:
@@ -103,7 +114,7 @@ class CrudBoard(Crudbase):
         if user_id:
             board_liked_sql = "SELECT user_id FROM coco.boards_likes WHERE boards_id = %s AND user_id = %s;"
             data = (board_id,user_id)
-            is_board_liked = self.select_sql(board_liked_sql, data)
+            is_board_liked = db_cursor.select_sql(board_liked_sql, data)
             if is_board_liked:
                 is_board_liked=True
             else:
@@ -125,7 +136,7 @@ class CrudBoard(Crudbase):
             'is_board_liked': is_board_liked,
         }
 
-    def delete_board(self, board_id:int):
+    def delete_board(self,db_cursor:DBCursor, board_id:int):
         """
         게시글 삭제
 
@@ -133,14 +144,14 @@ class CrudBoard(Crudbase):
         """
         comments_sql = "DELETE FROM coco.comments WHERE id in (select comment_id from coco.comments_ids where board_id=%s);"
         data=(board_id)
-        self.execute_sql(comments_sql,data)
+        db_cursor.execute_sql(comments_sql,data)
         board_sql = "DELETE FROM `coco`.`boards` WHERE (`id` = %s);"
         data=(board_id)
-        self.execute_sql(board_sql,data)
+        db_cursor.execute_sql(board_sql,data)
         image.delete_image(os.path.join(os.getenv("BOARD_PATH"),str(board_id)))
         return 1
 
-    def update_board_likes(self, boardLikes:LikesBase):
+    def update_board_likes(self,db_cursor:DBCursor, boardLikes:LikesBase):
         """
         게시글의 좋아요 업데이트
 
@@ -158,12 +169,12 @@ class CrudBoard(Crudbase):
             update_sql = "UPDATE `coco`.`boards` SET `likes` = likes+1 WHERE (`id` = %s);"
             type_sql = "INSERT INTO `coco`.`boards_likes` (`user_id`, `boards_id`) VALUES (%s, %s);" 
         update_data=(boardLikes.board_id)
-        self.execute_sql(update_sql,update_data)
+        db_cursor.execute_sql(update_sql,update_data)
         type_data=(boardLikes.user_id,boardLikes.board_id)
-        self.execute_sql(type_sql,type_data)
+        db_cursor.execute_sql(type_sql,type_data)
         return 1
 
-    def create_comment(self, commentInfo:CreateComment):
+    def create_comment(self, db_cursor:DBCursor,commentInfo:CreateComment):
         """
         새로운 댓글을 생성
 
@@ -172,19 +183,19 @@ class CrudBoard(Crudbase):
             - context : 댓글 내용
             - board_id : board id
         """
-        sql=("INSERT INTO `coco`.`comments` (`context`, `write_time`) VALUES (%s, now());")
-        data=((commentInfo.context))
-        last_idx = self.insert_last_id([sql], [data])
+        sql="INSERT INTO `coco`.`comments` (`context`, `write_time`) VALUES (%s, now());"
+        data=(commentInfo.context)
+        last_idx = db_cursor.insert_last_id(sql, data)
         comment_sql = "INSERT INTO `coco`.`comments_ids` (`comment_id`, `user_id`, `board_id`) VALUES (%s, %s,%s);"
         data=(last_idx,commentInfo.user_id,commentInfo.board_id)
-        self.execute_sql(comment_sql,data)
+        db_cursor.execute_sql(comment_sql,data)
 
         sql="UPDATE `coco`.`boards` SET `comments` = `comments`+1 WHERE (`id` = %s);"
         data=(commentInfo.board_id)
-        self.execute_sql(sql,data)
+        db_cursor.execute_sql(sql,data)
         return 1
 
-    def delete_comment(self, board_id: int,comment_id: int):
+    def delete_comment(self, db_cursor:DBCursor,board_id: int,comment_id: int):
         """
         댓글 삭제
 
@@ -193,14 +204,14 @@ class CrudBoard(Crudbase):
         """
         comment_sql = "DELETE FROM `coco`.`comments` WHERE (`id` = %s);"
         data=(comment_id)
-        self.execute_sql(comment_sql,data)
+        db_cursor.execute_sql(comment_sql,data)
         
         sql="UPDATE `coco`.`boards` SET `comments` = `comments`-1 WHERE (`id` = %s);"
         data=(board_id)
-        self.execute_sql(sql,data)
+        db_cursor.execute_sql(sql,data)
         return 1
     
-    def update_comment_likes(self, commentLikes:CommentLikes):
+    def update_comment_likes(self,db_cursor:DBCursor, commentLikes:CommentLikes):
         """
         댓글의 좋아요 업데이트
 
@@ -217,11 +228,11 @@ class CrudBoard(Crudbase):
             update_sql = "UPDATE `coco`.`comments` SET `likes` = likes+1 WHERE (`id` = %s);"
             type_sql = "INSERT INTO `coco`.`comments_likes` (`user_id`, `comment_id`) VALUES (%s, %s);" 
         update_data=(commentLikes.comment_id)
-        self.execute_sql(update_sql,update_data)
+        db_cursor.execute_sql(update_sql,update_data)
         data=(commentLikes.user_id,commentLikes.comment_id)
-        self.execute_sql(type_sql,data)
+        db_cursor.execute_sql(type_sql,data)
 
         return 1
 
 
-board_crud=CrudBoard()
+board_crud=CrudBoard(Boards)

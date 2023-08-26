@@ -1,15 +1,12 @@
-from collections import defaultdict
-from datetime import datetime
 from .base import Crudbase
-from core import security
 from schemas.room import *
 from models.room import *
-import db
+from db.base import DBCursor
+from core.image import image
+import os
 
-db_server = db.db_server
-
-class CrudRoom(Crudbase):
-    def create_room(self, info:CreateRoom):
+class CrudRoom(Crudbase[Room,int]):
+    def create_room(self, db_cursor:DBCursor,info:CreateRoom):
         """
         study room 생성에 관련된 데이터, 테이블 생성
         
@@ -22,13 +19,13 @@ class CrudRoom(Crudbase):
         #study room 정보 추가
         room_sql="INSERT INTO `coco`.`room` ( `name`, `desc`, `leader`) VALUES (%s, %s, %s);"
         room_data=(info.name,info.desc,info.leader)
-        last_idx = self.insert_last_id([room_sql], [room_data])
+        last_idx = db_cursor.insert_last_id(room_sql, room_data)
 
         #study room에 포함된 멤버 추가
         member_sql = "INSERT INTO coco.room_ids (room_id, user_id) VALUES (%s, %s);"
         for member in info.members:
             member_data = (last_idx, member)
-            self.execute_sql(member_sql, member_data)
+            db_cursor.execute_sql(member_sql, member_data)
 
         #관련 테이블 생성
         table_sql=[]
@@ -70,11 +67,11 @@ class CrudRoom(Crudbase):
             
         table_data=[(last_idx),(last_idx),(last_idx,last_idx),(last_idx,last_idx)]
         for sql,data in zip(table_sql,table_data):
-            self.execute_sql(sql,data)
+            db_cursor.execute_sql(sql,data)
 
         return last_idx
     
-    def read_all_rooms(self):
+    def read_all_rooms(self,db_cursor:DBCursor):
         """
         모든 study room 정보 리턴
         """
@@ -83,9 +80,9 @@ class CrudRoom(Crudbase):
             from coco.room as g, coco.room_ids as i, coco.user as u
             where g.id = i.room_id and i.user_id = u.id group by g.id order by exp desc;
         '''
-        return self.select_sql(sql)
+        return db_cursor.select_sql(sql)
     
-    def delete_room(self, room_id:int):
+    def delete_room(self, db_cursor:DBCursor,room_id:int):
         """
         study room삭제에 관련된 데이터, 테이블 삭제
         
@@ -94,16 +91,16 @@ class CrudRoom(Crudbase):
         #room 테이블에서 id값의 정보 삭제
         sql = "DELETE FROM `coco`.`room` WHERE (`id` = %s);"
         data = (room_id)
-        self.execute_sql(sql,data)
+        db_cursor.execute_sql(sql,data)
 
         #관련 테이블 삭제
         sql = "DROP TABLE `room`.`%s_qa`, `room`.`%s_question`, `room`.`%s_roadmap`, `room`.`%s_roadmap_ids`"
         data = (room_id,room_id,room_id,room_id)
-        self.execute_sql(sql, data)
+        db_cursor.execute_sql(sql, data)
 
         return True
     
-    def insert_members(self, members:RoomMember):
+    def insert_members(self, db_cursor:DBCursor,members:RoomMember):
         """
         해당 id의 study room에 member를 추가
         
@@ -116,13 +113,13 @@ class CrudRoom(Crudbase):
         for member in members.user_id:
             try:
                 member_data = (members.room_id, member)
-                self.execute_sql(member_sql, member_data)
+                db_cursor.execute_sql(member_sql, member_data)
             except Exception as e:
                 print(e,"멤버 추가 오류")
         
         return True
 
-    def delete_members(self, members:RoomMember):
+    def delete_members(self, db_cursor:DBCursor,members:RoomMember):
         '''
         해당 id의 study room에 member를 삭제
 
@@ -133,11 +130,11 @@ class CrudRoom(Crudbase):
         member_sql = "DELETE FROM `coco`.`room_ids` WHERE (`room_id` = %s) and (`user_id` = %s);"
         for member in members.user_id:
             member_data = (members.room_id, member)
-            self.execute_sql(member_sql, member_data)
+            db_cursor.execute_sql(member_sql, member_data)
 
         return True
     
-    def myroom(self, user_id):
+    def myroom(self,db_cursor:DBCursor, user_id):
         '''
         해당 user가 속한 study room의 정보를 리턴            
         '''
@@ -150,9 +147,9 @@ class CrudRoom(Crudbase):
             )
             group by g.id order by exp desc;
         """
-        return self.select_sql(sql, data)
+        return db_cursor.select_sql(sql, data)
     
-    def write_question(self, info):
+    def write_question(self,db_cursor:DBCursor, info):
         '''
         Study room의 질문 생성
         
@@ -167,16 +164,16 @@ class CrudRoom(Crudbase):
             INSERT INTO `room`.`%s_question` (`title`, `question`, `code`, `writer`) 
             VALUES (%s, %s, %s, %s);
         """
-        self.execute_sql(sql, data)
+        db_cursor.execute_sql(sql, data)
         return True
     
-    def room_questions(self, info):
+    def room_questions(self, db_cursor:DBCursor,info):
         '''
         해당 study room에 등록된 모든 질문 리스트 리턴
         '''
         data = (info)
         sql = 'SELECT * FROM room.%s_question;'
-        q_result = self.select_sql(sql, data)
+        q_result = db_cursor.select_sql(sql, data)
         qa = []
         for q in q_result:
             ans_sql = """
@@ -184,23 +181,23 @@ class CrudRoom(Crudbase):
                 where a.q_id = q.id and q.id = %s;
             """
             ans_data = (info,info, q['id'])
-            ans_result = self.select_sql(ans_sql, ans_data)
+            ans_result = db_cursor.select_sql(ans_sql, ans_data)
             qa.append({
                 'question': q,
                 'answers':ans_result
             })
         return qa
     
-    def write_answer(self, info):
+    def write_answer(self,db_cursor:DBCursor, info):
         data = (info.room_id, info.q_id, info.answer, info.code, info.ans_writer)
         sql = """
             INSERT INTO `room`.`%s_qa` (`q_id`, `answer`, `code`, `ans_writer`) 
             VALUES (%s, %s, %s, %s);
         """
-        self.execute_sql(sql, data)
+        db_cursor.execute_sql(sql, data)
         return True
 
-    def create_roadmap(self, info:RoomRoadMap):
+    def create_roadmap(self,db_cursor:DBCursor, info:RoomRoadMap, user_id:str):
         '''
         Study room의 roadmap 생성
         
@@ -215,17 +212,19 @@ class CrudRoom(Crudbase):
             INSERT INTO `room`.`%s_roadmap` ( `name`, `desc`,`last_modify`) 
             VALUES (%s, %s,now());
         """
-        last_idx=self.insert_last_id([sql], [data])
+        last_idx=db_cursor.insert_last_id(sql, data)
+        new_desc=image.save_update_image(os.path.join(os.getenv("ROADMAP_PATH"),"temp",user_id),os.path.join(os.getenv("ROADMAP_PATH"),f"{str(info.id)}_{str(last_idx)}"),info.desc,f"{str(info.id)}_{str(last_idx)}","s")
+        self.update(db_cursor,{"`desc`":new_desc},"`room`",f"`{str(info.id)}_roadmap`",id=last_idx)
         for i in info.tasks:
             data = (info.id,last_idx, i)
             sql = """
                 INSERT INTO `room`.`%s_roadmap_ids` ( `roadmap_id`, `task_id`) 
                 VALUES (%s, %s);
             """
-            self.execute_sql(sql,data)
+            db_cursor.execute_sql(sql,data)
         return True
     
-    def read_roadmap(self, room_id):
+    def read_roadmap(self, db_cursor:DBCursor,room_id):
         '''
         Study room의 모든 roadmap 조회 
         
@@ -237,25 +236,28 @@ class CrudRoom(Crudbase):
                 where r.id = rids.roadmap_id group by rids.roadmap_id;
         """
         data = (room_id,room_id)
-        result=self.select_sql(sql,data)
+        result=db_cursor.select_sql(sql,data)
         for i in result:
             i["tasks"]=list(map(int,i["tasks"].split(",")))
         return result
 
-    def delete_roadmap(self,room_id:int,roadmap_id:int):
+    def delete_roadmap(self,db_cursor:DBCursor,room_id:int,roadmap_id:int):
         '''
         해당 id의 study room에서 roadmap을 삭제
 
         - room_id : room id
         - roadmap_id : roadmap id
         '''
+        sql = "DELETE FROM `room`.`%s_roadmap_ids` WHERE (`roadmap_id` = %s);"
+        data = (room_id, roadmap_id)
+        db_cursor.execute_sql(sql, data)
         sql = "DELETE FROM `room`.`%s_roadmap` WHERE (`id` = %s);"
         data = (room_id, roadmap_id)
-        self.execute_sql(sql, data)
+        db_cursor.execute_sql(sql, data)
          
         return True
     
-    def insert_roadmap_task(self, room_id:int,roadmap_id:int,task_id:int):
+    def insert_roadmap_task(self,db_cursor:DBCursor, room_id:int,roadmap_id:int,task_id:int):
         """
         해당 id의 study room의 roadmap에 task를 추가
         
@@ -266,11 +268,11 @@ class CrudRoom(Crudbase):
         #study room에 포함된 멤버 추가
         sql = "INSERT INTO `room`.`%s_roadmap_ids` (roadmap_id, task_id) VALUES (%s, %s);"
         data = (room_id, roadmap_id,task_id)
-        self.execute_sql(sql, data)
+        db_cursor.execute_sql(sql, data)
         
         return True
     
-    def delete_roadmap_task(self,room_id:int,roadmap_id:int,task_id:int):
+    def delete_roadmap_task(self,db_cursor:DBCursor,room_id:int,roadmap_id:int,task_id:int):
         '''
         해당 id의 study room의 roadmap에 task를 삭제
 
@@ -280,51 +282,18 @@ class CrudRoom(Crudbase):
         '''
         sql = "DELETE FROM `room`.`%s_roadmap_ids` WHERE (`roadmap_id` = %s) and (`task_id` = %s);"
         data = (room_id, roadmap_id,task_id)
-        self.execute_sql(sql, data)
+        db_cursor.execute_sql(sql, data)
          
         return True
-    
-    
-    def leave_room(self, info):
-        sql = "DELETE FROM `coco`.`room_users` WHERE (`room_id` = %s AND `user_id` = %s);"
-        data = (info.room_id, info.user_id)
-        self.execute_sql(sql, data)
-        len_sql = "select count(room_id) as cnt from coco.room_users where room_id = %s;"
-        len_data = (info.room_id)
-        room_len = self.select_sql(len_sql, len_data)
-        if room_len == 0:
-            self.delete_room(info.room_id)
-        return True
 
-    
-
-    def invite_member(self, info):
-        check_sql = """
-            select exists( select 1 from coco.room_users 
-            where room_id = %s and user_id = %s) as is_member;
-        """
-        data = (info.room_id, info.user_id)
-        result = self.select_sql(check_sql, data)
-        print(result[0]['is_member'])
-        if result[0]['is_member'] == 1:
-            return False
-        else:
-            sql = "INSERT INTO coco.room_users (room_id, user_id) VALUES (%s, %s);"
-            self.execute_sql(sql, data)
-            if info.apply:
-                del_sql = "DELETE FROM `coco`.`room_apply` WHERE (`room_id` = %s) and (`user_id` = %s);"
-                del_data = (info.room_id, info.user_id)
-                self.execute_sql(del_sql, del_data)
-            return True
-
-    def get_room(self, info):
+    def get_room(self,db_cursor:DBCursor, info):
         sql = """
             select g.id, g.name, g.desc, g.leader, gu.user_id, u.exp
             from coco.room as g, coco.room_ids as gu, coco.user as u
             where gu.room_id = g.id and gu.room_id = %s and gu.user_id = u.id;
         """
         data = (info)
-        result = self.select_sql(sql, data)
+        result = db_cursor.select_sql(sql, data)
         members = []
         exp = 0
         for user in result:
@@ -340,67 +309,7 @@ class CrudRoom(Crudbase):
             'exp': exp
         }
     
-    def room_boardlist(self, room_id):
-        sql = "SELECT * FROM coco.view_board WHERE room_id = %s order by time desc;"
-        data = (room_id)
-        return self.select_sql(sql, data)
-
-    def room_workbooks(self, room_id):
-        sql = """
-            select w.room_id, t.*
-            from coco.workbook_problems as w, coco.task_list as t
-            where w.room_id = %s and w.task_id = t.id;
-        """
-        data = (room_id)
-        return self.select_sql(sql, data)
-    
-    def add_problem(self, info):
-        check_sql = "select exists( select 1 from coco.workbook_problems where room_id = %s and task_id = %s) as room_workbook;" 
-        data = (info.room_id, info.task_id)
-        result = self.select_sql(check_sql, data)
-        check_result = result[0]['room_workbook']
-        if check_result == 1:
-            return False
-        else:
-            sql = "INSERT INTO `coco`.`workbook_problems` (`room_id`, `task_id`) VALUES (%s, %s);"
-            data = (info.room_id, info.task_id)
-            self.execute_sql(sql, data)
-            return True
-        
-    def delete_problem(self, info):
-        sql = "DELETE FROM `coco`.`workbook_problems` WHERE (`room_id` = %s) and (`task_id` = %s);"
-        data = (info.room_id, info.task_id)
-        self.execute_sql(sql, data)
-        return True
-    
-    def is_my_room(self, info):
-        sql = "select exists( select 1 from coco.room_users where room_id = %s and user_id = %s) as isMember;"
-        data = (info.room_id, info.user_id)
-        result = self.select_sql(sql, data)
-        if result[0]['isMember'] == 0:
-            return False
-        else:
-            return True
-        
-    def join_room(self, info):
-        check_sql = "select exists( select 1 from coco.room_apply where room_id = %s and user_id = %s) as isJoin;"
-        check_data = (info.room_id, info.user_id)
-        result = self.select_sql(check_sql, check_data)
-        if result[0]['isJoin'] == 1:
-            return False
-        else:
-            sql = "INSERT INTO `coco`.`room_apply` (`room_id`, `user_id`, `message`) VALUES (%s, %s, %s);"
-            data = (info.room_id, info.user_id, info.message)
-            self.execute_sql(sql, data)
-            return True
-        
-    def room_leader(self, room_id):
-        print("room_id", room_id)
-        sql = "select leader from coco.room where id = %s;"
-        result = self.select_sql(sql, room_id)
-        return result[0]['leader']
-    
-    def get_roadmap(self, room_id, roadmap_id):
+    def get_roadmap(self, db_cursor:DBCursor,room_id, roadmap_id):
         '''
             해당 id의 study room의 특정 roadmap 정보를 가져옴
 
@@ -408,9 +317,9 @@ class CrudRoom(Crudbase):
             - roadmap_id: roadmap id
         '''
         # 스룸 로드맵 정보
-        roadmap_sql = "SELECT * FROM room.%s_roadmap where id = %s;"
-        roadmap_data = (room_id, roadmap_id)
-        roadmap_result = self.select_sql(roadmap_sql, roadmap_data)
+        roadmap_sql = "SELECT r.*, c.leader FROM room.%s_roadmap as r, coco.room as c where c.id = %s and r.id = %s;"
+        roadmap_data = (room_id, room_id, roadmap_id)
+        roadmap_result = db_cursor.select_sql(roadmap_sql, roadmap_data)
 
         # 로드맵에 속한 문제 리스트
         problem_sql = '''
@@ -418,7 +327,7 @@ class CrudRoom(Crudbase):
             FROM room.%s_roadmap as r, room.%s_roadmap_ids as i where r.id = %s and r.id = i.roadmap_id);
         '''
         problem_data = (room_id, room_id, roadmap_id)
-        problem_result = self.select_sql(problem_sql, problem_data)
+        problem_result = db_cursor.select_sql(problem_sql, problem_data)
         
         # 문제 번호만 추출
         problems = []
@@ -429,7 +338,7 @@ class CrudRoom(Crudbase):
         users = []
         user_sql = "SELECT i.user_id FROM coco.room as r, coco.room_ids as i where r.id = %s and r.id = i.room_id;"
         user_data = (room_id)
-        user_result = self.select_sql(user_sql, user_data)
+        user_result = db_cursor.select_sql(user_sql, user_data)
         for result in user_result:
             users.append(result['user_id'])
 
@@ -440,7 +349,7 @@ class CrudRoom(Crudbase):
             for problem in problems:
                 sql = "SELECT user_id, task_id, status FROM coco.user_problem WHERE user_id = %s AND task_id = %s and status = 3;"
                 data = (user, problem)
-                result = self.select_sql(sql, data)
+                result = db_cursor.select_sql(sql, data)
                 if not result:
                     continue
                 else:
@@ -448,7 +357,7 @@ class CrudRoom(Crudbase):
             solved_result[user] = solved
 
         return{
-            'roadmap': roadmap_result,
+            'roadmap': roadmap_result[0],
             'problem_list': problem_result,
             'solved_list': solved_result
         }
@@ -460,4 +369,4 @@ class CrudRoom(Crudbase):
 
             
 
-room = CrudRoom()
+room = CrudRoom(Room)

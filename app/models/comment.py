@@ -1,6 +1,7 @@
-class Comment():
+from .base import ModelBase
+from datetime import datetime
+class Comment(ModelBase):
     id: int
     context:str
-    write_time:str
-    user_id:str
-    board_content_id:int
+    write_time:datetime
+    likes:int
