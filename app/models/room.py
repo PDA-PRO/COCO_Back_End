@@ -1,6 +1,5 @@
-from .base import ModelBase
-class Room(ModelBase):
+class Room():
     id:int
     name:str
     desc:str
-    leader:str
+    leade:str
