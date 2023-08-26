@@ -95,3 +95,29 @@ async def read_board_with_pagination(info:PaginationIn=Depends(),db_cursor:DBCur
         - page : 현재 페이지의 번호
     '''
     return board_crud.read_board_with_pagination(db_cursor,info)
+
+@router.get('/tutor-request', tags = ['admin'])
+def read_tutor_request(db_cursor:DBCursor=Depends(get_cursor)):
+    '''
+    모든 튜터 신청 정보 조회
+    '''
+    return user_crud.read(db_cursor,table="user_tutor")
+
+@router.get('/tutor', tags = ['admin'])
+def read_tutor(db_cursor:DBCursor=Depends(get_cursor)):
+    '''
+    모든 튜터 조회
+    '''
+    return user_crud.read(db_cursor,["id","tutor"],tutor=1)
+
+@router.patch('/tutor', tags = ['admin'])
+def update_tutor(user_id:str,value:int,db_cursor:DBCursor=Depends(get_cursor)):
+    '''
+    유저의 튜터 정보 업데이트
+     
+    - user_id : 업데이트할 유저의 id
+    - value : 0 -> 일반 유저, 1 -> 튜터
+    '''
+    user_crud.update(db_cursor,{"tutor":value},id=user_id)
+    user_crud.delete(db_cursor,table="user_tutor",user_id=user_id)
+    return 1

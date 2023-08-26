@@ -197,3 +197,14 @@ async def get_roadmap(room_id: int, roadmap_id: int,db_cursor:DBCursor=Depends(g
         - roadmap_id: roadmap id
     '''
     return room.get_roadmap(db_cursor,room_id, roadmap_id)
+
+@router.post('/tutor-request', tags=['room'])
+def create_tutor_request(user_id:str,reason:str="",db_cursor:DBCursor=Depends(get_cursor)):
+    '''
+        해당 id의 study room의 특정 roadmap 정보를 가져옴
+
+        - room_id: room id
+        - roadmap_id: roadmap id
+    '''
+    room.create(db_cursor,{"reason":reason,"user_id":user_id},table="user_tutor")
+    return 1
