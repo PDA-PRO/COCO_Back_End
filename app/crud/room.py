@@ -2,6 +2,8 @@ from .base import Crudbase
 from schemas.room import *
 from models.room import *
 from db.base import DBCursor
+from core.image import image
+import os
 
 class CrudRoom(Crudbase[Room,int]):
     def create_room(self, db_cursor:DBCursor,info:CreateRoom):
@@ -195,7 +197,7 @@ class CrudRoom(Crudbase[Room,int]):
         db_cursor.execute_sql(sql, data)
         return True
 
-    def create_roadmap(self,db_cursor:DBCursor, info:RoomRoadMap):
+    def create_roadmap(self,db_cursor:DBCursor, info:RoomRoadMap, user_id:str):
         '''
         Study room의 roadmap 생성
         
@@ -211,6 +213,8 @@ class CrudRoom(Crudbase[Room,int]):
             VALUES (%s, %s,now());
         """
         last_idx=db_cursor.insert_last_id([sql], [data])
+        new_desc=image.save_update_image(os.path.join(os.getenv("ROADMAP_PATH"),"temp",user_id),os.path.join(os.getenv("ROADMAP_PATH"),f"{str(info.id)}_{str(last_idx)}"),info.desc,f"{str(info.id)}_{str(last_idx)}","s")
+        self.update(db_cursor,{"`desc`":new_desc},"`room`",f"`{str(info.id)}_roadmap`",id=last_idx)
         for i in info.tasks:
             data = (info.id,last_idx, i)
             sql = """
@@ -244,6 +248,9 @@ class CrudRoom(Crudbase[Room,int]):
         - room_id : room id
         - roadmap_id : roadmap id
         '''
+        sql = "DELETE FROM `room`.`%s_roadmap_ids` WHERE (`roadmap_id` = %s);"
+        data = (room_id, roadmap_id)
+        db_cursor.execute_sql(sql, data)
         sql = "DELETE FROM `room`.`%s_roadmap` WHERE (`id` = %s);"
         data = (room_id, roadmap_id)
         db_cursor.execute_sql(sql, data)

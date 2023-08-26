@@ -5,6 +5,7 @@ from crud.user import user_crud
 from crud.submission import submission_crud
 from schemas.room import *
 from models.room import *
+from core import security
 from api.deps import get_cursor,DBCursor
 
 router = APIRouter(prefix='/room')
@@ -113,7 +114,7 @@ async def create_answer(info: RoomAnswer,db_cursor:DBCursor=Depends(get_cursor))
     return room.write_answer(db_cursor,info)
 
 @router.post("/roadmap", tags=['room'])
-async def create_roadmap(info: RoomRoadMap,db_cursor:DBCursor=Depends(get_cursor)):
+async def create_roadmap(info: RoomRoadMap,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     '''
     Study room의 roadmap 생성
     
@@ -123,7 +124,7 @@ async def create_roadmap(info: RoomRoadMap,db_cursor:DBCursor=Depends(get_cursor
         - desc: roadmap 메인 설명
         - task_id: 관련 문제 목록
     '''
-    return room.create_roadmap(db_cursor,info)
+    return room.create_roadmap(db_cursor,info,token["id"])
 
 @router.get('/roadmap/{room_id}', tags=['room'], response_model=RoomRoadMapList)
 async def read_roadmap(room_id: int,user_id:str,db_cursor:DBCursor=Depends(get_cursor)):
