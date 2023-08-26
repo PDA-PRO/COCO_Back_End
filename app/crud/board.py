@@ -18,11 +18,8 @@ class CrudBoard(Crudbase[Boards,int]):
             - category : 카테고리
             - code : 코드
         """
-        sql=[]
-        data=[]
-
-        sql.append("INSERT INTO `coco`.`boards` (`context`, `title`, `time`, `category`, `code`) VALUES (%s,%s,now(), %s, %s);")
-        data.append((writeBoard.context, writeBoard.title, writeBoard.category, writeBoard.code))
+        sql="INSERT INTO `coco`.`boards` (`context`, `title`, `time`, `category`, `code`) VALUES (%s,%s,now(), %s, %s);"
+        data=(writeBoard.context, writeBoard.title, writeBoard.category, writeBoard.code)
         board_id=db_cursor.insert_last_id(sql,data)
 
         sql = "INSERT INTO `coco`.`boards_ids` (`board_id`, `user_id`) VALUES (%s, %s);"
@@ -186,9 +183,9 @@ class CrudBoard(Crudbase[Boards,int]):
             - context : 댓글 내용
             - board_id : board id
         """
-        sql=("INSERT INTO `coco`.`comments` (`context`, `write_time`) VALUES (%s, now());")
-        data=((commentInfo.context))
-        last_idx = db_cursor.insert_last_id([sql], [data])
+        sql="INSERT INTO `coco`.`comments` (`context`, `write_time`) VALUES (%s, now());"
+        data=(commentInfo.context)
+        last_idx = db_cursor.insert_last_id(sql, data)
         comment_sql = "INSERT INTO `coco`.`comments_ids` (`comment_id`, `user_id`, `board_id`) VALUES (%s, %s,%s);"
         data=(last_idx,commentInfo.user_id,commentInfo.board_id)
         db_cursor.execute_sql(comment_sql,data)

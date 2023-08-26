@@ -19,7 +19,7 @@ class CrudRoom(Crudbase[Room,int]):
         #study room 정보 추가
         room_sql="INSERT INTO `coco`.`room` ( `name`, `desc`, `leader`) VALUES (%s, %s, %s);"
         room_data=(info.name,info.desc,info.leader)
-        last_idx = db_cursor.insert_last_id([room_sql], [room_data])
+        last_idx = db_cursor.insert_last_id(room_sql, room_data)
 
         #study room에 포함된 멤버 추가
         member_sql = "INSERT INTO coco.room_ids (room_id, user_id) VALUES (%s, %s);"
@@ -212,7 +212,7 @@ class CrudRoom(Crudbase[Room,int]):
             INSERT INTO `room`.`%s_roadmap` ( `name`, `desc`,`last_modify`) 
             VALUES (%s, %s,now());
         """
-        last_idx=db_cursor.insert_last_id([sql], [data])
+        last_idx=db_cursor.insert_last_id(sql, data)
         new_desc=image.save_update_image(os.path.join(os.getenv("ROADMAP_PATH"),"temp",user_id),os.path.join(os.getenv("ROADMAP_PATH"),f"{str(info.id)}_{str(last_idx)}"),info.desc,f"{str(info.id)}_{str(last_idx)}","s")
         self.update(db_cursor,{"`desc`":new_desc},"`room`",f"`{str(info.id)}_roadmap`",id=last_idx)
         for i in info.tasks:

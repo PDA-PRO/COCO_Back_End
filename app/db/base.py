@@ -29,20 +29,19 @@ class DBCursor():
         """
         self.cursor.execute(query,data)
 
-    def insert_last_id(self,query:list[str],data:list[tuple]):
+    def insert_last_id(self,query:str,data:tuple):
         """
         id속성에 auto increment가 적용된 테이블에 대해
-        여러 개의 쿼리 실행 후 마지막 id값 리턴
+        쿼리 실행 후 마지막 id값 리턴
         
         param
-        - query : 쿼리문 리스트
-        - data : 쿼리문에 들어갈 데이터 리스트
+        - query : 쿼리문
+        - data : 쿼리문에 들어갈 데이터
         ----------------
         return
         - id : 마지막 id값 
         """
-        for i in range(len(query)):
-            self.cursor.execute(query[i],data[i])
+        self.cursor.execute(query,data)    
         #mysql 의 LAST_INSERTID()와 같은 기능
         id=self.cursor.lastrowid
         return id

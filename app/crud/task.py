@@ -34,7 +34,7 @@ class CrudTask(Crudbase[Task,int]):
         #time_limit, diff는 한자리 숫자 task 테이블에 문제 먼저 삽입해서 id추출
         sql="INSERT INTO `coco`.`task` ( `title`, `sample`,`mem_limit`, `time_limit`, `diff` ) VALUES ( %s, json_object('input', %s, 'output',%s), %s, %s, %s );"
         data=(task.title, f"[{task.inputEx1}, {task.inputEx2}]",f"[{task.outputEx1}, {task.outputEx2}]",task.memLimit,task.timeLimit,task.diff)
-        task_id=db_cursor.insert_last_id([sql],[data])
+        task_id=db_cursor.insert_last_id(sql,data)
 
         #카테고리 연결
         for i in map(lambda a:a.strip(),task.category.split(",")):
