@@ -22,6 +22,8 @@ class subDetail(BaseModel):
     number_of_runs:int|None
     status:int
     lang:conint(le=1,ge=0)
+    rate:float
+    diff:int
 
 class Status(BaseModel):
     sub_id:int

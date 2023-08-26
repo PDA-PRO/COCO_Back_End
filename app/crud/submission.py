@@ -95,7 +95,7 @@ class CrudSubmission(Crudbase):
 
         - sub_id
         """
-        sql="SELECT * FROM coco.submissions WHERE id=%s;"
+        sql="SELECT submit.*,task.rate,task.diff FROM coco.task as task, coco.sub_ids as ids, coco.submissions as submit where submit.id= %s and submit.id=ids.sub_id and task.id=ids.task_id;"
         data=(sub_id)
         row=db_cursor.select_sql(sql,data)
         return row
