@@ -1,9 +1,6 @@
-from .base import ModelBase
-class User(ModelBase):
+class User():
     id:str
     pw:str
     name:str
-    role:int
+    role:str
     email:str
-    exp:int
-    level:int

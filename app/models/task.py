@@ -1,10 +1,10 @@
-from .base import ModelBase
-
-class Task(ModelBase):
+class Task():
     id:int
     title:str
+    description:str
     sample:str
     rate:float
-    mem_limit:int
+    test_case:str
+    memory_limit:int
     time_limit:int
-    diff:int
+    img:str

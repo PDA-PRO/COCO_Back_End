@@ -1,16 +1,16 @@
-from datetime import datetime
-from .base import ModelBase
-class Submissions(ModelBase):
-    id:int
-    status_id:int
-    code:str  
-    stdout:str  
-    time:datetime
-    stderr:str
-    token:str
-    callback_url:str
-    exit_code:int
-    message:str
-    number_of_runs:int
-    status:int
-    lang:int
+class Submission():
+    task_id:int=None
+    user_id:str=None
+    sub_id:int=None
+    status_id:int=None
+    source_code:str=None
+    stdout:str=None
+    time:str=None
+    stderr:str=None
+    token:str=None
+    callback_url:str=None
+    exit_code:int=None
+    message:str=None
+    exit_signal:str=None
+    compile_output:str=None
+    number_of_runs:int=None
