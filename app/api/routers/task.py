@@ -1,6 +1,7 @@
 from fastapi.responses import FileResponse
 from core import security
 from crud.task import task_crud
+from crud.submission import submission_crud
 from fastapi import APIRouter, Depends, Form, HTTPException
 from schemas.task import *
 from api.deps import get_cursor,DBCursor
@@ -33,7 +34,7 @@ async def create_task(description:str=Form(...),task: Task = Depends(), token: d
         "result":  task_crud.create_task(db_cursor,description,task)
     }
 
-@router.get('/', tags=['task'])
+@router.get('/', tags=['task'], response_model=TaskList)
 async def read_task_with_pagination(query:ReadTask=Depends(),db_cursor:DBCursor=Depends(get_cursor)):
     """
     문제 리스트에서 쿼리에 맞는 문제들의 정보만 리턴
@@ -47,7 +48,25 @@ async def read_task_with_pagination(query:ReadTask=Depends(),db_cursor:DBCursor=
         - size: 한페이지의 크기
         - page: 페이지 번호
     """
-    return task_crud.read_task_with_pagination(db_cursor,query)
+    total,task_list=task_crud.read_task_with_pagination(db_cursor,query)
+    if query.user_id:
+        my_sub_list=submission_crud.read_my_sub(db_cursor,query.user_id)
+        solved_list=set()
+        for i in my_sub_list:
+            if i["status"]==3:
+                solved_list.add(i["task_id"])
+        return {
+            "total":total,
+            "size":query.size,
+            "tasks":task_list,
+            "solved_list":list(solved_list)
+        }
+    else:
+        return {
+            "total":total,
+            "size":query.size,
+            "tasks":task_list
+        }
 
 @router.get('/{task_id}/', tags=['task'],response_model=TaskDetail)
 async def task_detail(task_id: int,db_cursor:DBCursor=Depends(get_cursor)):

@@ -317,5 +317,11 @@ class CrudSubmission(Crudbase):
             'growth': sorted(growth, reverse=True),
             'rate': round((total_solved/total_submit)*100, 1)
         }
+    
+    def read_my_sub(self, db_cursor:DBCursor, user_id:str):
+        sql="select ids.task_id,sub.status from coco.submissions as sub, coco.sub_ids as ids where ids.user_id=%s and sub.id=ids.sub_id group by task_id,status"
+        data=(user_id)
+        db_cursor.select_sql(sql,data)
+        return db_cursor.select_sql(sql,data)
 
 submission_crud=CrudSubmission(Submissions)

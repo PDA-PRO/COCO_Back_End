@@ -21,7 +21,7 @@ class ReadTask(PaginationIn):
     diff:str|None
     category:str|None
     rateSort:conint(ge=0,le=2)|None
-    user_id: str
+    user_id: str|None
 
 class TaskMeta(BaseModel):
     id : int
@@ -34,6 +34,7 @@ class TaskMetaWithCount(TaskMeta):
 
 class TaskList(PaginationOut):
     tasks : list[TaskMeta]
+    solved_list : list[int]|None
 
 class TaskListWithCount(PaginationOut):
     tasks : list[TaskMetaWithCount]

@@ -103,20 +103,7 @@ class CrudTask(Crudbase[Task,int]):
 
         total,result=db_cursor.select_sql_with_pagination(sql,tuple(data),query.size,query.page)
 
-        # 유저가 푼 문제 리스트
-        solved_sql = 'SELECT task_id FROM coco.user_problem WHERE user_id = %s AND status = 3;'
-        user_id = query.user_id
-        solved_result = db_cursor.select_sql(solved_sql, user_id)
-        solved_list = []
-        for solved in solved_result:
-            solved_list.append(solved['task_id'])
-
-        return  {
-            "total" : total,
-            "size":query.size,
-            "tasks" : result,
-            "solved_list": solved_list,
-        }
+        return total,result
 
     def update_task(self,db_cursor:DBCursor,task_id:int,description:str,task:Task):
         """ 
