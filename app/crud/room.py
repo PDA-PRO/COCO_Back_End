@@ -111,12 +111,8 @@ class CrudRoom(Crudbase[Room,int]):
         #study room에 포함된 멤버 추가
         member_sql = "INSERT INTO coco.room_ids (room_id, user_id) VALUES (%s, %s);"
         for member in members.user_id:
-            try:
-                member_data = (members.room_id, member)
-                db_cursor.execute_sql(member_sql, member_data)
-            except Exception as e:
-                print(e,"멤버 추가 오류")
-        
+            member_data = (members.room_id, member)
+            db_cursor.execute_sql(member_sql, member_data)
         return True
 
     def delete_members(self, db_cursor:DBCursor,members:RoomMember):

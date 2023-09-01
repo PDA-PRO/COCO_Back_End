@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from schemas.user import UserListIn, UserListOut
 from crud.room import room
 from crud.user import user_crud
@@ -49,7 +49,11 @@ async def insert_members(members: RoomMember,db_cursor:DBCursor=Depends(get_curs
         - room_id : room id
         - user_id : user id
     '''
-    return room.insert_members(db_cursor,members)
+    try:
+        room.insert_members(db_cursor,members)
+        return True
+    except Exception as e:
+        raise HTTPException(status_code=409, detail=str(e))
 
 @router.delete("/member/", tags=["room"])
 async def delete_members(members: RoomMember,db_cursor:DBCursor=Depends(get_cursor)):
