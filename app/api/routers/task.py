@@ -45,6 +45,7 @@ async def read_task_with_pagination(query:ReadTask=Depends(),db_cursor:DBCursor=
         - diff: 문제 난이도 | 1~5의 정수 값이 ','로 구분된 문자열 다중값 가능
         - category: 문제 카테고리 | ','로 구분된 문자열 다중값 가능
         - rateSort: 정답률 기준 정렬 | 0 - 기본 정렬 1 - 오름차순 2 - 내림차순 
+        - user_id: 존재할 시 해당 유저의 틀린, 맞은 문제 리스트 반환
         - size: 한페이지의 크기
         - page: 페이지 번호
     """
@@ -52,14 +53,19 @@ async def read_task_with_pagination(query:ReadTask=Depends(),db_cursor:DBCursor=
     if query.user_id:
         my_sub_list=submission_crud.read_my_sub(db_cursor,query.user_id)
         solved_list=set()
+        wrong_list=set()
         for i in my_sub_list:
             if i["status"]==3:
                 solved_list.add(i["task_id"])
+            elif i['status']==4:
+                wrong_list.add(i["task_id"])
+        wrong_list=wrong_list-solved_list
         return {
             "total":total,
             "size":query.size,
             "tasks":task_list,
-            "solved_list":list(solved_list)
+            "solved_list":list(solved_list),
+            "wrong_list":list(wrong_list)
         }
     else:
         return {

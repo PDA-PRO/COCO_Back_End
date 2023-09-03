@@ -35,6 +35,7 @@ class TaskMetaWithCount(TaskMeta):
 class TaskList(PaginationOut):
     tasks : list[TaskMeta]
     solved_list : list[int]|None
+    wrong_list : list[int]|None
 
 class TaskListWithCount(PaginationOut):
     tasks : list[TaskMetaWithCount]
