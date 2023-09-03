@@ -35,7 +35,7 @@ class CrudRoom(Crudbase[Room,int]):
             `id` INT NOT NULL auto_increment,
             `name` VARCHAR(45) NULL,
             `desc` TEXT NULL,
-            `last_modify` DATETIME NULL,
+            `last_modify` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (`id`));
         """)
         table_sql.append("""
@@ -205,8 +205,8 @@ class CrudRoom(Crudbase[Room,int]):
         '''
         data = (info.id, info.name, info.desc)
         sql = """
-            INSERT INTO `room`.`%s_roadmap` ( `name`, `desc`,`last_modify`) 
-            VALUES (%s, %s,now());
+            INSERT INTO `room`.`%s_roadmap` ( `name`, `desc`) 
+            VALUES (%s, %s);
         """
         last_idx=db_cursor.insert_last_id(sql, data)
         new_desc=image.save_update_image(os.path.join(os.getenv("ROADMAP_PATH"),"temp",user_id),os.path.join(os.getenv("ROADMAP_PATH"),f"{str(info.id)}_{str(last_idx)}"),info.desc,f"{str(info.id)}_{str(last_idx)}","s")
@@ -249,35 +249,6 @@ class CrudRoom(Crudbase[Room,int]):
         db_cursor.execute_sql(sql, data)
         sql = "DELETE FROM `room`.`%s_roadmap` WHERE (`id` = %s);"
         data = (room_id, roadmap_id)
-        db_cursor.execute_sql(sql, data)
-         
-        return True
-    
-    def insert_roadmap_task(self,db_cursor:DBCursor, room_id:int,roadmap_id:int,task_id:int):
-        """
-        해당 id의 study room의 roadmap에 task를 추가
-        
-        - room_id : room id
-        - roadmap_id : roadmap id
-        - task_id : task id
-        """
-        #study room에 포함된 멤버 추가
-        sql = "INSERT INTO `room`.`%s_roadmap_ids` (roadmap_id, task_id) VALUES (%s, %s);"
-        data = (room_id, roadmap_id,task_id)
-        db_cursor.execute_sql(sql, data)
-        
-        return True
-    
-    def delete_roadmap_task(self,db_cursor:DBCursor,room_id:int,roadmap_id:int,task_id:int):
-        '''
-        해당 id의 study room의 roadmap에 task를 삭제
-
-        - room_id : room id
-        - roadmap_id : roadmap id
-        - task_id : task id
-        '''
-        sql = "DELETE FROM `room`.`%s_roadmap_ids` WHERE (`roadmap_id` = %s) and (`task_id` = %s);"
-        data = (room_id, roadmap_id,task_id)
         db_cursor.execute_sql(sql, data)
          
         return True

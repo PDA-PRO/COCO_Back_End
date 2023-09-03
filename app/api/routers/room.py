@@ -7,6 +7,8 @@ from schemas.room import *
 from models.room import *
 from core import security
 from api.deps import get_cursor,DBCursor
+from core.image import image
+import os
 
 router = APIRouter(prefix='/room')
 # 전체 그룹 리스트(그룹명, 설명)
@@ -123,10 +125,10 @@ async def create_roadmap(info: RoomRoadMap,token: dict = Depends(security.check_
     Study room의 roadmap 생성
     
     - info: roadmap 생성에 필요한 입력 데이터
-        - room_id: room id
+        - id: room id
         - name: roadmap 제목
         - desc: roadmap 메인 설명
-        - task_id: 관련 문제 목록
+        - tasks: 관련 문제 목록
     '''
     return room.create_roadmap(db_cursor,info,token["id"])
 
@@ -134,8 +136,6 @@ async def create_roadmap(info: RoomRoadMap,token: dict = Depends(security.check_
 async def read_roadmap(room_id: int,user_id:str,db_cursor:DBCursor=Depends(get_cursor)):
     '''
     해당 study room에 등록된 모든 roadmap 정보 조회
-
-    
 
     - room_id: room id
     - user_id: user id
@@ -147,6 +147,28 @@ async def read_roadmap(room_id: int,user_id:str,db_cursor:DBCursor=Depends(get_c
         "solved_task" : solved_task
     }
 
+@router.put('/roadmap/', tags=['room'])
+async def update_roadmap(info: RoomRoadMap,roadmap_id:int, token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
+    '''
+    해당 study room에 등록된 모든 roadmap 수정
+    
+    - info: roadmap 수정에 필요한 입력 데이터
+        - id: room id
+        - name: roadmap 제목
+        - desc: roadmap 메인 설명
+        - tasks: 관련 문제 목록
+    - roadmap_id : 수정할 roadmap id
+    '''
+    roadmap_table=f"`{str(info.id)}_roadmap`"
+    roadmap_ids_table=f"`{str(info.id)}_roadmap_ids`"
+    new_desc=image.save_update_image(os.path.join(os.getenv("ROADMAP_PATH"),"temp",token["id"]),os.path.join(os.getenv("ROADMAP_PATH"),f"{str(info.id)}_{str(roadmap_id)}"),info.desc,f"{str(info.id)}_{str(roadmap_id)}","su")
+    room.update(db_cursor,{"name":info.name,"`desc`":new_desc},"room",roadmap_table,id=roadmap_id)
+    room.delete(db_cursor,"room",roadmap_ids_table,roadmap_id=roadmap_id)
+    for i in info.tasks:
+        room.create(db_cursor,{"roadmap_id":roadmap_id,"task_id":i},"room",roadmap_ids_table)
+
+    return 1
+
 @router.delete('/roadmap/{room_id}', tags=['room'])
 async def delete_roadmap(room_id: int,roadmap_id:int,db_cursor:DBCursor=Depends(get_cursor)):
     '''
@@ -156,28 +178,6 @@ async def delete_roadmap(room_id: int,roadmap_id:int,db_cursor:DBCursor=Depends(
     - roadmap_id: roadmap id
     '''
     return room.delete_roadmap(db_cursor,room_id,roadmap_id)
-
-@router.put('/roadmap/{room_id}/task', tags=['room'])
-async def insert_roadmap_task(room_id: int,roadmap_id:int,task_id:int,db_cursor:DBCursor=Depends(get_cursor)):
-    '''
-    해당 id의 study room의 roadmap에 task를 추가
-        
-    - room_id : room id
-    - roadmap_id : roadmap id
-    - task_id : task id
-    '''
-    return room.insert_roadmap_task(db_cursor,room_id,roadmap_id,task_id)
-
-@router.delete('/roadmap/{room_id}/task', tags=['room'])
-async def delete_roadmap_task(room_id: int,roadmap_id:int,task_id:int,db_cursor:DBCursor=Depends(get_cursor)):
-    '''
-    해당 id의 study room의 roadmap에 task를 삭제
-
-    - room_id : room id
-    - roadmap_id : roadmap id
-    - task_id : task id
-    '''
-    return room.delete_roadmap_task(db_cursor,room_id,roadmap_id,task_id)
 
 @router.get('/search_user/', tags=['room'],response_model=UserListOut)
 async def search_user(info: UserListIn=Depends(),db_cursor:DBCursor=Depends(get_cursor)):
