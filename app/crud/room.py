@@ -3,6 +3,7 @@ from schemas.room import *
 from models.room import *
 from db.base import DBCursor
 from core.image import image
+from schemas.common import PaginationIn
 import os
 
 class CrudRoom(Crudbase[Room,int]):
@@ -163,26 +164,26 @@ class CrudRoom(Crudbase[Room,int]):
         db_cursor.execute_sql(sql, data)
         return True
     
-    def room_questions(self, db_cursor:DBCursor,info):
+    def room_questions(self, db_cursor:DBCursor,room_id,pagination:PaginationIn):
         '''
         해당 study room에 등록된 모든 질문 리스트 리턴
         '''
-        data = (info)
-        sql = 'SELECT * FROM room.%s_question;'
-        q_result = db_cursor.select_sql(sql, data)
+        data = (room_id)
+        sql = 'SELECT * FROM room.%s_question'
+        total,q_result = db_cursor.select_sql_with_pagination(sql, [data],pagination.size,pagination.page)
         qa = []
         for q in q_result:
             ans_sql = """
                 select q.id, a.answer, a.code, a.ans_writer from room.%s_qa as a, room.%s_question as q
                 where a.q_id = q.id and q.id = %s;
             """
-            ans_data = (info,info, q['id'])
+            ans_data = (room_id,room_id, q['id'])
             ans_result = db_cursor.select_sql(ans_sql, ans_data)
             qa.append({
-                'question': q,
-                'answers':ans_result
+                **q,
+                'answers':ans_result,
             })
-        return qa
+        return {"question_list":qa,"total":total,'size':pagination.size}
     
     def write_answer(self,db_cursor:DBCursor, info):
         data = (info.room_id, info.q_id, info.answer, info.code, info.ans_writer)

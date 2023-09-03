@@ -98,12 +98,12 @@ async def create_question(info: RoomQuestion,db_cursor:DBCursor=Depends(get_curs
     '''
     return room.write_question(db_cursor,info)
 
-@router.get('/question/{room_id}', tags=['room'])
-async def read_questions(room_id: int,db_cursor:DBCursor=Depends(get_cursor)):
+@router.get('/question/{room_id}', tags=['room'],response_model=QuestionListOut)
+async def read_questions(room_id: int,pagination:PaginationIn=Depends(),db_cursor:DBCursor=Depends(get_cursor)):
     '''
     해당 study room에 등록된 질문 리스트 조회
     '''
-    return room.room_questions(db_cursor,room_id)
+    return room.room_questions(db_cursor,room_id,pagination)
 
 @router.post("/answer", tags=['room'])
 async def create_answer(info: RoomAnswer,db_cursor:DBCursor=Depends(get_cursor)):
