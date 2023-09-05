@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime
+
+from schemas.common import PaginationOut,PaginationIn
 class RoomBase(BaseModel):
     id:int
     name:str
@@ -21,6 +23,24 @@ class RoomQuestion(BaseModel):
     question: str
     code: str
     writer: str
+
+
+
+class Answer(BaseModel):
+    id: int
+    answer: str
+    code: str
+    ans_writer: str
+
+class Question(BaseModel):
+    id: int
+    title: str
+    question: str
+    code: str
+    writer: str
+    answers:list[Answer]
+class QuestionListOut(PaginationOut):
+    question_list:list[Question]
 
 class MyRoom(BaseModel):
     id: int

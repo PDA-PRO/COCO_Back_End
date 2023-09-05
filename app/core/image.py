@@ -111,7 +111,7 @@ class Image():
         img_tags=soup.find_all('img')
         # 저장된 data에서 쓰인 사진만 추출 및 텍스트 에디터의 사진 경로를 실제 사진 경로로 수정
         for i in range(len(img_tags)):
-            image_url=img_tags[i]["src"].split("/temp")[0]
+            image_url=img_tags[i]["src"].split("/temp")[0].split("?id")[0]
             img_tags[i]["src"]=image_url
             imagelist.append(image_url.split("/")[-1])
             if id:
