@@ -1,33 +1,70 @@
-version: "3.8"
+version: "3"
 services:
   mysql:
-    image: mysql:8.1.0
     container_name: con_mysql
+    platform: linux/x86_64
     build: ./mysql/
     ports:
-      - 3306:3306
+      - "3306:3306"
     volumes:
-      - ./mysql/db:/var/lib/mysql
+      - ./mysql/db:/docker-entrypoint-initdb.d
       - ./mysql/conf.d:/etc/mysql/conf.d
     env_file:
-      - .env
+      - ./mysql/local.env
     tty: true
-    environment:
-      TZ: Asia/Seoul
     command: # 명령어 실행
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
-    restart: always
+    # restart: always
   
   fastapi:
     depends_on:
       - mysql
-    build:
-      context: .
-      dockerfile: ./Dockerfile
-    environment:
-      DB_URL: mysql+mysqldb://root:localhost@db:3306/coco?charset=utf8mb4
-    container_name: con_fastapi
-    ports:
-      - "1000:8000"
+    container_name: con_fast_api
+    platform: linux/x86_64
+    build: ./
     restart: always
+    tty: true
+    volumes:
+      - ./app:/app
+    ports:
+      - 1000:8000
+    env_file:
+      - ./app/local.env
+   
+
+
+#
+
+# version: "3"
+# services:
+#   mysql:
+#     container_name: con_mysql
+#     platform: linux/x86_64
+#     build: ./mysql/
+#     ports:
+#       - "3306:3306"
+#     volumes:
+#       - ./mysql/db:/docker-entrypoint-initdb.d
+#       - ./mysql/conf.d:/etc/mysql/conf.d
+#     env_file:
+#       - ./mysql/local.env
+#     tty: true
+#     command: # 명령어 실행
+#       - --character-set-server=utf8mb4
+#       - --collation-server=utf8mb4_unicode_ci
+
+#   api:
+#     depends_on:
+#       - mysql
+#     container_name: con_fast_api
+#     platform: linux/x86_64
+#     build: ./app
+#     restart: unless-stopped
+#     tty: true
+#     volumes:
+#       - ./api:/app
+#     ports:
+#       - 1000:8000
+#     env_file:
+#       - ./app/local.env

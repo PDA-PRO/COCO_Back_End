@@ -2,9 +2,43 @@ from fastapi import APIRouter,Depends
 from crud.board import board_crud
 from schemas.board import *
 from core import security
-router = APIRouter()
+
+
+# import os
+# import pymysql.cursors
+# from pymysql import converters
+# from fastapi.responses import JSONResponse
+# from fastapi.encoders import jsonable_encoder
+# converions = converters.conversions
+# converions[pymysql.FIELD_TYPE.BIT] = lambda x: False if x == b'\x00' else True
 
 router = APIRouter(prefix="/board")
+
+
+
+# @router.get("/tmp", tags=['board'])
+# def tmp():
+#     user = query_get("""
+#         SELECT * FROM coco.user;
+#         """, ())
+#     return JSONResponse(status_code=200, content=jsonable_encoder(user))
+
+# def init_connection():
+#     connection = pymysql.connect(host=os.getenv("DATABASE_HOST"),
+#                                  port=3306,
+#                                  user=os.environ.get("DATABASE_USERNAME"),
+#                                  password=os.environ.get("DATABASE_PASSWORD"),
+#                                  database=os.environ.get("DATABASE"),
+#                                  cursorclass=pymysql.cursors.DictCursor,
+#                                  conv=converions)
+#     return connection
+
+# def query_get(sql, param):
+#     connection = init_connection()
+#     with connection:
+#         with connection.cursor() as cursor:
+#             cursor.execute(sql, param)
+#             return cursor.fetchall()
 
 @router.post('/', tags=['board'])
 async def create_board(writeBoard: CreateBoard, token: dict = Depends(security.check_token)):
