@@ -72,16 +72,28 @@ class CrudRoom(Crudbase[Room,int]):
 
         return last_idx
     
-    def read_all_rooms(self,db_cursor:DBCursor):
+    def read_all_rooms(self,params:RoomBaseIn, db_cursor:DBCursor):
         """
         모든 study room 정보 리턴
         """
-        sql = '''
-            select g.id, g.name, g.desc, g.leader, count(i.user_id) as members, sum(u.exp) as exp, row_number() over(order by sum(u.exp) desc) as ranking
-            from coco.room as g, coco.room_ids as i, coco.user as u
-            where g.id = i.room_id and i.user_id = u.id group by g.id order by exp desc;
-        '''
-        return db_cursor.select_sql(sql)
+        sql=""
+        data=[]
+        if params.query:
+            sql = '''
+                select g.id, g.name, g.desc, g.leader, count(i.user_id) as members, sum(u.exp) as exp, row_number() over(order by sum(u.exp) desc) as ranking
+                from coco.room as g, coco.room_ids as i, coco.user as u
+                where g.id = i.room_id and i.user_id = u.id and g.name like %s group by g.id order by exp desc
+            '''
+            data.append(f'%{params.query}%')
+        else:
+            sql = '''
+                select g.id, g.name, g.desc, g.leader, count(i.user_id) as members, sum(u.exp) as exp, row_number() over(order by sum(u.exp) desc) as ranking
+                from coco.room as g, coco.room_ids as i, coco.user as u
+                where g.id = i.room_id and i.user_id = u.id group by g.id order by exp desc
+            '''
+
+        total,result=db_cursor.select_sql_with_pagination(sql,data,params.size,params.page)
+        return {"total":total,"room_list":result,"size":params.size}
     
     def delete_room(self, db_cursor:DBCursor,room_id:int):
         """

@@ -26,12 +26,12 @@ async def create_room(info: CreateRoom,db_cursor:DBCursor=Depends(get_cursor)):
     '''
     return room.create_room(db_cursor,info)
 
-@router.get('/', tags=['room'], response_model=list[RoomBase])
-async def read_rooms(db_cursor:DBCursor=Depends(get_cursor)):
+@router.get('/', tags=['room'], response_model=RoomBaseOut)
+async def read_rooms(params:RoomBaseIn=Depends(), db_cursor:DBCursor=Depends(get_cursor)):
     '''
     모든 study room의 기본 정보 조회
     '''
-    return room.read_all_rooms(db_cursor)
+    return room.read_all_rooms(params,db_cursor)
 
 @router.delete("/", tags=["room"])
 async def delete_room(room_id: int,db_cursor:DBCursor=Depends(get_cursor)):
