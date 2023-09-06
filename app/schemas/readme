@@ -1,0 +1,3 @@
+여긴 스프링의 DTO와 비슷 item.py, user.py, msg.py, token.py 파일들이 저장되는 폴더입니다
+
+https://github.com/tiangolo/full-stack-fastapi-postgresql/tree/master 디렉토리 구조 참고

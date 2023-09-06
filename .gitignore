@@ -1,2 +1,14 @@
 *.pyc
 __pycache__/
+.venv
+*.rdb
+/sandbox/*/*/*
+/tasks/*/*/*
+/tasks/*
+/board/*
+/profile/*
+/notice/*
+/roadmap/*
+/lint/*
+!.keep
+.env
