@@ -24,7 +24,7 @@ class Check():
 
     def get_notice(self):
         try:
-            with open("./../../COCO_Back_End/notice/notice.txt","r", encoding="UTF-8") as file:
+            with open("notice/notice.txt","r", encoding="UTF-8") as file:
                 content=file.readlines()
         except Exception as e:
             print("공지사항 파일 notice.txt 를 불러오는 중 오류가 발생하였습니다.",e)
