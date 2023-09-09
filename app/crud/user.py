@@ -15,7 +15,7 @@ class CrudUser(Crudbase[User,str]):
         - user_id : id
         - user_pw : pw
         """
-        sql = "SELECT id, pw, name, role, exp, level FROM `coco`.`user` where id = %s;"
+        sql = "SELECT id, pw, name, role, exp, level, tutor FROM `coco`.`user` where id = %s;"
         data=(user_id)
         result = db_cursor.select_sql(sql,data)
         if len(result) == 0:#로그인 정보가 없다면

@@ -11,6 +11,12 @@ class RoomBase(BaseModel):
     exp: int
     ranking: int
 
+class RoomBaseIn(PaginationIn):
+    query:str|None
+
+class RoomBaseOut(PaginationOut):
+    room_list:list[RoomBase]
+
 class CreateRoom(BaseModel):
     name: str
     desc: str

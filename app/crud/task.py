@@ -43,7 +43,7 @@ class CrudTask(Crudbase[Task,int]):
             db_cursor.execute_sql(sql,data)
 
         #desc에서 임시 이미지 삭제 및 실제 이미지 저장
-        maindesc=image.save_update_image(os.path.join(os.getenv("TASK_PATH"),"temp"),os.path.join(os.getenv("TASK_PATH"),str(id)),description,id,"s")
+        maindesc=image.save_update_image(os.path.join(os.getenv("TASK_PATH"),"temp"),os.path.join(os.getenv("TASK_PATH"),str(task_id)),description,task_id,"s")
 
         #desc 및 테스트케이스 저장
         sql="insert into coco.descriptions values (%s,%s,%s,%s);"
