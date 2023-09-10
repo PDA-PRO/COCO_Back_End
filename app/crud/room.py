@@ -186,22 +186,31 @@ class CrudRoom(Crudbase[Room,int]):
         qa = []
         for q in q_result:
             ans_sql = """
-                select q.id, a.answer, a.code, a.ans_writer from room.%s_qa as a, room.%s_question as q
+                select q.id, a.a_id, a.answer, a.code, a.ans_writer, a.time, a.check from room.%s_qa as a, room.%s_question as q
                 where a.q_id = q.id and q.id = %s;
             """
             ans_data = (room_id,room_id, q['id'])
             ans_result = db_cursor.select_sql(ans_sql, ans_data)
+            check = False
+            for ans in ans_result:
+                if ans['check'] == 1:
+                    check = True
+                    break
+        
+            print(q['id'], ans_result)
             qa.append({
                 **q,
                 'answers':ans_result,
+                'check': check
             })
+
         return {"question_list":qa,"total":total,'size':pagination.size}
     
     def write_answer(self,db_cursor:DBCursor, info):
         data = (info.room_id, info.q_id, info.answer, info.code, info.ans_writer)
         sql = """
-            INSERT INTO `room`.`%s_qa` (`q_id`, `answer`, `code`, `ans_writer`) 
-            VALUES (%s, %s, %s, %s);
+            INSERT INTO `room`.`%s_qa` (`q_id`, `answer`, `code`, `ans_writer`, `time`, `check`) 
+            VALUES (%s, %s, %s, %s, now(), 0);
         """
         db_cursor.execute_sql(sql, data)
         return True
@@ -341,6 +350,13 @@ class CrudRoom(Crudbase[Room,int]):
             'problem_list': problem_result,
             'solved_list': solved_result
         }
+    
+    def select_answer(self, db_cursor: DBCursor, info):
+        sql = "UPDATE `room`.`%s_qa` SET `check` = %s WHERE (`a_id` = '%s')"
+        data = (info.room_id, info.select, info.a_id)
+        db_cursor.execute_sql(sql, data)
+        return True
+
 
         
 
