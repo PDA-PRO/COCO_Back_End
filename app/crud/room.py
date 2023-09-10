@@ -170,8 +170,8 @@ class CrudRoom(Crudbase[Room,int]):
         '''
         data = (info.room_id, info.title, info.question, info.code, info.writer)
         sql = """
-            INSERT INTO `room`.`%s_question` (`title`, `question`, `code`, `writer`) 
-            VALUES (%s, %s, %s, %s);
+            INSERT INTO `room`.`%s_question` (`title`, `question`, `code`, `writer`, `time`) 
+            VALUES (%s, %s, %s, %s, now());
         """
         db_cursor.execute_sql(sql, data)
         return True
