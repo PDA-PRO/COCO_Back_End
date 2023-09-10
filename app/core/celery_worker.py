@@ -12,6 +12,7 @@ from api.deps import get_cursor
 import json
 from googletrans import Translator
 import traceback
+import glob
 
 
 load_dotenv(verbose=True)
