@@ -4,7 +4,6 @@ import redis
 import subprocess
 from contextlib import contextmanager
 import os
-import glob
 from crud.task import task_crud
 from crud.submission import submission_crud
 from crud.user import user_crud
@@ -12,8 +11,8 @@ from dotenv import load_dotenv
 from api.deps import get_cursor
 import json
 from googletrans import Translator
+import traceback
 
-redis_client = redis.Redis(host='127.0.0.1', port=6379)
 
 load_dotenv(verbose=True)
 
@@ -53,7 +52,7 @@ def ready_C(db_cursor,box_id,sub_id):
     #output data 저장공간
     output_path=os.getenv("SANDBOX_PATH")+str(box_id)+'/out/compile.txt'
     
-    subprocess.run('isolate --meta '+meta_path+' -E PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" -p5 --cg -d /etc:noexec -b '+str(box_id)+' --run /usr/bin/gcc src.c > '+output_path+' 2> '+error_path,shell=True)
+    subprocess.run('isolate --meta '+meta_path+' -E PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" -p5 -d /etc:noexec -b '+str(box_id)+' --run /usr/bin/gcc src.c > '+output_path+' 2> '+error_path,shell=True)
 
     #실행결과 분석
     exec_result=txt_to_dic(meta_path)
@@ -85,16 +84,17 @@ def get_isolate(timelimit:int)->int|None:
     """
     box_id=1
     timeover=0
-    with redis.StrictRedis(host='127.0.0.1', port=6379, db=0) as conn:
+    with redis.StrictRedis(host='redis', port=6379, db=0) as conn:
         try:
             while timeover<timelimit:#폴링으로 box가 사용가능한지 계속 확인
                 if conn.set(str(box_id),1,nx=True):
                     #isolate box 초기화
-                    subprocess.run(['isolate', '--cg', '-b',str(box_id),'--init'],capture_output=True,text=True)
+                    subprocess.run(['isolate', '-b',str(box_id),'--init'],capture_output=True,text=True)
                     time.sleep(0.2)#격리 공간 생기는 거 기다리기
                     yield box_id
                     break
-                box_id=((box_id+1)%9)
+                
+                box_id=((box_id+1)%int(os.getenv("CELERY_CONCURRENCY"))+1)
                 if box_id==0:
                     box_id=1
                 time.sleep(0.1)
@@ -105,7 +105,7 @@ def get_isolate(timelimit:int)->int|None:
         finally:
             if box_id:
                 #사용가능한 box id를 획득했다면 사용종료 후 isolate box 삭제
-                subprocess.run(['isolate', '--cg', '-b',str(box_id),'--cleanup'],capture_output=True)
+                subprocess.run(['isolate', '-b',str(box_id),'--cleanup'],capture_output=True)
             #isolate box id 사용가능으로 설정하기 위해 box id를 삭제
             conn.delete(str(box_id))
 
@@ -190,9 +190,9 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
                     answer_path=os.getenv("TASK_PATH")+str(taskid)+'/output/'+TC_list[TC_num]
                     #isolate 환경에서 실행 C언어는 a.out 실행파일로 채점
                     if lang==1:
-                        subprocess.run('isolate --meta '+meta_path+' --cg -t '+str(result["time_limit"])+' -d /etc:noexec --cg-mem='+str(result["mem_limit"]*1000)+' -b '+str(box_id)+' --run ./a.out < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
+                        subprocess.run('isolate --meta '+meta_path+' -t '+str(result["time_limit"])+' -d /etc:noexec -m '+str(result["mem_limit"]*1500)+' -b '+str(box_id)+' --run ./a.out < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
                     else:
-                        subprocess.run('isolate --meta '+meta_path+' --cg -t '+str(result["time_limit"])+' -d /etc:noexec --cg-mem='+str(result["mem_limit"]*1000)+' -b '+str(box_id)+' --run /usr/bin/python3 src.py < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
+                        subprocess.run('isolate --meta '+meta_path+' -t '+str(result["time_limit"])+' -d /etc:noexec -m '+str(result["mem_limit"]*1500)+' -b '+str(box_id)+' --run /usr/bin/python3 src.py < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
                     
                     #실행결과 분석
                     exec_result=txt_to_dic(meta_path)
@@ -239,6 +239,7 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
                     if lang==0:
                         run_pylint(code_file_path,sub_id)
             except:
+                print(traceback.format_exc())
                 print("채점 중 오류 발생")
         
         #폴더 초기화
