@@ -33,10 +33,12 @@ class RoomQuestion(BaseModel):
 
 
 class Answer(BaseModel):
-    id: int
+    a_id: int
     answer: str
     code: str
     ans_writer: str
+    time: datetime
+    check: int
 
 class Question(BaseModel):
     id: int
@@ -45,6 +47,8 @@ class Question(BaseModel):
     code: str
     writer: str
     answers:list[Answer]
+    check: bool
+
 class QuestionListOut(PaginationOut):
     question_list:list[Question]
 
@@ -86,3 +90,9 @@ class RoomRoadMap(BaseModel):
 class RoomRoadMapList(BaseModel):
     room_info :list[RoomRoadMap]
     solved_task : list[int]
+
+
+class SelectAnswer(BaseModel):
+    room_id: int
+    a_id: int
+    select: int

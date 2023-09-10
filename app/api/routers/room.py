@@ -213,3 +213,13 @@ def create_tutor_request(user_id:str,reason:str="",db_cursor:DBCursor=Depends(ge
     '''
     room.create(db_cursor,{"reason":reason,"user_id":user_id},table="user_tutor")
     return 1
+
+@router.put('/select-answer', tags=['room'])
+def select_answer(info: SelectAnswer, db_cursor:DBCursor=Depends(get_cursor)):
+    '''
+        해당 질문에 대한 답변을 채택함
+
+        - room_id: room id
+        - a_id: answer id
+    '''
+    return room.select_answer(db_cursor, info)
