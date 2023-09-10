@@ -181,9 +181,10 @@ class CrudRoom(Crudbase[Room,int]):
         해당 study room에 등록된 모든 질문 리스트 리턴
         '''
         data = (room_id)
-        sql = 'SELECT * FROM room.%s_question'
+        sql = 'SELECT r.*, c.level FROM room.%s_question as r, coco.user as c where r.writer = c.id'
         total,q_result = db_cursor.select_sql_with_pagination(sql, [data],pagination.size,pagination.page)
         qa = []
+        print(q_result)
         for q in q_result:
             ans_sql = """
                 select q.id, a.a_id, a.answer, a.code, a.ans_writer, a.time, a.check from room.%s_qa as a, room.%s_question as q
@@ -196,8 +197,6 @@ class CrudRoom(Crudbase[Room,int]):
                 if ans['check'] == 1:
                     check = True
                     break
-        
-            print(q['id'], ans_result)
             qa.append({
                 **q,
                 'answers':ans_result,
