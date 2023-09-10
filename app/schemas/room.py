@@ -48,6 +48,7 @@ class Question(BaseModel):
     writer: str
     answers:list[Answer]
     check: bool
+    time: datetime
 
 class QuestionListOut(PaginationOut):
     question_list:list[Question]
