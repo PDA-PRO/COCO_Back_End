@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException,status
 from core import security
-from schemas.submission import Submit, subDetail
+from schemas.submission import Submit, Wpc, subDetail,Lint
 from core.celery_worker import process_sub
-import redis
 from crud.submission import submission_crud
 from crud.task import task_crud
 from api.deps import get_cursor,DBCursor
 from core.wpc import *
+import json
+from googletrans import Translator
 router = APIRouter()
 
 @router.post("/submission/", tags=["submission"])
@@ -27,19 +28,6 @@ async def scoring(submit:Submit,token: dict = Depends(security.check_token),db_c
 
     return {"result": 1}
 
-@router.get("/running_stat/", tags=["submission"])
-async def work_result():
-    """
-    isolate id 1~8중 비어있는 격리공간 조회
-    """
-    i=1
-    temp=[]
-    with redis.StrictRedis(host='127.0.0.1', port=6379, db=0) as conn:
-        while i<9:
-            temp.append(int(conn.get(str(i))))
-            i+=1
-    return {"message": (temp)}
-
 @router.get("/result/{sub_id}", tags=["submission"],response_model=subDetail|None)
 async def load_result(sub_id: int,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     """
@@ -53,8 +41,21 @@ async def load_result(sub_id: int,token: dict = Depends(security.check_token),db
     else:
         return None
 
-@router.get("/wpc", tags=["submission"])
+@router.get("/wpc", tags=["submission"],response_model=Wpc)
 def get_wpc(sub_id:int,task_id:int,db_cursor:DBCursor=Depends(get_cursor)):
+    """
+    WPC:Wrong Part of Code 분석 결과 조회
+    서버에 WPC 확장기능이 적용되어 있어야함.
+    WPC 분석이 가능한 제출코드는 TC틀림으로 인한 오답, 512토큰 이하, 문제 제목에 wpc:p00000 형식의 wpc문제 코드가 존재해야함
+
+    params
+    - sub_id : 제출 id
+    - task_id : 문제 id
+    ------------------------------------
+    returns
+    - status : wpc 분석 결과 `1`분석 성공 `2`TC틀림 오답이 아님 `3`wpc 불가능 문제 `4`512토큰 초과
+    """
+    
     if not is_active:
         raise HTTPException(status.HTTP_510_NOT_EXTENDED,"wpc 확장 기능이 존재하지 않습니다.")
     
@@ -70,7 +71,6 @@ def get_wpc(sub_id:int,task_id:int,db_cursor:DBCursor=Depends(get_cursor)):
             return {"status":1,"wpc_result":prev_result[0]["result"]}
     else:
         task_title=task_crud.read(db_cursor,["title"],id=task_id)
-        print(task_title)
         if "wpc:" not in task_title[0]["title"]:
             submission_crud.create(db_cursor,{"sub_id":sub_id,"status":3},"coco","wpc")
             return {"status":3}
@@ -88,3 +88,34 @@ def get_wpc(sub_id:int,task_id:int,db_cursor:DBCursor=Depends(get_cursor)):
         
         submission_crud.create(db_cursor,{"sub_id":sub_id,"status":1,"result":wpc_result},"coco","wpc")
         return {"status":1,"wpc_result":wpc_result}
+    
+@router.get("/lint", tags=["submission"],response_model=list[Lint])
+def read_lint(sub_id:int):
+    """
+    오답 제출 코드에 대해 pylint 분석 결과 조회
+    TC틀림 오답코드 제외
+
+    params
+    - sub_id : 제출 id
+    ------------------------------------
+    returns
+    """
+    translator = Translator()   
+    err_msg = []
+    lint_path=os.path.join(os.getenv("LINT_PATH"),str(sub_id)+".json")
+    if not os.path.exists(lint_path):
+        raise HTTPException(status.HTTP_404_NOT_FOUND,"pylint 분석결과가 없습니다.")
+    with open(os.path.join(os.getenv("LINT_PATH"),str(sub_id)+".json"), 'r') as file:
+        datas = json.load(file)
+        for data in datas:
+            err_msg.append({
+                'type': data['type'],
+                'line': data['line'],
+                'column': data['column'],
+                'endLine': data['endLine'],
+                'endColumn': data['endColumn'],
+                'symbol': data['symbol'],
+                'message': translator.translate(data['message'], 'ko').text,
+                "message_id": data['message-id"'],
+            })
+    return err_msg

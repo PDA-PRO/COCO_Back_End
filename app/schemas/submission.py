@@ -43,3 +43,17 @@ class StatusListIn(PaginationIn):
 
 class StatusListOut(PaginationOut):
     statuslist:list[Status]
+
+class Lint(BaseModel):
+    type:str
+    line:int
+    column:int
+    endLine:int
+    endColumn:int
+    symbol:str
+    message:str
+    message_id :str
+
+class Wpc(BaseModel):
+    status:int
+    wpc_result:str=None

@@ -10,8 +10,6 @@ from crud.submission import submission_crud
 from crud.user import user_crud
 from dotenv import load_dotenv
 from api.deps import get_cursor
-import json
-from googletrans import Translator
 
 redis_client = redis.Redis(host='127.0.0.1', port=6379)
 
@@ -109,25 +107,9 @@ def get_isolate(timelimit:int)->int|None:
             #isolate box id 사용가능으로 설정하기 위해 box id를 삭제
             conn.delete(str(box_id))
 
-def run_pylint(py_file_path, sub_id):
-    translator = Translator()             
+def run_pylint(py_file_path, sub_id):     
     json_path = os.path.join(os.getenv("LINT_PATH"),f"{sub_id}.json")
-    os.system(f'pylint {py_file_path} --disable=W,C --output-format=json:{json_path}')     
-    # err_msg = []
-    # with open(json_path, 'r') as file:
-    #     datas = json.load(file)
-    #     for data in datas:
-    #         type = data['type']
-    #         line = data['line']
-    #         symbol = data['symbol']
-    #         msg = data['message']
-    #         err_msg.append({
-    #             'type': type,
-    #             'line': line,
-    #             'symbol': symbol,
-    #             'msg': translator.translate(msg, 'ko').text
-    #         })
-    # return err_msg
+    os.system(f'pylint {py_file_path} --disable=W,C --output-format=json:{json_path}')   
 
 @celery_task.task(ignore_result=True)
 def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
