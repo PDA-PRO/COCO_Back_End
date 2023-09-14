@@ -1,13 +1,13 @@
 from fastapi import APIRouter,Depends
-from crud.board import board_crud
-from schemas.board import *
-from core import security
-from api.deps import get_cursor,DBCursor
+from app.crud.board import board_crud
+from app.schemas.board import *
+from app.core import security
+from app.api.deps import get_cursor,DBCursor
 
 router = APIRouter(prefix="/board")
 
 @router.post('/', tags=['board'])
-async def create_board(writeBoard: CreateBoard, token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
+def create_board(writeBoard: CreateBoard, token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     """
     새로운 게시글을 생성
 
@@ -22,14 +22,14 @@ async def create_board(writeBoard: CreateBoard, token: dict = Depends(security.c
     return {'code': board_crud.create_board(db_cursor,writeBoard)}
 
 @router.get('/', tags = ['board'],response_model=list[BoardBase])
-async def read_board(db_cursor:DBCursor=Depends(get_cursor)):
+def read_board(db_cursor:DBCursor=Depends(get_cursor)):
     '''
     게시글 정보 조회
     '''
     return board_crud.read_board(db_cursor)
 
 @router.get('/{board_id}', tags = ['board'],response_model=BoardDetail)
-async def detail_board(board_id: int,user_id:str=None,db_cursor:DBCursor=Depends(get_cursor)):
+def detail_board(board_id: int,user_id:str=None,db_cursor:DBCursor=Depends(get_cursor)):
     '''
     특정 게시글 상세 정보 조회
 
@@ -39,7 +39,7 @@ async def detail_board(board_id: int,user_id:str=None,db_cursor:DBCursor=Depends
     return board_crud.board_detail(db_cursor,board_id,user_id)
 
 @router.delete('/', tags=['board'])
-async def delete_board(board_id: int,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
+def delete_board(board_id: int,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     """
     게시글 삭제
 
@@ -49,7 +49,7 @@ async def delete_board(board_id: int,token: dict = Depends(security.check_token)
     return {'code': board_crud.delete_board(db_cursor,board_id)}
 
 @router.patch('/likes/', tags = ['board'])
-async def update_board_likes(boardLikes: LikesBase,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
+def update_board_likes(boardLikes: LikesBase,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     """
     게시글의 좋아요 업데이트
 
@@ -62,7 +62,7 @@ async def update_board_likes(boardLikes: LikesBase,token: dict = Depends(securit
     return {'code': board_crud.update_board_likes(db_cursor,boardLikes)}
 
 @router.post('/comment/', tags = ['board'])
-async def create_comment(commentInfo: CreateComment,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
+def create_comment(commentInfo: CreateComment,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     """
     새로운 댓글을 생성
 
@@ -75,7 +75,7 @@ async def create_comment(commentInfo: CreateComment,token: dict = Depends(securi
     return {'code': board_crud.create_comment(db_cursor,commentInfo)}
 
 @router.delete('/comment/', tags=['board'])
-async def delete_comment(board_id: int,comment_id: int,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
+def delete_comment(board_id: int,comment_id: int,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     """
     댓글 삭제
 
@@ -86,7 +86,7 @@ async def delete_comment(board_id: int,comment_id: int,token: dict = Depends(sec
     return {'code': board_crud.delete_comment(db_cursor,board_id,comment_id)}
 
 @router.patch('/comment/likes/', tags = ['board'])
-async def update_comment_likes(commentLikes: CommentLikes,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
+def update_comment_likes(commentLikes: CommentLikes,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     """
     댓글의 좋아요 업데이트
 

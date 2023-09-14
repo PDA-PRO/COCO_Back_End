@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends
-from schemas.submission import StatusListIn,StatusListOut
-from crud.submission import submission_crud
-from api.deps import get_cursor,DBCursor
+from app.schemas.submission import StatusListIn,StatusListOut
+from app.crud.submission import submission_crud
+from app.api.deps import get_cursor,DBCursor
 
 router = APIRouter()
 
 @router.get("/status/", tags=["status"],response_model=StatusListOut)
-async def read_status(info:StatusListIn=Depends(),db_cursor:DBCursor=Depends(get_cursor)):
+def read_status(info:StatusListIn=Depends(),db_cursor:DBCursor=Depends(get_cursor)):
     """
     제출 조회
 

@@ -1,8 +1,6 @@
 from fastapi import FastAPI
-from api.routers import scoring, login, task, board, status, hot, admin,  mypage, image
+from app.api.routers import scoring, login, task, board, status, hot, admin,  mypage, image,room
 from fastapi.middleware.cors import CORSMiddleware
-
-from api.routers import room
 
 app = FastAPI()
 

@@ -1,15 +1,15 @@
-from core.celery_app import celery_task
+from app.core.celery_app import celery_task
 import time
 import redis
 import subprocess
 from contextlib import contextmanager
 import os
 import glob
-from crud.task import task_crud
-from crud.submission import submission_crud
-from crud.user import user_crud
+from app.crud.task import task_crud
+from app.crud.submission import submission_crud
+from app.crud.user import user_crud
 from dotenv import load_dotenv
-from api.deps import get_cursor
+from app.api.deps import get_cursor
 
 redis_client = redis.Redis(host='127.0.0.1', port=6379)
 

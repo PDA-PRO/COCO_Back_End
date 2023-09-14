@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv,set_key,find_dotenv
-from core import security
-from core.image import image
+from app.core import security
+from app.core.image import image
 
 #환경변수에서 민감한 정보 가져오기
 load_dotenv(verbose=True)

@@ -1,17 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException,status
-from core import security
-from schemas.submission import Submit, Wpc, subDetail,Lint
-from core.celery_worker import process_sub
-from crud.submission import submission_crud
-from crud.task import task_crud
-from api.deps import get_cursor,DBCursor
-from core.wpc import *
+from app.core import security
+from app.schemas.submission import Submit, Wpc, subDetail,Lint
+from app.core.celery_worker import process_sub
+from app.crud.submission import submission_crud
+from app.crud.task import task_crud
+from app.api.deps import get_cursor,DBCursor
+from app.core.wpc import *
 import json
-from googletrans import Translator
+
 router = APIRouter()
 
 @router.post("/submission/", tags=["submission"])
-async def scoring(submit:Submit,token: dict = Depends(security.check_token),db_cursor=Depends(get_cursor)):
+def scoring(submit:Submit,token: dict = Depends(security.check_token),db_cursor=Depends(get_cursor)):
     """
     제출된 코드 채점
 
@@ -29,7 +29,7 @@ async def scoring(submit:Submit,token: dict = Depends(security.check_token),db_c
     return {"result": 1}
 
 @router.get("/result/{sub_id}", tags=["submission"],response_model=subDetail|None)
-async def load_result(sub_id: int,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
+def load_result(sub_id: int,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     """
     제출된 코드 채점 결과 확인
 
@@ -100,7 +100,6 @@ def read_lint(sub_id:int):
     ------------------------------------
     returns
     """
-    translator = Translator()   
     err_msg = []
     lint_path=os.path.join(os.getenv("LINT_PATH"),str(sub_id)+".json")
     if not os.path.exists(lint_path):
@@ -115,7 +114,7 @@ def read_lint(sub_id:int):
                 'endLine': data['endLine'],
                 'endColumn': data['endColumn'],
                 'symbol': data['symbol'],
-                'message': translator.translate(data['message'], 'ko').text,
+                'message': data['message'],
                 "message_id": data['message-id"'],
             })
     return err_msg

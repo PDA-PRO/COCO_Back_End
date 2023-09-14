@@ -3,10 +3,10 @@ import json
 import os
 import zipfile
 from .base import Crudbase
-from core.image import image
-from schemas.task import *
-from models.task import *
-from db.base import DBCursor
+from app.core.image import image
+from app.schemas.task import *
+from app.models.task import *
+from app.db.base import DBCursor
 
 
 class CrudTask(Crudbase[Task,int]):

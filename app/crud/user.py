@@ -1,9 +1,9 @@
 from fastapi import HTTPException,status
-from schemas.user import *
+from app.schemas.user import *
 from .base import Crudbase
-from core import security
-from models.user import User
-from db.base import DBCursor
+from app.core import security
+from app.models.user import User
+from app.db.base import DBCursor
 
 class CrudUser(Crudbase[User,str]):
     def get_user(self, db_cursor:DBCursor,user_id:int, user_pw:int):

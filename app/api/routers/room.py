@@ -1,20 +1,20 @@
 from fastapi import APIRouter, Depends, HTTPException
-from schemas.user import UserListIn, UserListOut
-from crud.room import room
-from crud.user import user_crud
-from crud.submission import submission_crud
-from schemas.room import *
-from models.room import *
-from core import security
-from api.deps import get_cursor,DBCursor
-from core.image import image
+from app.schemas.user import UserListIn, UserListOut
+from app.crud.room import room
+from app.crud.user import user_crud
+from app.crud.submission import submission_crud
+from app.schemas.room import *
+from app.models.room import *
+from app.core import security
+from app.api.deps import get_cursor,DBCursor
+from app.core.image import image
 import os
 
 router = APIRouter(prefix='/room')
 # 전체 그룹 리스트(그룹명, 설명)
 
 @router.post("/", tags=["room"])
-async def create_room(info: CreateRoom,db_cursor:DBCursor=Depends(get_cursor)):
+def create_room(info: CreateRoom,db_cursor:DBCursor=Depends(get_cursor)):
     '''
     study room 생성
 
@@ -27,14 +27,14 @@ async def create_room(info: CreateRoom,db_cursor:DBCursor=Depends(get_cursor)):
     return room.create_room(db_cursor,info)
 
 @router.get('/', tags=['room'], response_model=RoomBaseOut)
-async def read_rooms(params:RoomBaseIn=Depends(), db_cursor:DBCursor=Depends(get_cursor)):
+def read_rooms(params:RoomBaseIn=Depends(), db_cursor:DBCursor=Depends(get_cursor)):
     '''
     모든 study room의 기본 정보 조회
     '''
     return room.read_all_rooms(params,db_cursor)
 
 @router.delete("/", tags=["room"])
-async def delete_room(room_id: int,db_cursor:DBCursor=Depends(get_cursor)):
+def delete_room(room_id: int,db_cursor:DBCursor=Depends(get_cursor)):
     '''
     해당 id의 study room 삭제 
 
@@ -43,7 +43,7 @@ async def delete_room(room_id: int,db_cursor:DBCursor=Depends(get_cursor)):
     return room.delete_room(db_cursor,room_id)
 
 @router.put("/member/", tags=["room"])
-async def insert_members(members: RoomMember,db_cursor:DBCursor=Depends(get_cursor)):
+def insert_members(members: RoomMember,db_cursor:DBCursor=Depends(get_cursor)):
     '''
     해당 id의 study room에 member를 추가
 
@@ -58,7 +58,7 @@ async def insert_members(members: RoomMember,db_cursor:DBCursor=Depends(get_curs
         raise HTTPException(status_code=409, detail=str(e))
 
 @router.delete("/member/", tags=["room"])
-async def delete_members(members: RoomMember,db_cursor:DBCursor=Depends(get_cursor)):
+def delete_members(members: RoomMember,db_cursor:DBCursor=Depends(get_cursor)):
     '''
     해당 id의 study room에 member를 삭제
 
@@ -69,7 +69,7 @@ async def delete_members(members: RoomMember,db_cursor:DBCursor=Depends(get_curs
     return room.delete_members(db_cursor,members)
 
 @router.get("/{room_id}", tags=['room'], )
-async def get_room(room_id: int,db_cursor:DBCursor=Depends(get_cursor)):
+def get_room(room_id: int,db_cursor:DBCursor=Depends(get_cursor)):
     '''
     해당 id의 study room의 정보를 리턴
 
@@ -79,14 +79,14 @@ async def get_room(room_id: int,db_cursor:DBCursor=Depends(get_cursor)):
 
 
 @router.get("/myroom/{user_id}", tags=['room'], response_model=list[MyRoom])
-async def myroom(user_id: str,db_cursor:DBCursor=Depends(get_cursor)):
+def myroom(user_id: str,db_cursor:DBCursor=Depends(get_cursor)):
     '''
     해당 user가 속한 study room의 정보를 리턴
     '''
     return room.myroom(db_cursor,user_id)
 
 @router.post("/question/", tags=['room'])
-async def create_question(info: RoomQuestion,db_cursor:DBCursor=Depends(get_cursor)):
+def create_question(info: RoomQuestion,db_cursor:DBCursor=Depends(get_cursor)):
     '''
     Study room의 질문 생성
     
@@ -99,14 +99,14 @@ async def create_question(info: RoomQuestion,db_cursor:DBCursor=Depends(get_curs
     return room.write_question(db_cursor,info)
 
 @router.get('/question/{room_id}', tags=['room'],response_model=QuestionListOut)
-async def read_questions(room_id: int,pagination:PaginationIn=Depends(),db_cursor:DBCursor=Depends(get_cursor)):
+def read_questions(room_id: int,pagination:PaginationIn=Depends(),db_cursor:DBCursor=Depends(get_cursor)):
     '''
     해당 study room에 등록된 질문 리스트 조회
     '''
     return room.room_questions(db_cursor,room_id,pagination)
 
 @router.post("/answer", tags=['room'])
-async def create_answer(info: RoomAnswer,db_cursor:DBCursor=Depends(get_cursor)):
+def create_answer(info: RoomAnswer,db_cursor:DBCursor=Depends(get_cursor)):
     '''
     study room에 등록된 질문에 답변을 생성
 
@@ -120,7 +120,7 @@ async def create_answer(info: RoomAnswer,db_cursor:DBCursor=Depends(get_cursor))
     return room.write_answer(db_cursor,info)
 
 @router.post("/roadmap", tags=['room'])
-async def create_roadmap(info: RoomRoadMap,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
+def create_roadmap(info: RoomRoadMap,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     '''
     Study room의 roadmap 생성
     
@@ -133,7 +133,7 @@ async def create_roadmap(info: RoomRoadMap,token: dict = Depends(security.check_
     return room.create_roadmap(db_cursor,info,token["id"])
 
 @router.get('/roadmap/{room_id}', tags=['room'], response_model=RoomRoadMapList)
-async def read_roadmap(room_id: int,user_id:str,db_cursor:DBCursor=Depends(get_cursor)):
+def read_roadmap(room_id: int,user_id:str,db_cursor:DBCursor=Depends(get_cursor)):
     '''
     해당 study room에 등록된 모든 roadmap 정보 조회
 
@@ -148,7 +148,7 @@ async def read_roadmap(room_id: int,user_id:str,db_cursor:DBCursor=Depends(get_c
     }
 
 @router.put('/roadmap/', tags=['room'])
-async def update_roadmap(info: RoomRoadMap,roadmap_id:int, token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
+def update_roadmap(info: RoomRoadMap,roadmap_id:int, token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     '''
     해당 study room에 등록된 모든 roadmap 수정
     
@@ -170,7 +170,7 @@ async def update_roadmap(info: RoomRoadMap,roadmap_id:int, token: dict = Depends
     return 1
 
 @router.delete('/roadmap/{room_id}', tags=['room'])
-async def delete_roadmap(room_id: int,roadmap_id:int,db_cursor:DBCursor=Depends(get_cursor)):
+def delete_roadmap(room_id: int,roadmap_id:int,db_cursor:DBCursor=Depends(get_cursor)):
     '''
     해당 study room에 등록된 roadmap 삭제
 
@@ -180,7 +180,7 @@ async def delete_roadmap(room_id: int,roadmap_id:int,db_cursor:DBCursor=Depends(
     return room.delete_roadmap(db_cursor,room_id,roadmap_id)
 
 @router.get('/search_user/', tags=['room'],response_model=UserListOut)
-async def search_user(info: UserListIn=Depends(),db_cursor:DBCursor=Depends(get_cursor)):
+def search_user(info: UserListIn=Depends(),db_cursor:DBCursor=Depends(get_cursor)):
     """
     user의 id나 name으로 검색
     id, name, role 값 리턴
@@ -194,7 +194,7 @@ async def search_user(info: UserListIn=Depends(),db_cursor:DBCursor=Depends(get_
     return user_crud.search_user(db_cursor,info)
 
 @router.get('/roadmap/{room_id}/{roadmap_id}', tags=['room'])
-async def get_roadmap(room_id: int, roadmap_id: int,db_cursor:DBCursor=Depends(get_cursor)):
+def get_roadmap(room_id: int, roadmap_id: int,db_cursor:DBCursor=Depends(get_cursor)):
     '''
         해당 id의 study room의 특정 roadmap 정보를 가져옴
 

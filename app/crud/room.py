@@ -1,9 +1,9 @@
 from .base import Crudbase
-from schemas.room import *
-from models.room import *
-from db.base import DBCursor
-from core.image import image
-from schemas.common import PaginationIn
+from app.schemas.room import *
+from app.models.room import *
+from app.db.base import DBCursor
+from app.core.image import image
+from app.schemas.common import PaginationIn
 import os
 
 class CrudRoom(Crudbase[Room,int]):

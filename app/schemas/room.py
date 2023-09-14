@@ -1,7 +1,8 @@
 from pydantic import BaseModel
 from datetime import datetime
 
-from schemas.common import PaginationOut,PaginationIn
+from app.schemas.common import PaginationOut,PaginationIn
+
 class RoomBase(BaseModel):
     id:int
     name:str

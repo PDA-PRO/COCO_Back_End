@@ -1,11 +1,9 @@
-import db
 from typing import Generic, TypeVar
-from db.base import DBCursor
+from app.db.base import DBCursor
 
 ModelType = TypeVar("ModelType")
 IdType=TypeVar("IdType")
 
-db_server = db.db_server
 
 class Crudbase(Generic[ModelType,IdType]):
     def __init__(self,model:ModelType=None) -> None:

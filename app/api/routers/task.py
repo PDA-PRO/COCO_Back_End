@@ -1,16 +1,16 @@
 from fastapi.responses import FileResponse
-from core import security
-from crud.task import task_crud
-from crud.submission import submission_crud
+from app.core import security
+from app.crud.task import task_crud
+from app.crud.submission import submission_crud
 from fastapi import APIRouter, Depends, Form, HTTPException
-from schemas.task import *
-from api.deps import get_cursor,DBCursor
+from app.schemas.task import *
+from app.api.deps import get_cursor,DBCursor
 import os
 
 router = APIRouter(prefix="/task")
 
 @router.post('/', tags=['task'])
-async def create_task(description:str=Form(...),task: Task = Depends(), token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
+def create_task(description:str=Form(...),task: Task = Depends(), token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     """ 
     새로운 문제를 생성
 
@@ -35,7 +35,7 @@ async def create_task(description:str=Form(...),task: Task = Depends(), token: d
     }
 
 @router.get('/', tags=['task'], response_model=TaskList)
-async def read_task_with_pagination(query:ReadTask=Depends(),db_cursor:DBCursor=Depends(get_cursor)):
+def read_task_with_pagination(query:ReadTask=Depends(),db_cursor:DBCursor=Depends(get_cursor)):
     """
     문제 리스트에서 쿼리에 맞는 문제들의 정보만 리턴
     keyword, diff, category는 AND 로 결합
@@ -75,7 +75,7 @@ async def read_task_with_pagination(query:ReadTask=Depends(),db_cursor:DBCursor=
         }
 
 @router.get('/{task_id}/', tags=['task'],response_model=TaskDetail)
-async def task_detail(task_id: int,db_cursor:DBCursor=Depends(get_cursor)):
+def task_detail(task_id: int,db_cursor:DBCursor=Depends(get_cursor)):
     """
     원하는 문제의 상세한 정보 조회
 
@@ -88,7 +88,7 @@ async def task_detail(task_id: int,db_cursor:DBCursor=Depends(get_cursor)):
         raise HTTPException(status_code=404, detail="Item not found")
 
 @router.put('/', tags=['task'])
-async def update_task(task_id:int,description:str=Form(...),task: Task = Depends(), token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
+def update_task(task_id:int,description:str=Form(...),task: Task = Depends(), token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     """ 
     문제 수정
 
@@ -114,7 +114,7 @@ async def update_task(task_id:int,description:str=Form(...),task: Task = Depends
     }
     
 @router.delete('/', tags=['task'])
-async def delete_task(task_id:int, token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
+def delete_task(task_id:int, token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     """
     문제 삭제
     db에서 문제 데이터 삭제 및 로컬 스토리지에서 문제 데이터 삭제
@@ -125,7 +125,7 @@ async def delete_task(task_id:int, token: dict = Depends(security.check_token),d
     return task_crud.delete_task(db_cursor,task_id)
 
 @router.post('/category', tags=['task'])
-async def create_category(category:str, token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor),):
+def create_category(category:str, token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor),):
     """
     문제 카테고리 생성
 
@@ -135,7 +135,7 @@ async def create_category(category:str, token: dict = Depends(security.check_tok
     return task_crud.create_category(db_cursor,category)
 
 @router.get('/category', tags=['task'],response_model=list[str])
-async def read_category(db_cursor:DBCursor=Depends(get_cursor)):
+def read_category(db_cursor:DBCursor=Depends(get_cursor)):
     """
     문제 카테고리 조회
 
@@ -145,7 +145,7 @@ async def read_category(db_cursor:DBCursor=Depends(get_cursor)):
     return task_crud.read_category(db_cursor)
 
 @router.delete('/category', tags=['task'])
-async def delete_category(category:str, token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
+def delete_category(category:str, token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     """
     해당 카테고리를 가지는 문제가 존재하지 않는다면 삭제
 
@@ -155,7 +155,7 @@ async def delete_category(category:str, token: dict = Depends(security.check_tok
     return task_crud.delete_category(db_cursor,category)
 
 @router.get('/testcase/{task_id}', tags=['task'])
-async def get_testcase(task_id:int):
+def get_testcase(task_id:int):
     """
     문제에 대한 테스트 케이스 조회
 

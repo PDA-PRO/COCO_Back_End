@@ -1,9 +1,9 @@
 import os
-from schemas.board import *
+from app.schemas.board import *
 from .base import Crudbase
-from core.image import image
-from models.board import Boards
-from db.base import DBCursor
+from app.core.image import image
+from app.models.board import Boards
+from app.db.base import DBCursor
 
 class CrudBoard(Crudbase[Boards,int]):
 
