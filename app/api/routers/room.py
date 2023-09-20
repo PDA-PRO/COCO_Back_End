@@ -8,6 +8,7 @@ from app.models.room import *
 from app.core import security
 from app.api.deps import get_cursor,DBCursor
 from app.core.image import image
+from app.crud.alarm import alarm_crud
 import os
 
 router = APIRouter(prefix='/room')
@@ -167,6 +168,29 @@ def update_roadmap(info: RoomRoadMap,roadmap_id:int, token: dict = Depends(secur
     for i in info.tasks:
         room.create(db_cursor,{"roadmap_id":roadmap_id,"task_id":i},"room",roadmap_ids_table)
 
+    # 스터디룸 로드맵 수정 시 알람
+    room_name_sql = 'SELECT name FROM coco.room where id = %s;'
+    room_name_data = (info.id)
+    room_result = db_cursor.select_sql(room_name_sql, room_name_data)
+
+    users_sql = 'SELECT user_id FROM coco.room_ids where room_id = %s;'
+    users_data = (info.id)
+    users_result = db_cursor.select_sql(users_sql, users_data)
+    for result in users_result:
+        user = result['user']    
+        alarm_crud.create_alarm(
+            db_cursor,
+            {
+                'sender': None,
+                'receiver': user,
+                'context': {
+                    'studyroom_id': info.id,
+                    'studyroom_name': room_result[0]['name'],
+                    'roodmap_name': info.name,
+                    'roadmap_id': roadmap_id
+                    }
+            }
+        )    
     return 1
 
 @router.delete('/roadmap/{room_id}', tags=['room'])

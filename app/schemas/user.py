@@ -40,6 +40,7 @@ class FindId(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    alarm: list
 
 class UserListIn(PaginationIn):
     keyword: str | None
