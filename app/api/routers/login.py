@@ -117,7 +117,9 @@ def login_for_access_token(autologin:bool=False,form_data: OAuth2PasswordRequest
         - client_secret: optional string. OAuth2 recommends sending the client_id and client_secret (if any)
         using HTTP Basic auth, as: client_id:client_secret
     """
-    user = user_crud.get_user(db_cursor,form_data.username, form_data.password)
+    user_data = user_crud.get_user(db_cursor,form_data.username, form_data.password)
+    user = user_data[0]
+    alarm = user_data[1]
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -128,4 +130,4 @@ def login_for_access_token(autologin:bool=False,form_data: OAuth2PasswordRequest
         access_token = security.create_access_token( data={"sub": user["id"],"role":user["role"],"tutor":user["tutor"], "name": user["name"], "user_exp":user["exp"], "level":user["level"]})
     else:
         access_token = security.create_access_token( data={"sub": user["id"],"role":user["role"],"tutor":user["tutor"], "name": user["name"], "user_exp":user["exp"], "level":user["level"]},exp_time=2)
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer", "alarm": alarm}
