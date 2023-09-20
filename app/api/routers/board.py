@@ -21,12 +21,22 @@ def create_board(writeBoard: CreateBoard, token: dict = Depends(security.check_t
     """
     return {'code': board_crud.create_board(db_cursor,writeBoard)}
 
-@router.get('/', tags = ['board'],response_model=list[BoardBase])
-def read_board(db_cursor:DBCursor=Depends(get_cursor)):
+@router.get('/', tags = ['board'],response_model=BoardListOut)
+def read_board(info:PaginationIn=Depends(),db_cursor:DBCursor=Depends(get_cursor)):
     '''
     게시글 정보 조회
+    size와 page 존재할 시 pagination 적용
+    
+    - info 
+        - size : 한 페이지의 크기
+        - page : 현재 페이지의 번호
     '''
-    return board_crud.read_board(db_cursor)
+    if info.size and info.page:
+        total,result=board_crud.read_with_pagination(db_cursor,size=info.size,page=info.page,sort=True)
+        return {"total":total,"size":info.size,"boardlist":result}
+    else:
+        result=board_crud.read(db_cursor,sort=True)
+        return {"boardlist":result}
 
 @router.get('/{board_id}', tags = ['board'],response_model=BoardDetail)
 def detail_board(board_id: int,user_id:str=None,db_cursor:DBCursor=Depends(get_cursor)):

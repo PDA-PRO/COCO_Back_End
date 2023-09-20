@@ -58,6 +58,7 @@ class CrudTask(Crudbase[Task,int]):
         문제 리스트에서 쿼리에 맞는 문제들의 정보만 리턴
         keyword, diff, category는 AND 로 결합
         
+        params
         - query : 문제 쿼리 정보
             - keyword: 검색할 id 혹은 title 정보
             - diff: 문제 난이도 | 1~5의 정수 값이 ','로 구분된 문자열 다중값 가능
@@ -65,8 +66,12 @@ class CrudTask(Crudbase[Task,int]):
             - rateSort: 정답률 기준 정렬 | 0 - 기본 정렬 1 - 오름차순 2 - 내림차순 
             - size: 한페이지의 크기
             - page: 페이지 번호
+        -----------------------------
+        returns
+        - [total,result]
+            - total : 전체 문제 수
+            - result : 조건에 맞는 문제 수
         """
-
         #기본 sql 뼈대.
         sql="SELECT * FROM coco.task_list"
         data=[]
@@ -91,9 +96,12 @@ class CrudTask(Crudbase[Task,int]):
             else:
                 condition.append(" title like %s")
                 data.append("%"+query.keyword+"%")
+        #각 문제별 제출수     
+        sql+=" left outer join coco.sub_per_task s on id=s.task_id"
+
         #where 조건이 존재한다면 sql에 추가
         if len(condition):
-            sql+=" WHERE "+"AND".join(condition)
+            sql+=" WHERE"+" AND".join(condition)
 
         #정렬 기준 추가
         if query.rateSort==1:

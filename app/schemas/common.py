@@ -1,9 +1,9 @@
 from pydantic import BaseModel,conint
 
 class PaginationIn(BaseModel):
-    size:conint(ge=1)
-    page:conint(ge=1)
+    size:conint(ge=1)|None
+    page:conint(ge=1)|None
 
 class PaginationOut(BaseModel):
-    total : int
-    size:int
+    total : int|None
+    size:int|None

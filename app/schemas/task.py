@@ -28,17 +28,12 @@ class TaskMeta(BaseModel):
     title : str
     diff : int
     rate : int
-
-class TaskMetaWithCount(TaskMeta):
-    count:int|None
+    count :int|None
 
 class TaskList(PaginationOut):
     tasks : list[TaskMeta]
     solved_list : list[int]|None
     wrong_list : list[int]|None
-
-class TaskListWithCount(PaginationOut):
-    tasks : list[TaskMetaWithCount]
 
 class TaskDetail(BaseModel):
     id:int

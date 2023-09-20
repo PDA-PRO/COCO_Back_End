@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends,HTTPException,status
+from typing import Annotated
+from fastapi import APIRouter, Body, Depends,HTTPException,status
 from app.crud.hot import hot_crud
+from app.crud.user import user_crud
 from app.core import security
 from app.api.deps import get_cursor,DBCursor
-from app.core.notice import get_notice,update_notice
+from app.core import notice
 
 router = APIRouter()
 
@@ -19,7 +21,7 @@ def read_notice():
     """
     공지사항 조회
     """
-    result=get_notice()
+    result=notice.get_notice()
     if result is None:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -27,16 +29,29 @@ def read_notice():
         )
     return result
 
-@router.put('/notice', tags=["mics.","admin"])
-def update_notice(content: str):
+@router.put('/notice', tags=["mics."])
+def update_notice(content: Annotated[str, Body(embed=True)], token: dict = Depends(security.check_token)):
     """
     공지사항 업데이트
 
     - content : html형식의 공지사항 내용
     """
-    result=update_notice(content)
+    result=notice.update_notice(content)
+    if token["role"]!=1:
+        raise HTTPException(
+            status_code=403,
+            detail="Insufficient permissions. Admin privileges are required.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     if not result:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="공지사항 파일 업데이트 중 오류 발생"
         )
+    
+@router.get('/request-tutor', tags = ['mics.'])
+def read_tutor_request(db_cursor:DBCursor=Depends(get_cursor)):
+    '''
+    모든 튜터 신청 정보 조회
+    '''
+    return user_crud.read(db_cursor,table="user_tutor")

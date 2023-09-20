@@ -5,7 +5,7 @@ import os
 from fastapi import Depends,HTTPException,status
 from fastapi.security import OAuth2PasswordBearer
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def create_access_token(data: dict, exp_time:int=168):
