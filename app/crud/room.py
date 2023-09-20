@@ -223,7 +223,7 @@ class CrudRoom(Crudbase[Room,int]):
         해당 study room에 등록된 모든 질문 리스트 리턴
         '''
         data = (room_id)
-        sql = 'SELECT r.*, c.level FROM room.%s_question as r, coco.user as c where r.writer = c.id'
+        sql = 'SELECT r.* FROM room.%s_question as r, coco.user as c where r.writer = c.id'
         total,q_result = db_cursor.select_sql_with_pagination(sql, [data],pagination.size,pagination.page)
         qa = []
         print(q_result)

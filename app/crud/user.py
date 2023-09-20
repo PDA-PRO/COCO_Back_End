@@ -16,7 +16,7 @@ class CrudUser(Crudbase[User,str]):
         - user_id : id
         - user_pw : pw
         """
-        sql = "SELECT id, pw, name, role, exp, level, tutor FROM `coco`.`user` where id = %s;"
+        sql = "SELECT id, pw, name, role, exp, tutor FROM `coco`.`user` where id = %s;"
         data=(user_id)
         result = db_cursor.select_sql(sql,data)
 

@@ -6,4 +6,3 @@ class User(ModelBase):
     role:int
     email:str
     exp:int
-    level:int
