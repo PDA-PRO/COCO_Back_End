@@ -43,79 +43,6 @@ class CrudUser(Crudbase[User,str]):
         data=(user.id, security.get_password_hash(user.pw), user.name, 0, user.email)
         db_cursor.execute_sql(sql,data)
         return 1
-
-    def exist_id(self,db_cursor:DBCursor, id:str):
-        """
-        아이디 조회
-        존재하면 1 존재하지 않으면 0
-
-        - id : user id
-        """
-        sql = "SELECT id FROM `coco`.`user` where id = %s;"
-        data=(id)
-        result = db_cursor.select_sql(sql,data)
-        if len(result):
-            return id
-        else:
-            raise HTTPException(            
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="id가 존재하지 않습니다.")
-
-    def get_id(self, db_cursor:DBCursor,info:FindId):
-        """
-        id 찾기
-
-        - info
-            - name : 실명
-            - email : 이메일
-        """
-        sql = "SELECT id FROM `coco`.`user` WHERE name = %s AND email = %s"
-        data=(info.name,info.email)
-        result = db_cursor.select_sql(sql,data)
-        if len(result) == 0:
-            return 0
-        else:
-            return result[0]["id"]
-
-    def update_pw(self, db_cursor:DBCursor,info:Login):
-        """
-        해당 user의 pw 업데이트
-
-        - info 
-            - id : id
-            - pw : pw
-        """
-        sql = "UPDATE coco.user SET pw = %s WHERE id = %s;"
-        data = (security.get_password_hash(info.pw), info.id)
-        db_cursor.execute_sql(sql, data)
-        
-    def update_email(self, db_cursor:DBCursor,info:UpdateEmail):
-        """
-        해당 user의 email 업데이트
-
-        - info 
-            - id : id
-            - email : email
-        """
-        
-        sql = "UPDATE coco.user SET email = %s WHERE id = %s;"
-        data = (info.email, info.id)
-        db_cursor.execute_sql(sql, data)
-        return 1
-    
-    def update_role(self, db_cursor:DBCursor,info:UpdateRole):
-        """
-        해당 user의 role 업데이트
-
-        - info 
-            - id : id
-            - role : role | 0 -> 일반 유저 1 -> 관리자
-        """
-        
-        sql = "UPDATE coco.user SET role = %s WHERE id = %s;"
-        data = (info.role, info.id)
-        db_cursor.execute_sql(sql, data)
-        return 1
     
     def update_exp(self,db_cursor:DBCursor,user_id:str):
         """
@@ -133,48 +60,27 @@ class CrudUser(Crudbase[User,str]):
         sql="UPDATE coco.user SET exp = %s WHERE (id = %s);"
         data=(new_exp,user_id)
         db_cursor.execute_sql(sql,data)
-    
-    def add_manager(self, db_cursor:DBCursor,user_id:str):
-        """
-        일반 user에서 관리자로 업데이트
-
-        - user_id 
-        """
-        sql = "UPDATE `coco`.`user` SET `role` = '1' WHERE (`id` = %s);"
-        data = (user_id)
-        db_cursor.execute_sql(sql, data)
-
-        alarm_crud.create_alarm(
-            db_cursor,
-            {
-                'sender': None,
-                'receiver': user_id,
-                'context': None,
-                'category': 13
-            }
-        )
-        return True
-    
-    def read_manager(self,db_cursor:DBCursor):
-        """
-        모든 관리자 조회
-
-        """
-        sql = "select id, name, role from `coco`.`user` where `role` = 1"
-        return db_cursor.select_sql(sql)
 
     def search_user(self, db_cursor:DBCursor,info:UserListIn):
         """
-        user의 id나 name으로 검색
-        id, name, role 값 리턴
+        user의 id나 name, role, tutor로 검색
+        id, name, role, tutor 값 리턴
 
+        params
         - info
             - keyword : user의 id나 name | 값이 없을 시 모든 user 리스트 리턴
             - size : 한 페이지의 크기
             - page : 페이지
             - role : 0 -> 일반 유저 1-> 관리자
+            - tutor : 0 -> 일반 유저 1-> 튜터
+        -----------------------------------------------
+        returns
+        - userlist : 쿼리 결과
+        - size와 page가 있을 경우 
+            - total : 전체 결과
+            - size : 페이지 크기
         """
-        if info.keyword or info.role!=None:
+        if info.keyword or info.role!=None or info.tutor!=None:
             sql = "SELECT id, name, role FROM coco.user WHERE"
             plus_sql=[]
             plus_data=[]
@@ -185,13 +91,21 @@ class CrudUser(Crudbase[User,str]):
             if info.role!=None:
                 plus_sql.append(" role=%s")
                 plus_data.append(info.role)
+            if info.tutor!=None:
+                plus_sql.append(" tutor=%s")
+                plus_data.append(info.tutor)
             sql+=" and".join(plus_sql)
             data=tuple(plus_data)
         else:
             sql = "SELECT id, name, role FROM coco.user"
             data = ()
-        total,result=db_cursor.select_sql_with_pagination(sql, data,info.size,info.page)
-        return {"total":total,"size":info.size,"userlist":result}
+        print(sql)
+        if info.size and info.page:
+            total,result=db_cursor.select_sql_with_pagination(sql, data,info.size,info.page)
+            return {"total":total,"size":info.size,"userlist":result}
+        else:
+            result=db_cursor.select_sql(sql, data)
+            return {"userlist":result}
 
     def create_mytask(self,db_cursor:DBCursor, user_id,task_id):
         data = (user_id, task_id)

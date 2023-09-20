@@ -49,6 +49,12 @@ def read_task_with_pagination(query:ReadTask=Depends(),db_cursor:DBCursor=Depend
         - size: 한페이지의 크기
         - page: 페이지 번호
     """
+    if not (query.size and query.page):
+        raise HTTPException(
+            status_code=422,
+            detail="size와 page가 필요합니다.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     total,task_list=task_crud.read_task_with_pagination(db_cursor,query)
     if query.user_id:
         my_sub_list=submission_crud.read_my_sub(db_cursor,query.user_id)

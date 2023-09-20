@@ -9,7 +9,7 @@ router = APIRouter()
 
 @router.get('/myPageOne/{user_id}', tags=['mypage'])
 def mypage_one(user_id: str,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
-    return user_crud.read(db_cursor,["id","name","role","email","exp","level"],id=user_id,role=1)
+    return user_crud.read(db_cursor,["id","name","role","email","exp","level"],id=user_id)
 
 @router.get('/myPageTwo/{user_id}', tags = ['mypage'])
 def mypage_two(user_id: str, token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):

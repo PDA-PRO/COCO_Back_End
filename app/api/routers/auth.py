@@ -1,13 +1,13 @@
 from app.schemas.user import *
 from fastapi import APIRouter,Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm
 from app.core import security
 from app.crud.user import user_crud
 from app.api.deps import get_cursor,DBCursor
 
-router = APIRouter()
+router = APIRouter(prefix="/auth")
 
-@router.post("/signup/", tags=["login"])
+@router.post("/signup", tags=["auth"])
 def create_user(user: SignUp,db_cursor:DBCursor=Depends(get_cursor)):
     """
     새로운 회원 생성
@@ -21,83 +21,7 @@ def create_user(user: SignUp,db_cursor:DBCursor=Depends(get_cursor)):
     """
     return {"code": user_crud.create_user(db_cursor,user)}
 
-@router.get("/checkids/", tags=["login"])
-def check_id(id: str,db_cursor:DBCursor=Depends(get_cursor)):
-    """
-    회원가입시 아이디 중복 검사
-
-    - id : user id
-    """
-    try:
-        user_crud.exist_id(db_cursor,id)
-        return {"code": 0}
-    except:
-        return {"code":1}
-
-@router.get("/findid/", tags=["login"])
-def get_id(info: FindId=Depends(),db_cursor:DBCursor=Depends(get_cursor)):
-    """
-    id 찾기
-    존재하지 않으면 0 리턴
-
-    - info
-        - name : 실명
-        - email : 이메일
-    """
-    return {"code": user_crud.get_id(db_cursor,info)}
-
-@router.patch("/pw/", tags=["login"])
-def update_pw(pw:str,id:str,db_cursor:DBCursor=Depends(get_cursor)):
-    """
-    해당 user의 pw 업데이트
-    id가 존재하지 않으면 오류
-
-    - id : id
-    - pw : 새로운 pw
-    """
-    try:
-        user_crud.update_pw(db_cursor,Login(id=id,pw=pw))
-        return {"code": 1}
-    except ValueError:
-        raise HTTPException(            
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=[{
-                "loc": [
-                    "pw"
-                ],
-                "msg": "비밀번호는 영어, 숫자, 특수기호를 포함하고 8-15 길이여야합니다.",
-                "type": "value_error"
-                }]
-            )
-
-@router.patch("/email/", tags=["login"])
-def update_email(email:str,id:str,db_cursor:DBCursor=Depends(get_cursor)):
-    """
-    해당 user의 email 업데이트
- 
-    - id : id
-    - email : email
-    """
-    try:
-        user_crud.update_email(db_cursor,UpdateEmail(id=id,email=email))
-        return {"code": 1}
-    except ValueError :
-        raise HTTPException(            
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=[{
-                "loc": [
-                    "email"
-                ],
-                "msg": "이메일 형식이 아닙니다.",
-                "type": "value_error"
-                }]
-            )
-
-#인증
-#--------------------------------------------------------------
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
-
-@router.post("/login", response_model=Token,tags=["login"])
+@router.post("/login", response_model=Token,tags=["auth"])
 def login_for_access_token(autologin:bool=False,form_data: OAuth2PasswordRequestForm = Depends(),db_cursor:DBCursor=Depends(get_cursor)):
     """
     로그인

@@ -1,10 +1,8 @@
 import os
 from datetime import datetime
 import shutil
-from dotenv import load_dotenv
 from bs4 import BeautifulSoup
 
-load_dotenv(verbose=True)
 class Image():
     def upload_temp(self,file,type,id=None):
         """
