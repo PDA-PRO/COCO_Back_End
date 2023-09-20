@@ -4,6 +4,7 @@ from .base import Crudbase
 from app.core import security
 from app.models.user import User
 from app.db.base import DBCursor
+from app.crud.alarm import alarm_crud
 
 class CrudUser(Crudbase[User,str]):
     def get_user(self, db_cursor:DBCursor,user_id:int, user_pw:int):
@@ -18,11 +19,13 @@ class CrudUser(Crudbase[User,str]):
         sql = "SELECT id, pw, name, role, exp, level, tutor FROM `coco`.`user` where id = %s;"
         data=(user_id)
         result = db_cursor.select_sql(sql,data)
+
+        alarm = alarm_crud.read_alarm(db_cursor, user_id)
         if len(result) == 0:#로그인 정보가 없다면
             return None
         else:#로그인 정보가 있다면
             if security.verify_password(user_pw, result[0]["pw"]):#패스워드가 맞다면
-                return result[0]
+                return (result[0], alarm)
             return None
 
     def create_user(self,db_cursor:DBCursor, user:SignUp):

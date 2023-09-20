@@ -4,6 +4,7 @@ from .base import Crudbase
 from app.core.image import image
 from app.models.board import Boards
 from app.db.base import DBCursor
+from app.crud.alarm import alarm_crud
 
 class CrudBoard(Crudbase[Boards,int]):
 
@@ -172,6 +173,20 @@ class CrudBoard(Crudbase[Boards,int]):
         db_cursor.execute_sql(update_sql,update_data)
         type_data=(boardLikes.user_id,boardLikes.board_id)
         db_cursor.execute_sql(type_sql,type_data)
+
+        board_writer_sql = "select user_id from `coco`.`boards_ids` where board_id = %s"
+        board_writer_data = (boardLikes.board_id)
+        board_writer_result = db_cursor.select_sql(board_writer_sql, board_writer_data)
+
+        if not boardLikes.type:
+            alarm_crud.create_alarm(
+                db_cursor, 
+                {
+                    'sender':boardLikes.user_id, 'receiver': board_writer_result[0]['user_id'], 
+                    'context': { 'board_id': boardLikes.board_id }, 
+                    'category': 2
+                }
+            )
         return 1
 
     def create_comment(self, db_cursor:DBCursor,commentInfo:CreateComment):
@@ -193,6 +208,19 @@ class CrudBoard(Crudbase[Boards,int]):
         sql="UPDATE `coco`.`boards` SET `comments` = `comments`+1 WHERE (`id` = %s);"
         data=(commentInfo.board_id)
         db_cursor.execute_sql(sql,data)
+
+        board_writer_sql = "select user_id from `coco`.`boards_ids` where board_id = %s"
+        board_writer_data = (commentInfo.board_id)
+        board_writer_result = db_cursor.select_sql(board_writer_sql, board_writer_data)
+        
+        alarm_crud.create_alarm(
+            db_cursor, 
+            {
+                'sender':commentInfo.user_id, 'receiver': board_writer_result[0]['user_id'], 
+                'context': { 'board_id': commentInfo.board_id }, 
+                'category': 1
+            }
+        )
         return 1
 
     def delete_comment(self, db_cursor:DBCursor,board_id: int,comment_id: int):
@@ -231,6 +259,21 @@ class CrudBoard(Crudbase[Boards,int]):
         db_cursor.execute_sql(update_sql,update_data)
         data=(commentLikes.user_id,commentLikes.comment_id)
         db_cursor.execute_sql(type_sql,data)
+
+        #좋아요 눌리면
+        if not commentLikes.type:
+            # 댓글 좋아요 알람
+            com_writer_sql = "select user_id from `coco`.`comments_ids` where comment_id = %s"
+            com_writer_data = (commentLikes.comment_id)
+            com_writer_result = db_cursor.select_sql(com_writer_sql, com_writer_data)
+            alarm_crud.create_alarm(
+                db_cursor, 
+                {
+                    'sender':commentLikes.user_id, 'receiver': com_writer_result[0]['user_id'], 
+                    'context': { 'board_id': commentLikes.board_id }, 
+                    'category': 3
+                }
+            )
 
         return 1
 

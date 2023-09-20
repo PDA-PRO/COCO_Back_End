@@ -115,6 +115,6 @@ def read_lint(sub_id:int):
                 'endColumn': data['endColumn'],
                 'symbol': data['symbol'],
                 'message': data['message'],
-                "message_id": data['message-id"'],
+                "message_id": data['message-id'],
             })
     return err_msg

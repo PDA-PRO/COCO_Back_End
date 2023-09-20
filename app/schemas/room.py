@@ -99,3 +99,5 @@ class SelectAnswer(BaseModel):
     room_id: int
     a_id: int
     select: int
+    ans_writer: str
+    q_writer: str

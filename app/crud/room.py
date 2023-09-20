@@ -5,6 +5,7 @@ from app.db.base import DBCursor
 from app.core.image import image
 from app.schemas.common import PaginationIn
 import os
+from app.crud.alarm import alarm_crud
 
 class CrudRoom(Crudbase[Room,int]):
     def create_room(self, db_cursor:DBCursor,info:CreateRoom):
@@ -27,6 +28,11 @@ class CrudRoom(Crudbase[Room,int]):
         for member in info.members:
             member_data = (last_idx, member)
             db_cursor.execute_sql(member_sql, member_data)
+            alarm_crud.create_alarm(db_cursor, {'sender':info.leader, 'receiver': member, 'context': {
+                'room_id':last_idx,
+                'room_name': info.name
+            }, 'category': 5})
+            
 
         #관련 테이블 생성
         table_sql=[]
@@ -100,7 +106,26 @@ class CrudRoom(Crudbase[Room,int]):
         study room삭제에 관련된 데이터, 테이블 삭제
         
         - room_id : 삭제할 room의 id값
+        
         """
+
+        room_sql = 'SELECT name FROM coco.room where id = %s;'
+        room_data = (room_id)
+        room_result = db_cursor.select_sql(room_sql, room_data)
+        user_sql = 'SELECT user_id FROM coco.room_ids where room_id = %s;'
+        user_data = (room_id)
+        user_result = db_cursor.select_sql(user_sql, user_data)
+        for users in user_result:
+            user = users['user_id']
+            alarm_crud.create_alarm(
+                db_cursor, 
+                {
+                    'sender': None, 'receiver': user, 'context': {'room_name': room_result[0]['name']},
+                    'category': 6
+                }
+            )
+
+
         #room 테이블에서 id값의 정보 삭제
         sql = "DELETE FROM `coco`.`room` WHERE (`id` = %s);"
         data = (room_id)
@@ -110,6 +135,7 @@ class CrudRoom(Crudbase[Room,int]):
         sql = "DROP TABLE `room`.`%s_qa`, `room`.`%s_question`, `room`.`%s_roadmap`, `room`.`%s_roadmap_ids`"
         data = (room_id,room_id,room_id,room_id)
         db_cursor.execute_sql(sql, data)
+
 
         return True
     
@@ -174,6 +200,22 @@ class CrudRoom(Crudbase[Room,int]):
             VALUES (%s, %s, %s, %s, now());
         """
         db_cursor.execute_sql(sql, data)
+
+        # 질문 생성 시 스터디룸 튜터에게 알람
+        room_sql = 'SELECT name, leader FROM coco.room where id = %s;'
+        room_data = (info.room_id)
+        room_result = db_cursor.select_sql(room_sql,room_data)[0]
+        alarm_crud.create_alarm(
+            db_cursor,
+            {
+                'sender': info.writer,
+                'receiver': room_result['leader'],
+                'context': {
+                    'studyroom_id': info.id,
+                    'studyroom_name': room_result['name'],
+                    }
+            }
+        )
         return True
     
     def room_questions(self, db_cursor:DBCursor,room_id,pagination:PaginationIn):
@@ -212,6 +254,20 @@ class CrudRoom(Crudbase[Room,int]):
             VALUES (%s, %s, %s, %s, now(), 0);
         """
         db_cursor.execute_sql(sql, data)
+
+        q_writer_sql = 'SELECT writer FROM room.1_question where id = %s;'
+        q_writer_data = (info.q_id)
+        q_writer_result = db_cursor.select_sql(q_writer_sql, q_writer_data)
+
+        alarm_crud.create_alarm(
+            db_cursor,
+            {
+                'sender': info.ans_writer,
+                'receiver': q_writer_result[0]['writer'],
+                'context': {'study_room': info.room_id, 'q_id': info.q_id},
+                'category': 7
+            }
+        )
         return True
 
     def create_roadmap(self,db_cursor:DBCursor, info:RoomRoadMap, user_id:str):
@@ -239,6 +295,31 @@ class CrudRoom(Crudbase[Room,int]):
                 VALUES (%s, %s);
             """
             db_cursor.execute_sql(sql,data)
+        
+        # 스터디룸 로드맵 생성 시 알람
+        room_name_sql = 'SELECT name FROM coco.room where id = %s;'
+        room_name_data = (info.id)
+        room_result = db_cursor.select_sql(room_name_sql, room_name_data)
+
+        users_sql = 'SELECT user_id FROM coco.room_ids where room_id = %s;'
+        users_data = (info.id)
+        users_result = db_cursor.select_sql(users_sql, users_data)
+        for result in users_result:
+            user = result['user']    
+            alarm_crud.create_alarm(
+                db_cursor,
+                {
+                    'sender': None,
+                    'receiver': user,
+                    'context': {
+                        'studyroom_id': info.id,
+                        'studyroom_name': room_result[0]['name'],
+                        'roodmap_name': info.name,
+                        'roadmap_id': last_idx
+                        }
+                }
+            )    
+
         return True
     
     def read_roadmap(self, db_cursor:DBCursor,room_id):
@@ -351,9 +432,31 @@ class CrudRoom(Crudbase[Room,int]):
         }
     
     def select_answer(self, db_cursor: DBCursor, info):
+        '''
+        스터디룸 내 질문에 달린 답변 채택
+        - info: 답변 채택에 필요한 데이터
+            - room_id: 스터디룸 id
+            - a_id: 답변 id
+            - select: 채택 여부
+            - ans_writer: 답변 작성자
+            - q_writer: 질문 작성자
+        '''
+
         sql = "UPDATE `room`.`%s_qa` SET `check` = %s WHERE (`a_id` = '%s')"
         data = (info.room_id, info.select, info.a_id)
         db_cursor.execute_sql(sql, data)
+
+        # 답변 채택 시 알람
+        if info.select == 1:
+            alarm_crud.create_alarm(
+                db_cursor,
+                {
+                    'sender': info.q_writer,
+                    'receiver': info.ans_writer,
+                    'context': {'study_room': info.room_id},
+                    'category': 8
+                }
+            )
         return True
 
 
