@@ -7,3 +7,6 @@ class PaginationIn(BaseModel):
 class PaginationOut(BaseModel):
     total : int|None
     size:int|None
+
+class BaseResponse(BaseModel):
+    code : int
