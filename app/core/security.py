@@ -95,3 +95,11 @@ def check_token(token: str = Depends(oauth2_scheme)):
     if role=="" or id=="":
         raise credentials_exception
     return {"role":role,"id":id}
+
+def check_admin(token):
+    if token['role']!=1:
+            raise HTTPException(
+            status_code=403,
+            detail="권한이 없습니다.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )

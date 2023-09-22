@@ -62,12 +62,7 @@ def delete_board(board_id: int,token: dict = Depends(security.check_token),db_cu
     - token : 사용자 인증
     """
     if not board_crud.read(db_cursor,['user_id'],table="boards_ids",board_id=board_id,user_id=token["id"]):
-        if token['role']!=1:
-            raise HTTPException(
-            status_code=403,
-            detail="게시글을 삭제할 권한이 없습니다.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        security.check_admin(token)
 
     return {'code': board_crud.delete_board(db_cursor,board_id)}
 
@@ -121,12 +116,8 @@ def delete_comment(board_id: int,comment_id: int,token: dict = Depends(security.
     - token : 사용자 인증
     """
     if not board_crud.read(db_cursor,['user_id'],table="comments_ids",board_id=board_id,user_id=token["id"],comment_id=comment_id):
-        if token['role']!=1:
-            raise HTTPException(
-            status_code=403,
-            detail="댓글을 삭제할 권한이 없습니다.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        security.check_admin(token)
+        
     return {'code': board_crud.delete_comment(db_cursor,board_id,comment_id)}
 
 @router.patch('/comment/likes/', tags = ['board'],response_model=BaseResponse)
