@@ -4,6 +4,8 @@ from passlib.context import CryptContext
 import os
 from fastapi import Depends,HTTPException,status
 from fastapi.security import OAuth2PasswordBearer
+from app.crud.room import room_crud
+from app.db.base import DBCursor
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -52,24 +54,27 @@ def get_password_hash(password: str) -> str:
 
 def decode_jwt(token: str) -> str:
     """
-    jwt를 검증하고 jwt의 role과 sub를 디코딩
+    jwt를 검증하고 jwt의 role과 sub, tutor를 디코딩
 
     params
     - token : jwt
     ---------------
     returns
-    - role : 유효한 jwt라면 role 리턴
-    - id : 유효한 jwt라면 id 리턴
+    - (role, id, tutor)
+        - role : 유효한 jwt라면 role 리턴
+        - id : 유효한 jwt라면 id 리턴
+        - tutor : 유요한 jwt라면 tutor 권한 리턴
     """
     try:
         payload = jwt.decode(token, os.getenv("SECRET_KEY"), algorithms=[os.getenv("ALGORITHM")])
         role: str = payload.get("role")#잘못된 토큰이면 에러발생
         id: str = payload.get("sub")#잘못된 토큰이면 에러발생
-        if role is None or id is None:
-            return "",""
+        tutor: str = payload.get("tutor")#잘못된 토큰이면 에러발생
+        if role is None or id is None or tutor is None:
+            return "","",""
     except JWTError:
-        return "",""
-    return role,id
+        return "","",""
+    return role,id,tutor
 
 def check_token(token: str = Depends(oauth2_scheme)):
     """
@@ -81,7 +86,7 @@ def check_token(token: str = Depends(oauth2_scheme)):
     - token : jwt
     ---------------
     returns
-    - {"role", "id"}
+    - {"role", "id", "tutor" }
     ---------------
     Raises:
     - credentials_exception: If token is invalid.
@@ -91,14 +96,38 @@ def check_token(token: str = Depends(oauth2_scheme)):
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    role,id=decode_jwt(token)
-    if role=="" or id=="":
+    role,id,tutor=decode_jwt(token)
+    if role=="" or id=="" or tutor=="":
         raise credentials_exception
-    return {"role":role,"id":id}
+    return {"role":role,"id":id,"tutor":tutor}
 
 def check_admin(token):
     if token['role']!=1:
-            raise HTTPException(
+        raise HTTPException(
+            status_code=403,
+            detail="권한이 없습니다.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+def check_tutor(token):
+    if token['tutor']!=1:
+        raise HTTPException(
+            status_code=403,
+            detail="권한이 없습니다.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+def check_leader(db_cursor: DBCursor, room_id:int,leader:str):
+    if not room_crud.read(db_cursor,['id'],leader=leader,id=room_id):
+        raise HTTPException(
+            status_code=403,
+            detail="권한이 없습니다.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+def check_tutee(db_cursor: DBCursor, room_id:int,member:str):
+    if not room_crud.read(db_cursor,table='room_ids',user_id=member,room_id=room_id):
+        raise HTTPException(
             status_code=403,
             detail="권한이 없습니다.",
             headers={"WWW-Authenticate": "Bearer"},
