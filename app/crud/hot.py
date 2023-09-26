@@ -1,5 +1,5 @@
 from .base import Crudbase
-from db.base import DBCursor
+from app.db.base import DBCursor
 
 class CrudHot(Crudbase):
     def hot_list(self,db_cursor:DBCursor):

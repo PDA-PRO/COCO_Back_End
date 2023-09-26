@@ -1,8 +1,6 @@
 from fastapi import FastAPI
-from api.routers import scoring, login, task, board, status, hot, admin,  mypage, image
+from app.api.routers import auth,submission, task, board, miscellaneous, mypage, image,room, user
 from fastapi.middleware.cors import CORSMiddleware
-
-from api.routers import room
 
 app = FastAPI()
 
@@ -24,13 +22,12 @@ app.add_middleware(
 )
 
 #라우터 설정
-app.include_router(scoring.router)
-app.include_router(login.router)
+app.include_router(submission.router)
 app.include_router(task.router)
 app.include_router(board.router)
-app.include_router(status.router)
-app.include_router(hot.router)
-app.include_router(admin.router)
+app.include_router(miscellaneous.router)
+app.include_router(user.router)
+app.include_router(auth.router)
 app.include_router(mypage.router)
 app.include_router(image.router)
 app.include_router(room.router)

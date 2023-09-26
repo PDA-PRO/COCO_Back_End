@@ -2,7 +2,7 @@ from pydantic import BaseModel, conint
 from fastapi import  UploadFile
 from .common import *
 
-class Task(BaseModel):
+class TaskBase(BaseModel):
     title: str
     inputDescription: str
     inputEx1: str
@@ -16,7 +16,7 @@ class Task(BaseModel):
     memLimit: int
     category:str
     
-class ReadTask(PaginationIn):
+class TaskListIn(PaginationIn):
     keyword:str|None
     diff:str|None
     category:str|None
@@ -28,17 +28,12 @@ class TaskMeta(BaseModel):
     title : str
     diff : int
     rate : int
+    count :int|None
 
-class TaskMetaWithCount(TaskMeta):
-    count:int|None
-
-class TaskList(PaginationOut):
+class TaskListOut(PaginationOut):
     tasks : list[TaskMeta]
     solved_list : list[int]|None
     wrong_list : list[int]|None
-
-class TaskListWithCount(PaginationOut):
-    tasks : list[TaskMetaWithCount]
 
 class TaskDetail(BaseModel):
     id:int
