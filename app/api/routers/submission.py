@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException,status
 from app.core import security
-from app.schemas.submission import Submit, Wpc, subDetail,Lint
+from app.schemas.submission import *
 from app.core.celery_worker import process_sub
 from app.crud.submission import submission_crud
 from app.crud.task import task_crud
@@ -10,23 +10,23 @@ import json
 
 router = APIRouter()
 
-@router.post("/submission/", tags=["submission"])
+@router.post("/submission/", tags=["submission"],response_model=BaseResponse)
 def scoring(submit:Submit,token: dict = Depends(security.check_token),db_cursor=Depends(get_cursor)):
     """
     제출된 코드 채점
 
     - submit
         - taskid
-        - userid
         - sourcecode
         - callbackurl
         - lang : c언어 1 | 파이썬 0
+    - token :jwt
     """
-    sub_id=submission_crud.create_sub(db_cursor,submit)
+    sub_id=submission_crud.create_sub(db_cursor,submit,token['id'])
     #클라이언트와 celery worker 간에 전송되는 데이터는 직렬화되어야 하기 때문에 db_cursor 객체를 넘기지 못한다.
-    process_sub.apply_async([submit.taskid,submit.sourcecode,submit.callbackurl,"hi",sub_id,submit.lang,submit.userid])
+    process_sub.apply_async([submit.taskid,submit.sourcecode,submit.callbackurl,"hi",sub_id,submit.lang,token['id']])
 
-    return {"result": 1}
+    return {"code": 1}
 
 @router.get("/result/{sub_id}", tags=["submission"],response_model=subDetail|None)
 def load_result(sub_id: int,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
@@ -34,15 +34,38 @@ def load_result(sub_id: int,token: dict = Depends(security.check_token),db_curso
     제출된 코드 채점 결과 확인
 
     - sub_id : 제출 id
+    - token :jwt
     """
+    if not submission_crud.read(db_cursor,["sub_id"],table="sub_ids",sub_id=sub_id,user_id=token['id']):
+        raise HTTPException(
+            status_code=403,
+            detail="Insufficient permissions",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     rows=submission_crud.read_sub(db_cursor,sub_id)
     if len(rows):
         return rows[0]
     else:
         return None
 
+@router.get("/status/", tags=["submission"],response_model=StatusListOut)
+def read_status(info:StatusListIn=Depends(),db_cursor:DBCursor=Depends(get_cursor)):
+    """
+    제출 조회
+
+    - info
+        - size: 한 페이지의 크기
+        - page: 현재 페이지 번호
+        - task_id: 문제 id 
+        - lang: 제출 코드 언어 0 -> 파이썬 1-> c언어
+        - onlyme : 내 제출만 보기 여부
+        - user_id
+        - answer: status가 3("정답") 인지 여부
+    """
+    return submission_crud.read_status(db_cursor,info)
+
 @router.get("/wpc", tags=["submission"],response_model=Wpc)
-def get_wpc(sub_id:int,task_id:int,db_cursor:DBCursor=Depends(get_cursor)):
+def get_wpc(sub_id:int,task_id:int,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     """
     WPC:Wrong Part of Code 분석 결과 조회
     서버에 WPC 확장기능이 적용되어 있어야함.
@@ -51,6 +74,7 @@ def get_wpc(sub_id:int,task_id:int,db_cursor:DBCursor=Depends(get_cursor)):
     params
     - sub_id : 제출 id
     - task_id : 문제 id
+    - token :jwt
     ------------------------------------
     returns
     - status : wpc 분석 결과 `1`분석 성공 `2`TC틀림 오답이 아님 `3`wpc 불가능 문제 `4`512토큰 초과
@@ -90,13 +114,14 @@ def get_wpc(sub_id:int,task_id:int,db_cursor:DBCursor=Depends(get_cursor)):
         return {"status":1,"wpc_result":wpc_result}
     
 @router.get("/lint", tags=["submission"],response_model=list[Lint])
-def read_lint(sub_id:int):
+def read_lint(sub_id:int,token: dict = Depends(security.check_token)):
     """
     오답 제출 코드에 대해 pylint 분석 결과 조회
     TC틀림 오답코드 제외
 
     params
     - sub_id : 제출 id
+    - token :jwt
     ------------------------------------
     returns
     """
