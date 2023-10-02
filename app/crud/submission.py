@@ -5,24 +5,24 @@ from app.models.submission import Submissions
 from app.db.base import DBCursor
 
 class CrudSubmission(Crudbase):   
-    def create_sub(self,db_cursor:DBCursor,submit:Submit):
+    def create_sub(self,db_cursor:DBCursor,submit:Submit,user_id:str):
         """
         status 1("대기") 상태로 새로운 제출 생성
         생성된 제출의 id 리턴
 
         - submit
             - taskid
-            - userid
             - sourcecode
             - callbackurl
             - lang : c언어 1 | 파이썬 0
+        - user_id
         """
         sql="INSERT into coco.submissions (code,time,token,callback_url,status,lang ) values(%s, now(), %s, %s, %s,%s);"
         data=(submit.sourcecode,uuid.uuid1().hex,submit.callbackurl,1,submit.lang)
         id=db_cursor.insert_last_id(sql,data)
         
         sql="insert into coco.sub_ids values (%s,%s,%s);"
-        data=(submit.userid,submit.taskid,id)        
+        data=(user_id,submit.taskid,id)        
         db_cursor.execute_sql(sql,data)
         return id
 
@@ -101,7 +101,7 @@ class CrudSubmission(Crudbase):
         result=db_cursor.select_sql(sql,data)[0]["task_id"]
         solved_task=[]
         if result:
-            solved_task=list(set(result.split(",")))
+            solved_task=list(map(int,set(result.split(","))))
         return solved_task
     
     def read_status(self,  db_cursor:DBCursor,info : StatusListIn):
@@ -113,6 +113,7 @@ class CrudSubmission(Crudbase):
             - page: 현재 페이지 번호
             - task_id: 문제 id 
             - lang: 제출 코드 언어 0 -> 파이썬 1-> c언어
+            - onlyme : 내 제출코드만 보기 여부
             - user_id: 
             - answer: status가 3("정답") 인지 여부
         """
@@ -120,7 +121,7 @@ class CrudSubmission(Crudbase):
         data=[]
 
         condition=[]
-        if info.user_id:
+        if info.onlyme:
             condition.append(" user_id = %s ")
             data.append(info.user_id)
         if info.lang:
@@ -140,7 +141,7 @@ class CrudSubmission(Crudbase):
         total,result=db_cursor.select_sql_with_pagination(sql,tuple(data),info.size,info.page)
         
         if info.user_id:
-            solved_list=self.get_solved(info.user_id)
+            solved_list=self.get_solved(db_cursor,info.user_id)
             for i in result:
                 if i["task_id"] in solved_list:
                     i["is_solved"]=True

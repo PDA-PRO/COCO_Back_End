@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime
 
-from app.schemas.common import PaginationOut,PaginationIn
+from app.schemas.common import *
 
 class RoomBase(BaseModel):
     id:int
@@ -10,7 +10,7 @@ class RoomBase(BaseModel):
     leader:str
     members:int
     exp: int
-    ranking: int
+    ranking: int|None
 
 class RoomBaseIn(PaginationIn):
     query:str|None
@@ -21,7 +21,6 @@ class RoomBaseOut(PaginationOut):
 class CreateRoom(BaseModel):
     name: str
     desc: str
-    leader: str
     members: list[str]
 
 class RoomQuestion(BaseModel):
@@ -29,9 +28,6 @@ class RoomQuestion(BaseModel):
     title: str
     question: str
     code: str
-    writer: str
-
-
 
 class Answer(BaseModel):
     a_id: int
@@ -67,21 +63,17 @@ class RoomAnswer(BaseModel):
     q_id: int
     answer: str
     code: str
-    ans_writer: str
 
 class RoomMember(BaseModel):
     room_id: int
-    user_id: list[str]
-
-class RoomProblem(BaseModel):
-    room_id: int
-    task_id: int
-
-class JoinRoom(BaseModel):
-    room_id: int
     user_id: str
-    message: str
 
+class RoomMemberExp(BaseModel):
+    user_id: str
+    exp:int
+
+class RoomDetail(RoomBase):
+    members:list[RoomMemberExp]
 class RoomRoadMap(BaseModel):
     id: int
     name: str
@@ -93,10 +85,7 @@ class RoomRoadMapList(BaseModel):
     room_info :list[RoomRoadMap]
     solved_task : list[int]
 
-
 class SelectAnswer(BaseModel):
     room_id: int
     a_id: int
     select: int
-    ans_writer: str
-    q_writer: str

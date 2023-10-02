@@ -10,7 +10,7 @@ from app.db.base import DBCursor
 
 
 class CrudTask(Crudbase[Task,int]):
-    def create_task(self,db_cursor:DBCursor,description:str,task:Task):
+    def create_task(self,db_cursor:DBCursor,description:str,task:TaskBase):
         """ 
         새로운 문제를 생성
             
@@ -28,7 +28,6 @@ class CrudTask(Crudbase[Task,int]):
             - timeLimit: 시간제한
             - memLimit: 메모리제한
             - category: 문제 카테고리 ','로 구분된 문자열
-        - token : 사용자 인증
         """
 
         #time_limit, diff는 한자리 숫자 task 테이블에 문제 먼저 삽입해서 id추출
@@ -53,7 +52,7 @@ class CrudTask(Crudbase[Task,int]):
 
         return 1
 
-    def read_task_with_pagination(self, db_cursor:DBCursor,query:ReadTask):
+    def read_task_with_pagination(self, db_cursor:DBCursor,query:TaskListIn):
         """
         문제 리스트에서 쿼리에 맞는 문제들의 정보만 리턴
         keyword, diff, category는 AND 로 결합
@@ -113,7 +112,7 @@ class CrudTask(Crudbase[Task,int]):
 
         return total,result
 
-    def update_task(self,db_cursor:DBCursor,task_id:int,description:str,task:Task):
+    def update_task(self,db_cursor:DBCursor,task_id:int,description:str,task:TaskBase):
         """ 
         문제 수정
             
@@ -177,35 +176,6 @@ class CrudTask(Crudbase[Task,int]):
         db_cursor.execute_sql(sql,data)
         image.delete_image(os.path.join(os.getenv("TASK_PATH"),str(task_id)))
         return 1
-
-    def create_category(self,db_cursor:DBCursor,category:str):
-        """
-        문제 카테고리 생성
-
-        - category : 카테고리
-        """
-        sql="INSERT INTO `coco`.`task_category` (`category`) VALUES (%s);"
-        data=(category)
-        db_cursor.execute_sql(sql,data)
-
-        return 1
-    
-    def read_category(self,db_cursor:DBCursor):
-        """
-        문제 카테고리 조회
-
-        - category : 카테고리
-        """
-        sql="SELECT group_concat(category) as category FROM `coco`.`task_category`;"
-        
-        result=db_cursor.select_sql(sql)[0]["category"]
-        
-        if result:
-            result=list(result.split(","))
-        else:
-            result=[]
-
-        return result
     
     def delete_category(self,db_cursor:DBCursor,category:str):
         """

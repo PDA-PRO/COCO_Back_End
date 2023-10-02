@@ -5,6 +5,7 @@ from app.crud.user import user_crud
 from app.core import security
 from app.api.deps import get_cursor,DBCursor
 from app.core import notice
+from app.schemas.common import BaseResponse
 
 router = APIRouter()
 
@@ -50,8 +51,20 @@ def update_notice(content: Annotated[str, Body(embed=True)], token: dict = Depen
         )
     
 @router.get('/request-tutor', tags = ['mics.'])
-def read_tutor_request(db_cursor:DBCursor=Depends(get_cursor)):
+def read_tutor_request(token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     '''
     모든 튜터 신청 정보 조회
     '''
+    security.check_admin(token)
     return user_crud.read(db_cursor,table="user_tutor")
+
+@router.post('/request-tutor', tags=['mics.'],response_model=BaseResponse)
+def create_tutor_request(reason:str="",token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
+    '''
+    튜터 권한 신청
+
+    - rason : 튜터 신청 간략한 이유
+    - token : jwt
+    '''
+    user_crud.create(db_cursor,{"reason":reason,"user_id":token['id']},table="user_tutor")
+    return {"code":1}
