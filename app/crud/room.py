@@ -32,9 +32,9 @@ class CrudRoom(Crudbase[Room,int]):
         for member in info.members:
             member_data = (last_idx, member)
             db_cursor.execute_sql(member_sql, member_data)
-            alarm_crud.create_alarm(db_cursor, {'sender':user_id, 'receiver': member, 'context': {
-                'room_id':last_idx,
-                'room_name': info.name
+            alarm_crud.create_alarm(db_cursor, {'sender':info.leader, 'receiver': member, 'context': {
+                "room_id":last_idx,
+                "room_name": info.name
             }, 'category': 5})
             
 
@@ -131,7 +131,7 @@ class CrudRoom(Crudbase[Room,int]):
             alarm_crud.create_alarm(
                 db_cursor, 
                 {
-                    'sender': None, 'receiver': user, 'context': {'room_name': room_result[0]['name']},
+                    'sender': None, 'receiver': user, 'context': {"room_name": room_result[0]['name']},
                     'category': 6
                 }
             )
@@ -192,9 +192,10 @@ class CrudRoom(Crudbase[Room,int]):
                 'sender': writer,
                 'receiver': room_result['leader'],
                 'context': {
-                    'studyroom_id': info.room_id,
-                    'studyroom_name': room_result['name'],
-                    }
+                    "room_id": info.id,
+                    "room_name": room_result['name'],
+                    },
+                'category': 11
             }
         )
         return 1
@@ -255,7 +256,7 @@ class CrudRoom(Crudbase[Room,int]):
             {
                 'sender': ans_writer,
                 'receiver': q_writer_result[0]['writer'],
-                'context': {'study_room': info.room_id, 'q_id': info.q_id},
+                'context': {"room_id": info.room_id, "q_id": info.q_id},
                 'category': 7
             }
         )
@@ -304,11 +305,12 @@ class CrudRoom(Crudbase[Room,int]):
                     'sender': None,
                     'receiver': user,
                     'context': {
-                        'studyroom_id': info.id,
-                        'studyroom_name': room_result[0]['name'],
-                        'roodmap_name': info.name,
-                        'roadmap_id': last_idx
-                        }
+                        "room_id": info.id,
+                        "room_name": room_result[0]['name'],
+                        "roadmap_name": info.name,
+                        "roadmap_id": last_idx
+                        },
+                    'category': 9
                 }
             )    
 
@@ -453,9 +455,9 @@ class CrudRoom(Crudbase[Room,int]):
             alarm_crud.create_alarm(
                 db_cursor,
                 {
-                    'sender': q_writer,
-                    'receiver': result[0]["ans_writer"],
-                    'context': {'study_room': info.room_id},
+                    'sender': info.q_writer,
+                    'receiver': info.ans_writer,
+                    'context': {"room_id": info.room_id},
                     'category': 8
                 }
             )
