@@ -3,6 +3,7 @@ from app.schemas.user import *
 from fastapi import APIRouter,Depends, HTTPException
 from app.crud.user import user_crud
 from app.api.deps import get_cursor,DBCursor
+from app.crud.alarm import alarm_crud
 
 router = APIRouter(prefix="/user")
     
@@ -119,3 +120,7 @@ def get_id(name:str,email:EmailStr,db_cursor:DBCursor=Depends(get_cursor)):
         return {"code": 0}
     else:
         return {"code": result[0]["id"]}
+    
+@router.get("/alarm", tags=['user'])
+def get_alarm(user_id: str, db_cursor:DBCursor=Depends(get_cursor)):
+    return alarm_crud.read_alarm(db_cursor, user_id)

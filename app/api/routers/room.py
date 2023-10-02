@@ -184,11 +184,12 @@ def update_roadmap(info: RoomRoadMap,roadmap_id:int, token: dict = Depends(secur
                 'sender': None,
                 'receiver': user,
                 'context': {
-                    'studyroom_id': info.id,
-                    'studyroom_name': room_result[0]['name'],
-                    'roodmap_name': info.name,
+                    'room_id': info.id,
+                    'room_name': room_result[0]['name'],
+                    'roadmap_name': info.name,
                     'roadmap_id': roadmap_id
-                    }
+                    },
+                'category': 10
             }
         )    
     return 1

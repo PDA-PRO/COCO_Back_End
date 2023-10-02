@@ -29,8 +29,8 @@ class CrudRoom(Crudbase[Room,int]):
             member_data = (last_idx, member)
             db_cursor.execute_sql(member_sql, member_data)
             alarm_crud.create_alarm(db_cursor, {'sender':info.leader, 'receiver': member, 'context': {
-                'room_id':last_idx,
-                'room_name': info.name
+                "room_id":last_idx,
+                "room_name": info.name
             }, 'category': 5})
             
 
@@ -120,7 +120,7 @@ class CrudRoom(Crudbase[Room,int]):
             alarm_crud.create_alarm(
                 db_cursor, 
                 {
-                    'sender': None, 'receiver': user, 'context': {'room_name': room_result[0]['name']},
+                    'sender': None, 'receiver': user, 'context': {"room_name": room_result[0]['name']},
                     'category': 6
                 }
             )
@@ -211,9 +211,10 @@ class CrudRoom(Crudbase[Room,int]):
                 'sender': info.writer,
                 'receiver': room_result['leader'],
                 'context': {
-                    'studyroom_id': info.id,
-                    'studyroom_name': room_result['name'],
-                    }
+                    "room_id": info.id,
+                    "room_name": room_result['name'],
+                    },
+                'category': 11
             }
         )
         return True
@@ -226,7 +227,6 @@ class CrudRoom(Crudbase[Room,int]):
         sql = 'SELECT r.* FROM room.%s_question as r, coco.user as c where r.writer = c.id'
         total,q_result = db_cursor.select_sql_with_pagination(sql, [data],pagination.size,pagination.page)
         qa = []
-        print(q_result)
         for q in q_result:
             ans_sql = """
                 select q.id, a.a_id, a.answer, a.code, a.ans_writer, a.time, a.check from room.%s_qa as a, room.%s_question as q
@@ -264,7 +264,7 @@ class CrudRoom(Crudbase[Room,int]):
             {
                 'sender': info.ans_writer,
                 'receiver': q_writer_result[0]['writer'],
-                'context': {'study_room': info.room_id, 'q_id': info.q_id},
+                'context': {"room_id": info.room_id, "q_id": info.q_id},
                 'category': 7
             }
         )
@@ -312,11 +312,12 @@ class CrudRoom(Crudbase[Room,int]):
                     'sender': None,
                     'receiver': user,
                     'context': {
-                        'studyroom_id': info.id,
-                        'studyroom_name': room_result[0]['name'],
-                        'roodmap_name': info.name,
-                        'roadmap_id': last_idx
-                        }
+                        "room_id": info.id,
+                        "room_name": room_result[0]['name'],
+                        "roadmap_name": info.name,
+                        "roadmap_id": last_idx
+                        },
+                    'category': 9
                 }
             )    
 
@@ -453,7 +454,7 @@ class CrudRoom(Crudbase[Room,int]):
                 {
                     'sender': info.q_writer,
                     'receiver': info.ans_writer,
-                    'context': {'study_room': info.room_id},
+                    'context': {"room_id": info.room_id},
                     'category': 8
                 }
             )
