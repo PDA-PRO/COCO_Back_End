@@ -1,6 +1,16 @@
 from pydantic import BaseModel
 from .common import *
 from datetime import datetime
+
+class Lint(BaseModel):
+    type:str
+    line:int
+    column:int
+    endLine:int|None
+    endColumn:int|None
+    symbol:str
+    message:str
+    message_id :str
 class Submit(BaseModel):
     taskid: int
     sourcecode:str
@@ -24,6 +34,10 @@ class subDetail(BaseModel):
     rate:float
     diff:int
 
+class SubResult(BaseModel):
+    subDetail: subDetail
+    lint: Lint|None
+
 class StatusBase(BaseModel):
     sub_id:int
     user_id:str
@@ -43,17 +57,6 @@ class StatusListIn(PaginationIn):
 
 class StatusListOut(PaginationOut):
     statuslist:list[StatusBase]
-
-class Lint(BaseModel):
-    type:str
-    line:int
-    column:int
-    endLine:int|None
-    endColumn:int|None
-    symbol:str
-    message:str
-    message_id :str
-
 class Wpc(BaseModel):
     status:int
     wpc_result:str=None
