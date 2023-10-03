@@ -1,4 +1,5 @@
 CREATE DATABASE  IF NOT EXISTS `coco` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+CREATE DATABASE  IF NOT EXISTS `room`;
 USE `coco`;
 -- MySQL dump 10.13  Distrib 8.0.33, for Win64 (x86_64)
 --
@@ -16,6 +17,25 @@ USE `coco`;
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Table structure for table `alarm`
+--
+
+
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE IF NOT EXISTS `alarm` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `receiver` varchar(45) DEFAULT NULL,
+  `sender` varchar(45) DEFAULT NULL,
+  `is_read` tinyint(1) DEFAULT NULL,
+  `context` json DEFAULT NULL,
+  `time` datetime DEFAULT NULL,
+  `category` tinyint(1) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `boards`
@@ -38,7 +58,7 @@ CREATE TABLE IF NOT EXISTS `boards` (
   PRIMARY KEY (`id`),
   KEY `FK_rel` (`rel_task`),
   CONSTRAINT `FK_rel_task` FOREIGN KEY (`rel_task`) REFERENCES `task` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -87,7 +107,7 @@ CREATE TABLE IF NOT EXISTS `comments` (
   `write_time` datetime DEFAULT NULL,
   `likes` mediumint DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -175,7 +195,7 @@ CREATE TABLE IF NOT EXISTS `room` (
   `desc` mediumtext,
   `leader` varchar(45) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -286,7 +306,7 @@ CREATE TABLE IF NOT EXISTS `submissions` (
   `status` tinyint DEFAULT NULL,
   `lang` int DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -305,7 +325,7 @@ CREATE TABLE IF NOT EXISTS `task` (
   `time_limit` tinyint NOT NULL,
   `diff` tinyint NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -380,7 +400,6 @@ CREATE TABLE IF NOT EXISTS `user` (
   `role` int DEFAULT '0',
   `email` varchar(45) NOT NULL,
   `exp` int DEFAULT '0',
-  `level` tinyint DEFAULT '1',
   `tutor` tinyint DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`)
@@ -623,4 +642,4 @@ CREATE TABLE IF NOT EXISTS `wpc` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-09-10  9:46:13
+-- Dump completed on 2023-10-02 20:18:09

@@ -31,13 +31,22 @@ def scoring(submit:Submit,token: dict = Depends(security.check_token),db_cursor=
 @router.get("/result/{sub_id}", tags=["submission"],response_model=SubResult|None)
 def load_result(sub_id: int,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     """
-    제출된 코드 채점 결과 확인
+    제출된 코드 채점 결과 조회
+    조회를 요청하는 유저가 제출하거나 맞은 문제에 대한 제출결과만 조회 가능
 
     - sub_id : 제출 id
-    - token :jwt
+    - token : jwt
     """
-    if not submission_crud.read(db_cursor,["sub_id"],table="sub_ids",sub_id=sub_id,user_id=token['id']):
-        raise HTTPException(
+    sub_info=submission_crud.read(db_cursor,["task_id","user_id"],table="sub_ids",sub_id=sub_id)
+    if sub_info:
+        if sub_info[0]['user_id']==token['id'] or sub_info[0]['task_id'] in submission_crud.get_solved(db_cursor,token['id']):
+            rows=submission_crud.read_sub(db_cursor,sub_id)
+            if len(rows):
+                return rows[0]
+            else:
+                return None
+    
+    raise HTTPException(
             status_code=403,
             detail="Insufficient permissions",
             headers={"WWW-Authenticate": "Bearer"},
@@ -47,6 +56,7 @@ def load_result(sub_id: int,token: dict = Depends(security.check_token),db_curso
         return {'subDetail':rows[0], 'lint': read_lint(sub_id)}
     else:
         return None
+
 
 @router.get("/status/", tags=["submission"],response_model=StatusListOut)
 def read_status(info:StatusListIn=Depends(),db_cursor:DBCursor=Depends(get_cursor)):

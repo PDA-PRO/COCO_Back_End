@@ -10,9 +10,6 @@ services:
     env_file: # 설정에 필요한 환경변수
       - ./mysql/local.env
     tty: true
-    command: # 명령어 실행
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
     restart: always
 
   fastapi:
@@ -29,7 +26,7 @@ services:
     ports: #host 1000과 컨테이너의 8000포트 연결
       - 1000:8000
     env_file:
-      - ./app/.env
+      - ./product.env
 
   # celery broker
   redis:
@@ -48,7 +45,7 @@ services:
     volumes: # static 볼륨과 연결
       - static:/static
     env_file:
-      - ./app/.env
+      - ./product.env
     privileged: true # isolate의 sandbox마다 컴퓨터 자원 제한을 하기 위해 필요한 설정값
 
 volumes: # task의 test case와 같이 유지되는 파일들을 저장하는 볼륨
