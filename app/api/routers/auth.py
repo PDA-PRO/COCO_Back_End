@@ -54,4 +54,4 @@ def login_for_access_token(autologin:bool=False,form_data: OAuth2PasswordRequest
         access_token = security.create_access_token( data={"sub": user["id"],"role":user["role"],"tutor":user["tutor"], "name": user["name"], "user_exp":user["exp"],})
     else:
         access_token = security.create_access_token( data={"sub": user["id"],"role":user["role"],"tutor":user["tutor"], "name": user["name"], "user_exp":user["exp"],},exp_time=2)
-    return {"access_token": access_token, "token_type": "bearer", "alarm": alarm}
+    return {"access_token": access_token, "token_type": "bearer", "alarm": len(alarm)}

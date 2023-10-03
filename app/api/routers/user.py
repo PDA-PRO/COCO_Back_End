@@ -122,5 +122,10 @@ def get_id(name:str,email:EmailStr,db_cursor:DBCursor=Depends(get_cursor)):
         return {"code": result[0]["id"]}
     
 @router.get("/alarm", tags=['user'])
-def get_alarm(token: dict = Depends(security.check_token), db_cursor:DBCursor=Depends(get_cursor)):
-    return alarm_crud.read_alarm(db_cursor, token['id'])
+def get_alarm(user_id: str, db_cursor:DBCursor=Depends(get_cursor)):
+    return alarm_crud.get_alarm(db_cursor, user_id)
+
+@router.patch("/alarm/{user_id}", tags=['user'])
+def check_alarm(user_id: str, db_cursor:DBCursor=Depends(get_cursor)):
+    return alarm_crud.check_alarm(db_cursor, user_id)
+
