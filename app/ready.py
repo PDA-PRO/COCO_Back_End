@@ -1,6 +1,6 @@
-from api.deps import get_cursor
+from app.api.deps import get_cursor
 from contextlib import contextmanager
-from core.security import get_password_hash
+from app.core.security import get_password_hash
 import os
 from tenacity import retry, stop_after_attempt, wait_fixed 
 

@@ -83,7 +83,7 @@ def get_isolate(timelimit:int)->int|None:
     """
     box_id=1
     timeover=0
-    with redis.StrictRedis(host='redis', port=6379, db=0) as conn:
+    with redis.StrictRedis(host=os.getenv('REDIS_HOST'), port=os.getenv('REDIS_PORT'), db=os.getenv('REDIS_DB')) as conn:
         try:
             while timeover<timelimit:#폴링으로 box가 사용가능한지 계속 확인
                 if conn.set(str(box_id),1,nx=True):

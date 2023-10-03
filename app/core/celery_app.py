@@ -1,6 +1,7 @@
 from celery import Celery
+import os
 celery_task = Celery(
     'app',
-    broker="redis://redis:6379",
+    broker=f"{os.getenv('REDIS_HOST')}://{os.getenv('REDIS_HOST')}:{os.getenv('REDIS_PORT')}",
     include=['app.core.celery_worker']
 )
