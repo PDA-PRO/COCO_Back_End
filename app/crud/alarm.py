@@ -62,7 +62,7 @@ class CrudAlarm(Crudbase):
             db_cursor.execute_sql(sql, data)            
         return True
     
-    def read_alarm(self, db_cursor, user_id):
+    def get_alarm(self, db_cursor, user_id):
         sql = '''
             SELECT receiver, sender, is_read, context, time, category 
             FROM coco.alarm where receiver = %s order by time desc;
@@ -70,6 +70,23 @@ class CrudAlarm(Crudbase):
         data = (user_id)
         result = db_cursor.select_sql(sql, data)
         return result
+    
+    def read_alarm(self, db_cursor, user_id):
+        sql = 'SELECT id FROM coco.alarm where receiver = %s and is_read = 0;'
+        data = (user_id)
+        result = db_cursor.select_sql(sql, data)
+        print(result)
+        return result
+    
+    def check_alarm(self, db_cursor, user_id):
+        sql = 'SELECT id FROM coco.alarm where receiver = %s and is_read = 0;'
+        data = (user_id)
+        result = db_cursor.select_sql(sql, data)
+        for item in result:
+            sql = 'UPDATE `coco`.`alarm` SET `is_read` = 1 WHERE (`id` = %s);'
+            data = (item['id'])
+            db_cursor.execute_sql(sql, data)
+        return True
 
 
 

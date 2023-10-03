@@ -123,4 +123,8 @@ def get_id(name:str,email:EmailStr,db_cursor:DBCursor=Depends(get_cursor)):
     
 @router.get("/alarm", tags=['user'])
 def get_alarm(user_id: str, db_cursor:DBCursor=Depends(get_cursor)):
-    return alarm_crud.read_alarm(db_cursor, user_id)
+    return alarm_crud.get_alarm(db_cursor, user_id)
+
+@router.patch("/alarm/{user_id}", tags=['user'])
+def check_alarm(user_id: str, db_cursor:DBCursor=Depends(get_cursor)):
+    return alarm_crud.check_alarm(db_cursor, user_id)
