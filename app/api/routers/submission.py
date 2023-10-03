@@ -28,7 +28,7 @@ def scoring(submit:Submit,token: dict = Depends(security.check_token),db_cursor=
 
     return {"code": 1}
 
-@router.get("/result/{sub_id}", tags=["submission"],response_model=subDetail|None)
+@router.get("/result/{sub_id}", tags=["submission"],response_model=SubResult|None)
 def load_result(sub_id: int,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     """
     제출된 코드 채점 결과 확인
@@ -44,7 +44,7 @@ def load_result(sub_id: int,token: dict = Depends(security.check_token),db_curso
         )
     rows=submission_crud.read_sub(db_cursor,sub_id)
     if len(rows):
-        return rows[0]
+        return {'subDetail':rows[0], 'lint': read_lint(sub_id)}
     else:
         return None
 
@@ -113,7 +113,7 @@ def get_wpc(sub_id:int,task_id:int,token: dict = Depends(security.check_token),d
         submission_crud.create(db_cursor,{"sub_id":sub_id,"status":1,"result":wpc_result},"coco","wpc")
         return {"status":1,"wpc_result":wpc_result}
     
-@router.get("/lint", tags=["submission"],response_model=list[Lint])
+# @router.get("/lint", tags=["submission"],response_model=list[Lint])
 def read_lint(sub_id:int,token: dict = Depends(security.check_token)):
     """
     오답 제출 코드에 대해 pylint 분석 결과 조회
