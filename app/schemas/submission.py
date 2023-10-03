@@ -36,7 +36,7 @@ class subDetail(BaseModel):
 
 class SubResult(BaseModel):
     subDetail: subDetail
-    lint: Lint|None
+    lint: list[Lint]|None
 
 class StatusBase(BaseModel):
     sub_id:int
