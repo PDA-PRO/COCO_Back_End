@@ -128,3 +128,4 @@ def get_alarm(user_id: str, db_cursor:DBCursor=Depends(get_cursor)):
 @router.patch("/alarm/{user_id}", tags=['user'])
 def check_alarm(user_id: str, db_cursor:DBCursor=Depends(get_cursor)):
     return alarm_crud.check_alarm(db_cursor, user_id)
+

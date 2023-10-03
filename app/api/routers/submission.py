@@ -42,7 +42,7 @@ def load_result(sub_id: int,token: dict = Depends(security.check_token),db_curso
         if sub_info[0]['user_id']==token['id'] or sub_info[0]['task_id'] in submission_crud.get_solved(db_cursor,token['id']):
             rows=submission_crud.read_sub(db_cursor,sub_id)
             if len(rows):
-                return rows[0]
+                return {'subDetail':rows[0], 'lint': read_lint(sub_id)}
             else:
                 return None
     
@@ -51,11 +51,7 @@ def load_result(sub_id: int,token: dict = Depends(security.check_token),db_curso
             detail="Insufficient permissions",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    rows=submission_crud.read_sub(db_cursor,sub_id)
-    if len(rows):
-        return {'subDetail':rows[0], 'lint': read_lint(sub_id)}
-    else:
-        return None
+
 
 
 @router.get("/status/", tags=["submission"],response_model=StatusListOut)
