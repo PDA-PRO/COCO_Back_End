@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from app.api.routers import auth,submission, task, board, miscellaneous, mypage, image,room, user
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+
+load_dotenv(verbose=True,override=True)
 
 app = FastAPI()
 
@@ -8,8 +11,8 @@ app = FastAPI()
 origins = [
     "http://localhost",
     "http://localhost:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:8000/write_board/"
+    "http://localhost:1000",
+    "http://localhost:8080",
 ]
 
 # 미들웨어 추가 -> CORS 해결위해 필요(https://ghost4551.tistory.com/46)
