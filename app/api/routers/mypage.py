@@ -1,42 +1,69 @@
 from fastapi import APIRouter, Depends
-from crud.mypage import mypage
-from schemas.mypage import *
-from core import security
+from app.crud.submission import submission_crud
+from app.core import security
+from app.crud.user import user_crud
+from app.crud.board import board_crud
+from app.api.deps import get_cursor,DBCursor
 
 router = APIRouter()
 
 @router.get('/myPageOne/{user_id}', tags=['mypage'])
-async def mypage_one(user_id: str,token: dict = Depends(security.check_token)):
-    return mypage.myinfo(user_id)
+def mypage_one(user_id: str,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
+    """
+    사용자의 기본 정보 조회
+
+    - user_id
+    - token : jwt
+    """
+        
+    return user_crud.read(db_cursor,["id","name","role","email","exp"],id=user_id)
 
 @router.get('/myPageTwo/{user_id}', tags = ['mypage'])
-async def mypage_two(user_id: str, token: dict = Depends(security.check_token)):
-    return mypage.myproblems(user_id)
+def mypage_two(user_id: str, token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
+    """
+    사용자의 역량 정보 조회
+
+    - user_id
+    - token : jwt
+    """
+    return submission_crud.read_mysub(db_cursor,user_id)
 
 @router.get('/myPageThree/{user_id}', tags=['mypage'])
-async def mypage_three(user_id: str, token: dict = Depends(security.check_token)):
-    return mypage.myboard(user_id)
+def mypage_three(user_id: str, token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
+    """
+    사용자의 게시글 정보 조회
 
-@router.post('/delete_myboard/', tags=['mypage'])
-async def delete_myboard(info:MyBoard):
-    return mypage.delete_myboard(info.board_id)
+    - user_id
+    - token : jwt
+    """
+    return board_crud.read_myboard(db_cursor,user_id)
 
-@router.post('/changePW/', tags=['mypage'])
-async def change_pw(info: ChangeInfo,token: dict = Depends(security.check_token)):
-    return mypage.change_pw(info)
+@router.post("/mytask/", tags=['mypage'])
+def add_mytask(task_id:int, token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
+    """
+    내 문제집에 문제 추가
 
-@router.post('/changeEmail', tags=['mypage'])
-async def change_email(info: ChangeInfo,token: dict = Depends(security.check_token)):
-    return mypage.change_email(info)
+    - task_id
+    - token : jwt
+    """
+    return user_crud.create_mytask(db_cursor,token['id'],task_id)
 
-@router.post("/mytask", tags=['mypage'])
-async def post_mytask(info: MyTask, token: dict = Depends(security.check_token)):
-    return mypage.post_mytask(info)
+@router.get("/mytask/", tags = ['mypage'])
+def read_mytask(token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
+    """
+    내 문제집 조회
 
-@router.get("/mytasks/{user_id}", tags = ['mypage'])
-async def get_mytasks(user_id: str, token: dict = Depends(security.check_token)):
-    return mypage.get_mytasks(user_id)
+    - task_id
+    - token : jwt
+    """
+    return user_crud.read_mytask(db_cursor,token['id'])
 
-@router.post("/delete_mytask", tags=['mypage'])
-async def delete_mytask(info: MyTask, token:dict = Depends(security.check_token)):
-    return mypage.delete_mytask(info)
+@router.delete("/mytask/", tags=['mypage'])
+def delete_mytask(task_id:int, token:dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
+    """
+    내 문제집에서 문제 삭제
+
+    - task_id
+    - token : jwt
+    """
+    return user_crud.delete_mytask(db_cursor,token['id'],task_id)

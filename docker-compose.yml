@@ -1,0 +1,53 @@
+version: "3"
+services:
+  mysql:
+    image: styughjvbn/coco_db
+    container_name: con_mysql
+    platform: linux/x86_64
+    build: ./mysql/
+    ports: #host 3307과 컨테이너의 3306포트 연결
+      - "3307:3306"
+    env_file: # 설정에 필요한 환경변수
+      - ./mysql/local.env
+    tty: true
+    restart: always
+
+  fastapi:
+    image: styughjvbn/coco_backend
+    depends_on:
+      - mysql
+    container_name: con_fast_api
+    platform: linux/x86_64
+    build: ./
+    restart: always
+    tty: true
+    volumes: # static 볼륨과 연결
+      - static:/static
+    ports: #host 1000과 컨테이너의 8000포트 연결
+      - 1000:8000
+    env_file:
+      - ./product.env
+
+  # celery broker
+  redis:
+    image: styughjvbn/coco_mq
+    container_name: redis
+    tty: true
+
+  #celery worker
+  celery_worker:
+    image: styughjvbn/coco_worker
+    depends_on:
+      - redis
+    build:
+      context: ./
+      dockerfile: celeryworker.dockerfile
+    volumes: # static 볼륨과 연결
+      - static:/static
+    env_file:
+      - ./product.env
+    privileged: true # isolate의 sandbox마다 컴퓨터 자원 제한을 하기 위해 필요한 설정값
+
+volumes: # task의 test case와 같이 유지되는 파일들을 저장하는 볼륨
+  static:
+#TODO : 환경변수파일 dev, product 정리 및 세부 서비스별 지정

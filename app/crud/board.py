@@ -1,34 +1,175 @@
 import os
-import db
-from datetime import datetime
+from app.schemas.board import *
 from .base import Crudbase
-from core.image import image
+from app.core.image import image
+from app.models.board import Boards
+from app.db.base import DBCursor
+from app.crud.alarm import alarm_crud
 
-db_server = db.db_server
+class CrudBoard(Crudbase[Boards,int]):
+    def create_board(self,db_cursor:DBCursor, writeBoard:CreateBoard, user_id:str):
+        """
+        새로운 게시글을 생성
 
-class CrudBoard(Crudbase):
-    def check_board(self):
-        sql = 'select * from view_board where group_id = 0 order by time desc;'
-        result = self.select_sql(sql)
+        params
+        - writeBoard : 게시글의 요소들
+            - title : 제목
+            - context : 내용
+            - category : 카테고리
+            - code : 코드
+        - user_id : 글쓴이 id
+        -----------------------------
+        return
+        - 성공시 게시글 id 반환
+        """
+        sql="INSERT INTO `coco`.`boards` (`context`, `title`, `time`, `category`, `code`) VALUES (%s,%s,now(), %s, %s);"
+        data=(writeBoard.context, writeBoard.title, writeBoard.category, writeBoard.code)
+        board_id=db_cursor.insert_last_id(sql,data)
+
+        sql = "INSERT INTO `coco`.`boards_ids` (`board_id`, `user_id`) VALUES (%s, %s);"
+        data=(board_id, user_id)
+        db_cursor.execute_sql(sql,data)
+
+        #게시글 내용에서 이미지의 url을 임시 url에서 진짜 url로 변경
+        new_context=image.save_update_image(os.path.join(os.getenv("BOARD_PATH"),"temp",user_id),os.path.join(os.getenv("BOARD_PATH"),str(board_id)),writeBoard.context,board_id,"s")
+        
+        sql="UPDATE `coco`.`boards` SET `context` = %s WHERE (`id` = %s);"
+        data=(new_context,board_id)
+        db_cursor.execute_sql(sql,data)
+    
+        return board_id
+
+    def read_myboard(self,db_cursor:DBCursor, user_id:str):
+        """
+        해당 user가 쓴 게시글 목록 조회
+
+        params
+        - user_id : 글쓴이 id
+        -----------------------------
+        return
+        - 성공시 게시글 목록
+        """
+        sql = "SELECT * FROM coco.view_board WHERE user_id = %s order by time desc;"
+        data = user_id
+        result = db_cursor.select_sql(sql, data)
         return result
 
-    def board_detail(self, board_id):
-        views_sql = "SELECT views FROM coco.boards WHERE id = %s;"
-        data=(board_id)
-        cnt_views = self.select_sql(views_sql,data)
-        update_views = "UPDATE `coco`.`boards` SET `views` = %s WHERE (`id` = %s);"
-        data=(cnt_views[0]["views"]+1,board_id)
-        self.execute_sql(update_views,data)
+    def board_detail(self, db_cursor:DBCursor,board_id:int,user_id:str=None):
+        '''
+        특정 게시글 상세 정보 조회
+        유저 id가 존재한다면 해당 유저가 게시글을 좋아요 했는지 정보 표시
 
+        params
+        - board_id : 게시글 id
+        - user_id : 조회를 요청한 유저의 id
+        ----------------------------------------
+        return
+        - 성공시 게시글 상세 정보 목록
+        '''
+
+        #게시글 조회수 증가
+        update_views = "UPDATE `coco`.`boards` SET `views` = views+1 WHERE (`id` = %s);"
+        data=(board_id)
+        db_cursor.execute_sql(update_views,data)
+
+        #게시글 정보 및 게시글 작성자 조회
         sql = """
             SELECT b.id, b.context, b.title, b.rel_task, b.time, 
-            b.category, b.likes, b.views, b.comments, i.user_id, b.code, b.group_id
+            b.category, b.likes, b.views, b.comments, b.code, i.user_id 
             FROM coco.boards AS b, coco.boards_ids AS i
-            WHERE b.id = i.board_id AND b.id = %s;
+            WHERE b.id = i.board_id AND b.id = %s ;
         """
         data=(board_id)
-        result = self.select_sql(sql,data)
+        result = db_cursor.select_sql(sql,data)
 
+        #조회를 요청한 유저가 게시글을 좋아요했는지 여부
+        is_board_liked=False
+        if user_id:
+            board_liked_sql = "SELECT user_id FROM coco.boards_likes WHERE boards_id = %s AND user_id = %s;"
+            data = (board_id,user_id)
+            is_board_liked = db_cursor.select_sql(board_liked_sql, data)
+            if is_board_liked:
+                is_board_liked=True
+            else:
+                is_board_liked=False
+
+        return {
+            **result[0],
+            'is_board_liked': is_board_liked,
+        }
+
+    def delete_board(self,db_cursor:DBCursor, board_id:int):
+        """
+        게시글 삭제
+
+        params
+        - board_id : board id
+        -----------------------
+        return
+        - 성공시 1
+        """
+        comments_sql = "DELETE FROM coco.comments WHERE id in (select comment_id from coco.comments_ids where board_id=%s);"
+        data=(board_id)
+        db_cursor.execute_sql(comments_sql,data)
+        board_sql = "DELETE FROM `coco`.`boards` WHERE (`id` = %s);"
+        data=(board_id)
+        db_cursor.execute_sql(board_sql,data)
+        image.delete_image(os.path.join(os.getenv("BOARD_PATH"),str(board_id)))
+        return 1
+
+    def update_board_likes(self,db_cursor:DBCursor, boardLikes:LikesBase, user_id:str):
+        """
+        게시글의 좋아요 업데이트
+
+        params
+        - boardLikes : 게시글의 요소들
+            - board_id : board id
+            - type: True = 감소 , False = 증가
+        - user_id : user id
+        ---------------------------------
+        return
+        - 성공시 1
+        """
+
+        if boardLikes.type:
+            update_sql = "UPDATE `coco`.`boards` SET `likes` = likes-1 WHERE (`id` = %s);"
+            type_sql = "DELETE FROM `coco`.`boards_likes` WHERE (`user_id` = %s) and (`boards_id` = %s);"
+        else:
+            update_sql = "UPDATE `coco`.`boards` SET `likes` = likes+1 WHERE (`id` = %s);"
+            type_sql = "INSERT INTO `coco`.`boards_likes` (`user_id`, `boards_id`) VALUES (%s, %s);" 
+        update_data=(boardLikes.board_id)
+        db_cursor.execute_sql(update_sql,update_data)
+        type_data=(user_id,boardLikes.board_id)
+        db_cursor.execute_sql(type_sql,type_data)
+
+        board_writer_sql = "select user_id from `coco`.`boards_ids` where board_id = %s"
+        board_writer_data = (boardLikes.board_id)
+        board_writer_result = db_cursor.select_sql(board_writer_sql, board_writer_data)
+
+        if not boardLikes.type:
+            alarm_crud.create_alarm(
+                db_cursor, 
+                {
+                    'sender':user_id, 'receiver': board_writer_result[0]['user_id'], 
+                    'context': { 'board_id': boardLikes.board_id }, 
+                    'category': 2
+                }
+            )
+        return 1
+
+    def read_comment(self,db_cursor:DBCursor,board_id:CreateComment,user_id:str):
+        '''
+        해당 게시글의 댓글 정보 리스트 조회
+        유저 id가 존재한다면 해당 유저가 댓글을 좋아요 했는지 정보 표시
+
+        params
+        - board_id
+        - user_id : 조회한 유저 id
+        ---------------------------------
+        returns
+        - 댓글 정보 리스트
+        '''
+        #게시글 댓글 정보 및 댓글 작성자 조회
         comments_sql = """
             SELECT c.id, c.context, c.write_time, c.likes, i.user_id, i.board_id
             FROM coco.comments AS c, coco.comments_ids AS i
@@ -36,132 +177,126 @@ class CrudBoard(Crudbase):
             order by write_time desc;
         """
         data=(board_id)
-        comments_result = self.select_sql(comments_sql,data)
+        comments_result = db_cursor.select_sql(comments_sql,data)
 
-        board_liked_sql = "SELECT user_id FROM coco.boards_likes WHERE boards_id = %s;"
-        data = (board_id)
-        board_liked_result = self.select_sql(board_liked_sql, data)
-
-        board_liked_list = []
-        for i in board_liked_result:
-            board_liked_list.append(i['user_id'])
-
-        comment_liked_sql = """
-            SELECT l.user_id, i.comment_id
+        #조회를 요청한 유저가 댓글을 좋아요했는지 여부
+        my_comment_like=[]
+        if user_id:
+            comment_liked_sql = """
+            SELECT group_concat( i.comment_id) as liked
             FROM coco.comments_likes AS l, coco.comments_ids AS i, coco.boards AS b
-            WHERE l.comment_id = i.comment_id AND b.id = %s;
+            WHERE l.comment_id = i.comment_id AND b.id = %s AND l.user_id=%s group by l.user_id;
+            """
+            data = (board_id,user_id)
+            comment_liked_result = db_cursor.select_sql(comment_liked_sql, data)
+            if comment_liked_result:
+                my_comment_like=list(map(int,comment_liked_result[0]["liked"].split(",")))
+        for i in comments_result:
+            if i["id"] in my_comment_like:
+                i["is_liked"]=True
+            else:
+                i["is_liked"]=False
+        return comments_result
+
+    def create_comment(self, db_cursor:DBCursor,commentInfo:CreateComment,user_id:str):
         """
-        data = (board_id)
-        comment_liked_result = self.select_sql(comment_liked_sql, data)
-        comment_liked_list = []
-        for i in comment_liked_result:
-            comment_liked_list.append([i['user_id'], i['comment_id']])
+        새로운 댓글을 생성
 
-        return {
-            'id': result[0]["id"],
-            'context': result[0]["context"],
-            'title': result[0]["title"],
-            'rel_task': result[0]["rel_task"],
-            'time': result[0]["time"],
-            'category': result[0]["category"],
-            'likes': result[0]["likes"],
-            'views': result[0]["views"],
-            'comments': result[0]["comments"],
-            'user_id': result[0]["user_id"],
-            'code': result[0]["code"],
-            'group_id': result[0]['group_id'],
-            'comments_datail': comments_result,
-            'is_board_liked': board_liked_list,
-            'is_comment_liked': comment_liked_list
-        }
-
-    def write_board(self, writeBoard):
+        params
+        - commentInfo
+            - context : 댓글 내용
+            - board_id : board id
+        - user_id : user id
+        ---------------------------
+        returns
+        - 생성된 댓글의 id
         """
-        새로운 게시글을 저장
-
-        - writeBoard : 게시글의 요소들
-        """
-        sql=[]
-        data=[]
-
-        sql.append("INSERT INTO `coco`.`boards` (`context`, `title`, `time`, `category`, `likes`, `views`, `comments`, `code`, `group_id`) VALUES (%s,%s,%s, %s, '0', '0', '0', %s, %s);")
-        data.append((writeBoard.context, writeBoard.title, datetime.now(), writeBoard.category, writeBoard.code, writeBoard.group_id))
-        board_id=self.insert_last_id(sql,data)
-
-        sql = "INSERT INTO `coco`.`boards_ids` (`board_id`, `user_id`, `group_id`) VALUES (%s, %s, %s);"
-        data=(board_id, writeBoard.user_id, writeBoard.group_id)
-        self.execute_sql(sql,data)
-
-        new_context=image.save_update_image(os.path.join(os.getenv("BOARD_PATH"),"temp",writeBoard.user_id),os.path.join(os.getenv("BOARD_PATH"),str(board_id)),writeBoard.context,board_id,"s")
-        sql="UPDATE `coco`.`boards` SET `context` = %s WHERE (`id` = %s);"
-        data=(new_context,board_id)
-        self.execute_sql(sql,data)
-        
-        return 1
-
-    def board_likes(self, boardLikes):
-        update_sql = "UPDATE `coco`.`boards` SET `likes` = %s WHERE (`id` = %s);"
-        data=(boardLikes.likes, boardLikes.board_id)
-        self.execute_sql(update_sql,data)
-        if boardLikes.type:
-            type_sql = "DELETE FROM `coco`.`boards_likes` WHERE (`user_id` = %s) and (`boards_id` = %s);"
-        else:
-            type_sql = "INSERT INTO `coco`.`boards_likes` (`user_id`, `boards_id`) VALUES (%s, %s);" 
-        data=(boardLikes.user_id,boardLikes.board_id)
-        self.execute_sql(type_sql,data)
-        return 1
-
-    def write_comment(self, commentInfo):
-        sql=[]
-        data=[]
-        sql.append("INSERT INTO `coco`.`comments` (`context`, `write_time`, `likes`) VALUES (%s, %s, '0');")
-        data.append((commentInfo.context,datetime.now()))
-        last_idx = self.insert_last_id(sql, data)
+        sql="INSERT INTO `coco`.`comments` (`context`, `write_time`) VALUES (%s, now());"
+        data=(commentInfo.context)
+        last_idx = db_cursor.insert_last_id(sql, data)
         comment_sql = "INSERT INTO `coco`.`comments_ids` (`comment_id`, `user_id`, `board_id`) VALUES (%s, %s,%s);"
-        data=(last_idx,commentInfo.user_id,commentInfo.board_id)
-        self.execute_sql(comment_sql,data)
-        cnt_sql = """
-            select count(*) as count from coco.comments_ids 
-            where board_id = %s;
-        """
-        data=(commentInfo.board_id)
-        cnt = self.select_sql(cnt_sql,data)
-        update_sql = "UPDATE `coco`.`boards` SET `comments` = %s WHERE (`id` = %s);"
-        data=(cnt[0]["count"],commentInfo.board_id)
-        self.execute_sql(update_sql,data)
-        return 1
+        data=(last_idx,user_id,commentInfo.board_id)
+        db_cursor.execute_sql(comment_sql,data)
 
-    def comment_likes(self, commentLikes):
-        update_sql = "UPDATE `coco`.`comments` SET `likes` = %s WHERE (`id` = %s);"
-        data=(commentLikes.likes,commentLikes.comment_id)
-        self.execute_sql(update_sql,data)
+        sql="UPDATE `coco`.`boards` SET `comments` = `comments`+1 WHERE (`id` = %s);"
+        data=(commentInfo.board_id)
+        db_cursor.execute_sql(sql,data)
+
+        board_writer_sql = "select user_id from `coco`.`boards_ids` where board_id = %s"
+        board_writer_data = (commentInfo.board_id)
+        board_writer_result = db_cursor.select_sql(board_writer_sql, board_writer_data)
+        
+        alarm_crud.create_alarm(
+            db_cursor, 
+            {
+                'sender':user_id, 'receiver': board_writer_result[0]['user_id'], 
+                'context': { 'board_id': commentInfo.board_id }, 
+                'category': 1
+            }
+        )
+        return last_idx
+
+    def delete_comment(self, db_cursor:DBCursor,board_id: int,comment_id: int):
+        """
+        댓글 삭제
+
+        params
+        - board_id : board id
+        - comment_id : comment id
+        -----------------------
+        return
+        - 성공시 1
+        """
+        comment_sql = "DELETE FROM `coco`.`comments` WHERE (`id` = %s);"
+        data=(comment_id)
+        db_cursor.execute_sql(comment_sql,data)
+        
+        sql="UPDATE `coco`.`boards` SET `comments` = `comments`-1 WHERE (`id` = %s);"
+        data=(board_id)
+        db_cursor.execute_sql(sql,data)
+        return 1
+    
+    def update_comment_likes(self,db_cursor:DBCursor, commentLikes:CommentLikes,user_id:str):
+        """
+        댓글의 좋아요 업데이트
+
+        params
+        - commentLikes
+            - board_id : board id
+            - comment_id : comment id
+            - type: True = 감소 , False = 증가
+        - user_id : user id
+        -----------------------------
+        return
+        - 성공시 1
+        """
         if commentLikes.type:
+            update_sql = "UPDATE `coco`.`comments` SET `likes` = likes-1 WHERE (`id` = %s);"
             type_sql = "DELETE FROM `coco`.`comments_likes` WHERE (`user_id` = %s) and (`comment_id` = %s);"
         else:
+            update_sql = "UPDATE `coco`.`comments` SET `likes` = likes+1 WHERE (`id` = %s);"
             type_sql = "INSERT INTO `coco`.`comments_likes` (`user_id`, `comment_id`) VALUES (%s, %s);" 
-        data=(commentLikes.user_id,commentLikes.comment_id)
-        self.execute_sql(type_sql,data)
+        update_data=(commentLikes.comment_id)
+        db_cursor.execute_sql(update_sql,update_data)
+        data=(user_id,commentLikes.comment_id)
+        db_cursor.execute_sql(type_sql,data)
 
-    def delete_content(self, board_id):
-        comments_sql = "DELETE FROM coco.comments WHERE id in (select comment_id from coco.comments_ids where board_id=%s);"
-        data=(board_id.board_id)
-        self.execute_sql(comments_sql,data)
-        board_sql = "DELETE FROM `coco`.`boards` WHERE (`id` = %s);"
-        data=(board_id.board_id)
-        self.execute_sql(board_sql,data)
-        image.delete_image(os.path.join(os.getenv("BOARD_PATH"),str(board_id.board_id)))
+        #좋아요 눌리면
+        if not commentLikes.type:
+            # 댓글 좋아요 알람
+            com_writer_sql = "select user_id from `coco`.`comments_ids` where comment_id = %s"
+            com_writer_data = (commentLikes.comment_id)
+            com_writer_result = db_cursor.select_sql(com_writer_sql, com_writer_data)
+            alarm_crud.create_alarm(
+                db_cursor, 
+                {
+                    'sender':user_id, 'receiver': com_writer_result[0]['user_id'], 
+                    'context': { 'board_id': commentLikes.board_id }, 
+                    'category': 3
+                }
+            )
+
         return 1
 
-    def delete_comment(self, comment_id):
-        comment_sql = "DELETE FROM `coco`.`comments` WHERE (`id` = %s);"
-        data=(comment_id.comment_id)
-        self.execute_sql(comment_sql,data)
-        return 1
 
-    def update_board(self, updateBoard):
-        sql = "UPDATE coco.boards SET context = %s, title = %s WHERE (id = %s);"
-        data = (updateBoard.context, updateBoard.title, updateBoard.board_id)
-        self.execute_sql(sql,data)
-        return 1
-
-board_crud=CrudBoard()
+board_crud=CrudBoard(Boards)

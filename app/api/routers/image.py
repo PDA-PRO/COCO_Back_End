@@ -1,19 +1,18 @@
 from fastapi import APIRouter, HTTPException,UploadFile,Depends,Request,status
 from fastapi.responses import FileResponse
-from core import security
-from core.image import image
-
+from app.core import security
+from app.core.image import image
 
 router = APIRouter(prefix="/image")
     
 @router.post("/upload-temp",tags=["image"],)
-async def image_upload(request: Request,type:int,file:UploadFile,token: dict = Depends(security.check_token)):
+def image_upload(request: Request,type:int,file:UploadFile,token: dict = Depends(security.check_token)):
     """
     텍스트 에디터 작성시 임시로 저장되는 사진을 type별로 저장하고 요청된 url로 사진url을 리턴
     JWT토큰 필요
 
     - request : 요청url
-    - type : 1-공지글 2-게시판 3-문제글 4-프로필
+    - type : 1-공지글 2-게시판 3-문제글 4-프로필 5-로드맵
     - file : 사진파일
     - token : jwt토큰
     """
@@ -30,6 +29,9 @@ async def image_upload(request: Request,type:int,file:UploadFile,token: dict = D
     elif type==4:
         image_name=image.upload_temp(file,type,token["id"])
         return str(request.base_url)+"image/download/"+str(type)+"/"+image_name
+    elif type==5:
+        image_name=image.upload_temp(file,type,token["id"])
+        return str(request.base_url)+"image/download/"+str(type)+"/"+image_name+"/temp?id="+token["id"]
     else:
         raise HTTPException(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -38,12 +40,12 @@ async def image_upload(request: Request,type:int,file:UploadFile,token: dict = D
     )
 
 @router.get("/download/{type}/{filename}",tags=["image"],)
-async def image_download(filename:str,type:int,id:str=None,time:str=None):
+def image_download(filename:str,type:int,id:str=None,time:str=None):
     """
     실제로 저장된 사진을 리턴
 
     - filename : 요청하는 사진이름
-    - type : 1-공지글 2-게시판 3-문제글 4-프로필
+    - type : 1-공지글 2-게시판 3-문제글 4-프로필 5-로드맵
     - id : type별 id
     """
     image_path=""
@@ -67,12 +69,12 @@ async def image_download(filename:str,type:int,id:str=None,time:str=None):
     return FileResponse(image_path)
 
 @router.get("/download/{type}/{filename}/temp",tags=["image"])
-async def image_download(filename:str,type:int,id:str=None):
+def image_download(filename:str,type:int,id:str=None):
     """
     텍스트 에디터 작성시 임시로 저장한 사진을 리턴
 
     - filename: 요청하는 사진이름    
-    - type: 2-게시판 3-문제글  
+    - type: 2-게시판 3-문제글 5- 로드맵
     - id: type별 id
     """
     image_path=""
@@ -80,6 +82,8 @@ async def image_download(filename:str,type:int,id:str=None):
         image_path=image.download_temp(filename,type,id)
     elif type==3:
         image_path=image.download_temp(filename,type)
+    elif type==5:
+        image_path=image.download_temp(filename,type,id)
     else:
         raise HTTPException(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -95,7 +99,7 @@ async def image_download(filename:str,type:int,id:str=None):
     return FileResponse(image_path)
 
 @router.delete("/delete-image",tags=["image"])
-async def delete_image(token: dict = Depends(security.check_token)):
+def delete_image(token: dict = Depends(security.check_token)):
     """
     서버에 저장된 프로필 이미지 삭제
 

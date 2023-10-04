@@ -1,55 +1,48 @@
+from datetime import datetime
 from pydantic import BaseModel
+from .common import *
 
+class LikesBase(BaseModel):
+    board_id: int
+    type: bool
 
-class Board(BaseModel):
-    id: int
+class BoardBase(BaseModel):
+    id: int    
     title: str
-    user_id: str
-    time: str
+    rel_task:int|None
+    time: datetime
     category: int
     likes: int
     views: int
     comments: int
+    code : str|None
 
-class WriteBoard(BaseModel):
-    user_id: str
+class BoardListOut(PaginationOut):
+    boardlist:list[BoardBase]
+
+class BoardDetail(BoardBase):
+    user_id:str
+    context:str
+    is_board_liked:bool
+
+class CreateBoard(BaseModel):
     title: str
     context: str
     category: int
     code: str=None
-    group_id: int
-
-class UpdateBoard(BaseModel):
-    board_id: int
-    user_id: str
-    title: str
+    
+class CommentBase(BaseModel):
+    id: int
     context: str
-    category: int
-    code: str=None
-
-class BoardLikes(BaseModel):
+    write_time : datetime
+    likes : int
     user_id: str
     board_id: int
-    likes: int
-    type: bool
+    is_liked : bool|None
 
-class CommentLikes(BaseModel):
-    user_id: str
-    board_id: int
+class CommentLikes(LikesBase):
     comment_id: int
-    likes: int
-    type: bool
 
-class CommentInfo(BaseModel):
-    user_id: str
+class CreateComment(BaseModel):
     context: str
     board_id: int
-
-class DeleteBoard(BaseModel):
-    board_id: int
-    user_id: str
-
-
-class DeleteComment(BaseModel):
-    comment_id: int
-    user_id: str
