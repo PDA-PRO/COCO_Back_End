@@ -33,9 +33,15 @@ def load_result(sub_id: int,token: dict = Depends(security.check_token),db_curso
     """
     제출된 코드 채점 결과 조회
     조회를 요청하는 유저가 제출하거나 맞은 문제에 대한 제출결과만 조회 가능
+    lint 도구를 이용한 분석 결과도 포함 없으면 빈 리스트 
 
+    params
     - sub_id : 제출 id
     - token : jwt
+    --------------------------------------------------------
+    returns
+    - subDetail : 채점 결과
+    - lint : lint 도구로 분석한 결과 리스트
     """
     sub_info=submission_crud.read(db_cursor,["task_id","user_id"],table="sub_ids",sub_id=sub_id)
     if sub_info:
@@ -119,22 +125,21 @@ def get_wpc(sub_id:int,task_id:int,token: dict = Depends(security.check_token),d
         submission_crud.create(db_cursor,{"sub_id":sub_id,"status":1,"result":wpc_result},"coco","wpc")
         return {"status":1,"wpc_result":wpc_result}
     
-# @router.get("/lint", tags=["submission"],response_model=list[Lint])
-def read_lint(sub_id:int,token: dict = Depends(security.check_token)):
+def read_lint(sub_id:int)->list:
     """
     오답 제출 코드에 대해 pylint 분석 결과 조회
     TC틀림 오답코드 제외
 
     params
     - sub_id : 제출 id
-    - token :jwt
     ------------------------------------
     returns
+    - pylint 분석 결과 리스트 
     """
     err_msg = []
     lint_path=os.path.join(os.getenv("LINT_PATH"),str(sub_id)+".json")
     if not os.path.exists(lint_path):
-        raise HTTPException(status.HTTP_404_NOT_FOUND,"pylint 분석결과가 없습니다.")
+        return []
     with open(os.path.join(os.getenv("LINT_PATH"),str(sub_id)+".json"), 'r') as file:
         datas = json.load(file)
         for data in datas:
