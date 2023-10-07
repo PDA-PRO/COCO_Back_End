@@ -129,3 +129,6 @@ def get_alarm(token: dict = Depends(security.check_token), db_cursor:DBCursor=De
 def check_alarm(user_id: str, db_cursor:DBCursor=Depends(get_cursor)):
     return alarm_crud.check_alarm(db_cursor, user_id)
 
+@router.get("/level", tags=['user'])
+def user_level(user_id: str, db_cursor:DBCursor=Depends(get_cursor)):
+    return user_crud.user_level(db_cursor, user_id)

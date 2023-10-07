@@ -64,6 +64,9 @@ class UserList(BaseModel):
     id: str
     name: str
     role: conint(le=1,ge=0)
+    exp: int
+    level: int
+
 class UserListOut(PaginationOut):
     userlist:list[UserList]
 
