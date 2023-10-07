@@ -97,14 +97,20 @@ class CrudUser(Crudbase[User,str]):
             sql+=" and".join(plus_sql)
             data=tuple(plus_data)
         else:
-            sql = "SELECT id, name, role FROM coco.user"
+            sql = "SELECT id, name, role, exp FROM coco.user"
             data = ()
-        print(sql)
+        
         if info.size and info.page:
             total,result=db_cursor.select_sql_with_pagination(sql, data,info.size,info.page)
+            for i in range(len(result)):
+                level = self.get_level(result[i]['exp'])
+                result[i]['level'] = level['level']
             return {"total":total,"size":info.size,"userlist":result}
         else:
             result=db_cursor.select_sql(sql, data)
+            for i in range(len(result)):
+                level = self.get_level(result[i]['exp'])
+                result[i]['level'] = level['level']
             return {"userlist":result}
 
     def create_mytask(self,db_cursor:DBCursor, user_id,task_id):
@@ -135,5 +141,40 @@ class CrudUser(Crudbase[User,str]):
         data = (user_id, task_id)
         db_cursor.execute_sql(sql, data)
         return True
+
+    def user_level(self, db_cursor:DBCursor, user_id):
+        sql = 'SELECT id, exp FROM coco.user where id = %s;'
+        data = (user_id)
+        result = db_cursor.select_sql(sql, data)
+        level_info = self.get_level(result[0]['exp'])
+
+        # 전체에서 몇등인지
+        rank_sql = 'SELECT ROW_NUMBER() OVER ( ORDER BY exp desc ) AS ranking, id, exp FROM coco.user;'
+        rank_result = db_cursor.select_sql(rank_sql, ())
+        for i in range(len(rank_result)):
+            if user_id == rank_result[i]['id']:
+                rank = rank_result[i]['ranking']
+                break
+
+        return {'user_id': user_id, 'exp': result[0]['exp'], 
+                'level': level_info['level'], 'points': level_info['points'], 'rank': rank}
+
+    # 레벨 계산
+    def get_level(self, exp):
+        level = 1
+        points = 0
+        # 레벨 도달 포인트
+        arr_points = [0, 200, 700, 1500, 3100, 6300, 12700, 25500, 55300]
+        for i in range(1, len(arr_points)):
+            if exp < arr_points[i]:
+                level = i
+                points = arr_points[i] - exp
+                break
+
+        return {'level': level, 'points': points}
+
+
+
+
 
 user_crud=CrudUser(User)
