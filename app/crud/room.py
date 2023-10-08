@@ -192,7 +192,7 @@ class CrudRoom(Crudbase[Room,int]):
                 'sender': writer,
                 'receiver': room_result['leader'],
                 'context': {
-                    "room_id": info.id,
+                    "room_id": info.room_id,
                     "room_name": room_result['name'],
                     },
                 'category': 11
