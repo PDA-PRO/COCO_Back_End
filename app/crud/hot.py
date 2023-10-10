@@ -9,7 +9,23 @@ class CrudHot(Crudbase):
             order by likes desc limit 1;
         """
         board_result = db_cursor.select_sql(board_sql)
-        board_result = board_result[0]
+        if len(board_result) > 0:
+             board_result = board_result[0]
+             board_data = {
+                'board_id': board_result["id"],
+                'user_id': board_result["user_id"],
+                'time': board_result["time"],
+                'category': board_result["category"],
+                'views': board_result["views"],
+                'comments': board_result["comments"],
+                'likes': board_result["likes"],
+                'title': board_result["title"],
+             }
+        else:
+            board_data = {
+                
+            }
+        
         task_sql = """
             select count(*), i.task_id, t.title, t.rate, t.mem_limit, t.time_limit, t.diff 
             from coco.sub_ids as i , coco.task as t
@@ -17,24 +33,42 @@ class CrudHot(Crudbase):
             desc limit 1;
         """
         task_result = db_cursor.select_sql(task_sql)
-        task_result = task_result[0]
+        if len(task_result)>0:
+            task_result = task_result[0]
+            task_data = {
+                'problem_submitCount': task_result["count(*)"], 
+                'problem_id': task_result["task_id"],
+                'problem_title': task_result["title"],
+                'problem_rate': task_result["rate"],
+                'problem_memLimit': task_result["mem_limit"],
+                'problem_timeLimit': task_result["time_limit"],
+                'problem_diff': task_result["diff"]
+            }
+        else:
+            task_data = {
+                
+            }
         return {
-            'board_id': board_result["id"],
-            'user_id': board_result["user_id"],
-            'time': board_result["time"],
-            'category': board_result["category"],
-            'views': board_result["views"],
-            'comments': board_result["comments"],
-            'likes': board_result["likes"],
-            'title': board_result["title"],
-            'problem_submitCount': task_result["count(*)"], 
-            'problem_id': task_result["task_id"],
-            'problem_title': task_result["title"],
-            'problem_rate': task_result["rate"],
-            'problem_memLimit': task_result["mem_limit"],
-            'problem_timeLimit': task_result["time_limit"],
-            'problem_diff': task_result["diff"]
+            'board': board_data,
+            'problem': task_data
         }
+        # return {
+        #     'board_id': board_result["id"],
+        #     'user_id': board_result["user_id"],
+        #     'time': board_result["time"],
+        #     'category': board_result["category"],
+        #     'views': board_result["views"],
+        #     'comments': board_result["comments"],
+        #     'likes': board_result["likes"],
+        #     'title': board_result["title"],
+        #     'problem_submitCount': task_result["count(*)"], 
+        #     'problem_id': task_result["task_id"],
+        #     'problem_title': task_result["title"],
+        #     'problem_rate': task_result["rate"],
+        #     'problem_memLimit': task_result["mem_limit"],
+        #     'problem_timeLimit': task_result["time_limit"],
+        #     'problem_diff': task_result["diff"]
+        # }
 
     def my_status(self, db_cursor:DBCursor,user_id):
         data = user_id
