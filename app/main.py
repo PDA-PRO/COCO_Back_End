@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api.routers import auth,submission, task, board, miscellaneous, mypage, image,room, user
+from app.api.routers import auth, chatgpt,submission, task, board, miscellaneous, mypage, image,room, user, chatgpt
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
@@ -34,3 +34,4 @@ app.include_router(auth.router)
 app.include_router(mypage.router)
 app.include_router(image.router)
 app.include_router(room.router)
+app.include_router(chatgpt.router)

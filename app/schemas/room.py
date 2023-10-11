@@ -46,6 +46,7 @@ class Question(BaseModel):
     answers:list[Answer]
     check: bool
     time: datetime
+    q_writer_level: int
 
 class QuestionListOut(PaginationOut):
     question_list:list[Question]
