@@ -6,3 +6,9 @@ class AskQ(BaseModel):
     code: str
     room_id: int
     q_id: int
+
+class CreateTask(BaseModel):
+    content: str
+    category: str|None
+    diff: int|None
+    is_final: bool
