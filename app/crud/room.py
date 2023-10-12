@@ -206,14 +206,14 @@ class CrudRoom(Crudbase[Room,int]):
         해당 study room에 등록된 모든 질문 리스트 리턴
         '''
         data = (room_id)
-        sql = 'SELECT r.* FROM room.%s_question as r, coco.user as c where r.writer = c.id order by r.time desc'
+        sql = 'SELECT r.*, c.exp FROM room.%s_question as r, coco.user as c where r.writer = c.id order by r.time desc'
         total,q_result = db_cursor.select_sql_with_pagination(sql, [data],pagination.size,pagination.page)
         qa = []
         for q in q_result:
             ans_sql = """
-                select q.id, u.id, u.exp, a.a_id, a.answer, a.code, a.ans_writer, a.time, a.check 
-                from room.%s_qa as a, room.%s_question as q, coco.user as u
-                where a.q_id = q.id and q.id = %s and q.writer = u.id;
+                select q.id, a.a_id, a.answer, a.code, a.ans_writer, a.time, a.check 
+                from room.%s_qa as a, room.%s_question as q
+                where a.q_id = q.id and q.id = %s ;
             """
             ans_data = (room_id,room_id, q['id'])
             ans_result = db_cursor.select_sql(ans_sql, ans_data)
@@ -222,13 +222,11 @@ class CrudRoom(Crudbase[Room,int]):
                 if ans['check'] == 1:
                     check = True
                     break
-            q_writer_level = user_crud.get_level(ans['exp'])['level']
-            print(ans_result)
             qa.append({
                 **q,
                 'answers':ans_result,
                 'check': check,
-                'q_writer_level': q_writer_level
+                'q_writer_level': user_crud.get_level(q['exp'])['level']
             })
         return {"question_list":qa,"total":total,'size':pagination.size}
     

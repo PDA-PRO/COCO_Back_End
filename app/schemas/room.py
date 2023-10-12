@@ -36,6 +36,7 @@ class Answer(BaseModel):
     ans_writer: str
     time: datetime
     check: int
+    
 
 class Question(BaseModel):
     id: int
