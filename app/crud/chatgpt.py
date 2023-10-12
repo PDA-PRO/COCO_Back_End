@@ -74,7 +74,7 @@ class CrudChatGPT(Crudbase):
         "title": "<문제 제목>",
         "description": "<문제 설명>",
         "input": {
-            "description": "<입력 설명>",
+            "description": "<입력 설명>"
         },
         "output": {
             "description": "<출력 설명>"
@@ -96,8 +96,15 @@ class CrudChatGPT(Crudbase):
   }
 }
         ''' % (info.content)
+        task_result = self.chatGPT(task_prompt)
 
+        # 최종 문제 생성 아니면 다시 리턴
+        if info.is_final == False:
+             return {'data': True, 'result': json.loads(task_result, strict=False)}
+        else: #최종 문제 생성
+            self.upload_task(json.loads(task_result, strict=False), db_cursor)
 
+    def upload_task(self, task_info, db_cursor):
         testcase_prompt =  '''
 다음과 같은 형식을 사용해서 위 문제에 대한 테스트 케이스를 20개 만들어주세요
 
@@ -111,39 +118,8 @@ class CrudChatGPT(Crudbase):
 }
 
 '''
-        
-        task_result = self.chatGPT(task_prompt)
         # testcase_result = self.chatGPT(testcase_prompt)
 
-        task_result = '''
-{
-    "problem": {
-        "title": "숫자의 합 구하기",
-        "description": "1부터 N까지의 숫자의 합을 구하는 알고리즘 문제입니다.",
-        "input": {
-            "description": "정수 N",
-            "constraint": "1 <= N <= 10000"
-        },
-        "output": {
-            "description": "1부터 N까지의 숫자의 합"
-        },
-        "examples": [
-            {
-                "input": "5",
-                "output": "15"
-            },
-            {
-                "input": "10",
-                "output": "55"
-            }
-        ]
-    },
-  "constraints": {
-        "memory": "256mb",
-        "time": "2s"
-  }
-}
-'''
         testcase_result = '''
 {
     "testcase": [
@@ -230,78 +206,71 @@ class CrudChatGPT(Crudbase):
     ]
 }
 '''
-
-        print(json.loads(task_result, strict=False))
-        return json.loads(task_result, strict=False)
-        
-
-        # #문제 json 결과
-        # task_result = json.loads(task_result, strict=False)
+        testcase_result = json.loads(testcase_result, strict=False)
+        testcase = testcase_result["testcase"]
+       
+        #문제 json 결과
+        task_result = task_info
  
-        # # 문제 설명 파트
-        # problem = task_result["problem"]
-        # input_ex1 = problem['examples'][0]['input']
-        # output_ex1 = problem['examples'][0]['output']
-        # input_ex2 = problem['examples'][1]['input']
-        # output_ex2 = problem['examples'][1]['output']
+        # 문제 설명 파트
+        problem = task_result["problem"]
+        input_ex1 = str(problem['examples'][0]['input'])
+        output_ex1 = str(problem['examples'][0]['output'])
+        input_ex2 = str(problem['examples'][1]['input'])
+        output_ex2 = str(problem['examples'][1]['output'])
 
-        # # 문제 제약 조건 파트
-        # constraints = task_result["constraints"]
-        # memory_limit = self.get_number(constraints["memory"])
-        # time_limit = self.get_number(constraints["time"])
+
+        # 문제 제약 조건 파트
+        constraints = task_result["constraints"]
+        memory_limit = self.get_number(constraints["memory"])
+        time_limit = self.get_number(constraints["time"])
 
         # #ai가 생성한 문제 db 저장
-        # task_sql="INSERT INTO `coco`.`task` ( `title`, `sample`,`mem_limit`, `time_limit`, `diff` ) VALUES ( %s, json_object('input', %s, 'output',%s), %s, %s, 1 );"
-        # task_data=(problem["title"], f"[{input_ex1}, {input_ex2}]",f"[{output_ex1}, {output_ex2}]",memory_limit,time_limit)
-        # task_id=db_cursor.insert_last_id(task_sql,task_data)
-        # print(task_id)
+        task_sql="INSERT INTO `coco`.`task` ( `title`, `sample`,`mem_limit`, `time_limit`, `diff` ) VALUES ( %s, json_object('input', %s, 'output',%s), %s, %s, 1 );"
+        task_data=(problem["title"], f"[{input_ex1}, {input_ex2}]",f"[{output_ex1}, {output_ex2}]",memory_limit,time_limit)
+        task_id=db_cursor.insert_last_id(task_sql,task_data)
+        print(task_id)
 
-        # #문제 desc 저장
-        # desc_sql="insert into coco.descriptions values (%s,%s,%s,%s);"
-        # desc_data=(task_id,problem["description"],problem["input"]["description"],problem["output"]["description"])
-        # db_cursor.execute_sql(desc_sql,desc_data)
+        #문제 desc 저장
+        desc_sql="insert into coco.descriptions values (%s,%s,%s,%s);"
+        main_desc = "<p>"+problem["description"]+"</p>"
+        desc_data=(task_id,main_desc,problem["input"]["description"],problem["output"]["description"])
+        db_cursor.execute_sql(desc_sql,desc_data)
 
-
-        # #테스트케이스 json 결과
-        # testcase_result = json.loads(testcase_result, strict=False)
-        # testcase = testcase_result["testcase"]
-        # input_case, output_case = [], []
-        # for case in testcase:
-        #     input_case.append(case['input'])
-        #     output_case.append(case['output'])
+        #테스트케이스 json 결과
+        input_case, output_case = [], []
+        for case in testcase:
+            input_case.append(case['input'])
+            output_case.append(case['output'])
         
-        # # TC 파일 경로
-        # testcase_file_path = os.path.join(os.getenv("TASK_PATH"), str(1))
-        # os.mkdir(testcase_file_path)
+        # TC 파일 경로
+        testcase_file_path = os.path.join(os.getenv("TASK_PATH"), str(task_id))
+        os.mkdir(testcase_file_path)
 
-        # # 입력 TC 파일
-        # input_file_path = os.path.join(testcase_file_path,'in')
-        # os.mkdir(input_file_path)
-        # for i in range(len(input_case)):
-        #     file = open(input_file_path+"/"+str(i+1)+".txt",'w',encoding = 'utf-8') #텍스트파일 생성
-        #     file.write(input_case[i])					#생성한 텍스트파일에 글자를 입력합니다.
-        #     file.close()	
+        # 입력 TC 파일
+        input_file_path = os.path.join(testcase_file_path,'in')
+        os.mkdir(input_file_path)
+        for i in range(len(input_case)):
+            file = open(input_file_path+"/"+str(i+1)+".txt",'w',encoding = 'utf-8') #텍스트파일 생성
+            file.write(input_case[i])					#생성한 텍스트파일에 글자를 입력합니다.
+            file.close()	
 
-        # # 출력 TC 파일
-        # output_file_path = os.path.join(testcase_file_path,'out')
-        # os.mkdir(output_file_path)
-        # for i in range(len(output_case)):
-        #     file = open(output_file_path+"/"+str(i+1)+".txt",'w',encoding = 'utf-8') #텍스트파일 생성
-        #     file.write(output_case[i])					#생성한 텍스트파일에 글자를 입력합니다.
-        #     file.close()	
+        # 출력 TC 파일
+        output_file_path = os.path.join(testcase_file_path,'out')
+        os.mkdir(output_file_path)
+        for i in range(len(output_case)):
+            file = open(output_file_path+"/"+str(i+1)+".txt",'w',encoding = 'utf-8') #텍스트파일 생성
+            file.write(output_case[i])					#생성한 텍스트파일에 글자를 입력합니다.
+            file.close()	
 
-
-        # # TC 파일 압축해서 저장
-        # zip_file = zipfile.ZipFile(os.getenv("TASK_PATH") + "\\1\\1.zip", "w")
-        # for (path, dir, files) in os.walk("tasks\\1\\"):
-        #     for file in files:
-        #         if file.endswith('.txt'):
-        #             zip_file.write(os.path.join(path, file), compress_type=zipfile.ZIP_DEFLATED)
-        # zip_file.close()
-
-
-
-
+        # TC 파일 압축해서 저장
+        zip_file = zipfile.ZipFile(os.getenv("TASK_PATH") + f"\\{str(task_id)}\\{str(task_id)}.zip", "w")
+        for (path, dir, files) in os.walk(f"tasks\\{str(task_id)}\\"):
+            for file in files:
+                if file.endswith('.txt'):
+                    zip_file.write(os.path.join(path, file), compress_type=zipfile.ZIP_DEFLATED)
+        zip_file.close()
+        
     # 문자열에서 숫자만 추출
     def get_number(self, string):
         result = ""
