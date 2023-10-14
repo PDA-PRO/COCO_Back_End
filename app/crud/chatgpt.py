@@ -48,7 +48,7 @@ class CrudChatGPT(Crudbase):
 
 다음과 같은 JSON 형식을 사용해서 알려주세요:
 {
-    "code": <파이썬 리스트에 저장된 수정 코드>,
+    "code": "<파이썬 리스트에 저장된 수정 코드>",
     "content": "<문제 원인 설명>"
 }
         ''' % (content, info.code)
@@ -58,14 +58,18 @@ class CrudChatGPT(Crudbase):
         result = self.chatGPT(prompt)
         for item in self.extract_json_objects(result):
             result = item
-        result = json.loads(result, strict=False)
+        
+        # 답변 자료형이 str일 때 json으로 변환
+        if str(type(result)) == "<class 'str'>":
+            result = json.loads(result, strict=False)
+        
 
         # 해당 질문에 대한 ai 답변이 있는지 확인
         exist_sql = "select count(*) as exist FROM `plugin`.`qa` WHERE (`room_id` = %s and `q_id` = %s);"
         exist = db_cursor.select_sql(exist_sql, (info.room_id, info.q_id))
         exist = exist[0]['exist']
 
-        if exist == 0: # ai 답변이 없으면
+        if exist == 0: # 기존 ai 답변이 없으면
             if info.code != "": # 질문에 코드 포함
                 ans_code =  result['code']
                 ans_content = '<p>'+result['content']+'</p>'
@@ -80,7 +84,7 @@ class CrudChatGPT(Crudbase):
                 VALUES (%s, %s, %s, %s, now(), 0);
             """
             db_cursor.execute_sql(sql, data)
-        else: # ai에 답변이 있으면
+        else: # 기존 ai 답변이 있으면
             if info.code != "":
                 ans_code =  result['code']
                 ans_content = '<p>'+result['content']+'</p>'
@@ -137,7 +141,11 @@ class CrudChatGPT(Crudbase):
         task_result = self.chatGPT(task_prompt)
         for item in self.extract_json_objects(task_result):
             task_result = item
-        task_result = json.loads(task_result, strict=False)
+        
+        # 답변 자료형이 str일 때 json으로 변환
+        if str(type(task_result)) == "<class 'str'>":
+            task_result = json.loads(task_result, strict=False)
+
         return {'data': True, 'result': task_result}
 
     def upload_task(self, db_cursor, task, description):
@@ -152,8 +160,8 @@ class CrudChatGPT(Crudbase):
 {
     "testcase": [ 
         { 
-            "input": "<입력>",
-            "output": "<출력>"
+            "input": "<입력 예시>",
+            "output": "<입력에 대한 출력>"
         }
     ]
 }
@@ -161,39 +169,49 @@ class CrudChatGPT(Crudbase):
 # '''
         # 테스트 케이스 생성 후 JSON 변환
         testcase_result = self.chatGPT(testcase_prompt)
+
         for item in self.extract_json_objects(testcase_result):
             testcase_result = item
-        testcase_result = json.loads(testcase_result, strict=False)
+        
+        # 답변 자료형이 str일 때 json으로 변환
+        if str(type(testcase_result)) == "<class 'str'>":
+            testcase_result = json.loads(testcase_result, strict=False)
+
         testcase = testcase_result["testcase"]
-
-
-        # 문제 내용 DB 저장
-        sql="INSERT INTO `coco`.`task` ( `title`, `sample`,`mem_limit`, `time_limit`, `diff` ) VALUES ( %s, json_object('input', %s, 'output',%s), %s, %s, %s );"
-        data=(task.title, f"[{task.inputEx1}, {task.inputEx2}]",f"[{task.outputEx1}, {task.outputEx2}]",task.memLimit,task.timeLimit,task.diff)
+        
+        # 문제 내용 plugin DB에 저장
+        sql="""
+            INSERT INTO `plugin`.`task` ( `title`, `sample`,`mem_limit`, `time_limit`, `diff`, `input_description`, `output_description`) 
+            VALUES ( %s, json_object('input', %s, 'output',%s), %s, %s, %s, %s, %s );
+        """
+        data=(task.title, f"[{task.inputEx1}, {task.inputEx2}]",f"[{task.outputEx1}, {task.outputEx2}]", task.memLimit, task.timeLimit, task.diff, task.inputDescription, task.outputDescription)
         task_id=db_cursor.insert_last_id(sql,data)
+
+
+        #desc에서 임시 이미지 삭제 및 실제 이미지 저장
+        maindesc=image.save_update_image(os.path.join(os.getenv("TASK_PATH"),"temp"),os.path.join(os.getenv("TASK_PATH"),"ai_"+str(task_id)),description,task_id,"s")
+        print(maindesc)
+        sql = "UPDATE `plugin`.`task` SET `description` = %s WHERE (`id` = %s);"
+        data = (maindesc, task_id)
+        db_cursor.execute_sql(sql, data)
 
         #카테고리 연결
         for i in map(lambda a:a.strip(),task.category.split(",")):
-            sql="INSERT INTO `coco`.`task_ids` (`task_id`, `category`) VALUES (%s, %s);"
+            sql="INSERT INTO `plugin`.`task_category` (`task_id`, `category`) VALUES (%s, %s);"
             data=(task_id,i)
             db_cursor.execute_sql(sql,data)
 
-        #desc에서 임시 이미지 삭제 및 실제 이미지 저장
-        maindesc=image.save_update_image(os.path.join(os.getenv("TASK_PATH"),"temp"),os.path.join(os.getenv("TASK_PATH"),str(task_id)),description,task_id,"s")
-
-        #desc 및 테스트케이스 저장
-        sql="insert into coco.descriptions values (%s,%s,%s,%s);"
-        data=(task_id,maindesc,task.inputDescription,task.outputDescription)
-        db_cursor.execute_sql(sql,data)
 
         #테스트케이스 json 결과
         input_case, output_case = [], []
         for case in testcase:
             input_case.append(case['input'])
             output_case.append(case['output'])
-        
-        # TC 파일 경로
-        testcase_file_path = os.path.join(os.getenv("TASK_PATH"), str(task_id))
+
+
+        # TC 파일 경로 - AI가 생성한 문제는 ai_{task_id}
+        testcase_file_path = os.path.join(os.getenv("TASK_PATH"), "ai_"+str(task_id))
+        os.makedirs(testcase_file_path)
 
         # 입력 TC 파일
         input_file_path = os.path.join(testcase_file_path,'in')
@@ -212,8 +230,8 @@ class CrudChatGPT(Crudbase):
             file.close()	
 
         # TC 파일 압축해서 저장
-        zip_file = zipfile.ZipFile(os.getenv("TASK_PATH") + f"\\{str(task_id)}\\{str(task_id)}.zip", "w")
-        for (path, dir, files) in os.walk(f"tasks\\{str(task_id)}\\"):
+        zip_file = zipfile.ZipFile(os.getenv("TASK_PATH") + f"\\ai_{str(task_id)}\\{str(task_id)}.zip", "w")
+        for (path, dir, files) in os.walk(f"tasks\\ai_{str(task_id)}\\"):
             for file in files:
                 if file.endswith('.txt'):
                     zip_file.write(os.path.join(path, file), compress_type=zipfile.ZIP_DEFLATED)
