@@ -16,6 +16,7 @@ class BoardBase(BaseModel):
     views: int
     comments: int
     code : str|None
+    user_id: str
 
 class BoardListOut(PaginationOut):
     boardlist:list[BoardBase]
