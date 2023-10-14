@@ -33,7 +33,7 @@ class Answer(BaseModel):
     a_id: int
     answer: str
     code: str
-    ans_writer: str
+    ans_writer: str|None
     time: datetime
     check: int
     

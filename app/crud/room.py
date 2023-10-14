@@ -213,7 +213,7 @@ class CrudRoom(Crudbase[Room,int]):
             ans_sql = """
                 select q.id, a.a_id, a.answer, a.code, a.ans_writer, a.time, a.check 
                 from room.%s_qa as a, room.%s_question as q
-                where a.q_id = q.id and q.id = %s ;
+                where a.q_id = q.id and q.id = %s;
             """
             ans_data = (room_id,room_id, q['id'])
             ans_result = db_cursor.select_sql(ans_sql, ans_data)
@@ -222,9 +222,15 @@ class CrudRoom(Crudbase[Room,int]):
                 if ans['check'] == 1:
                     check = True
                     break
+            ai_answer_sql = '''
+                select q.id, a.a_id, a.answer, a.code, a.ans_writer, a.time, a.check 
+                from plugin.qa as a, room.%s_question as q
+                where a.room_id = %s and a.q_id = q.id and q.id = %s;
+            '''
+            ai_result = db_cursor.select_sql(ai_answer_sql, ans_data)
             qa.append({
                 **q,
-                'answers':ans_result,
+                'answers':list(ans_result) + list(ai_result),
                 'check': check,
                 'q_writer_level': user_crud.get_level(q['exp'])['level']
             })
