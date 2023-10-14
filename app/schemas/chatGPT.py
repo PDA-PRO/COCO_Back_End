@@ -25,6 +25,7 @@ class UploadAITask(BaseModel):
     category:str
 
 class AiCode(BaseModel):
-    task_id: int
     code: str
-    type: int
+    task_id: int
+    sub_id: int
+    

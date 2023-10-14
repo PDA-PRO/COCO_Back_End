@@ -47,11 +47,12 @@ def upload_task(description:str=Form(...),info: UploadAITask=Depends(), db_curso
     return crud_chatGPT.upload_task(db_cursor, info, description)
 
 @router.post("/ai-code", tags=["ai"])
-def ai_code(info: AiCode, db_cursor: DBCursor=Depends(get_cursor)):
+def ai_code(info: AiCode, token: dict = Depends(security.check_token), db_cursor: DBCursor=Depends(get_cursor)):
     '''
     - info: AI의 코드 추천
-        - task_id: 문제 id
         - code: 사용자의 코드
-        - type: 효율적인 코드/다른 유형 코드
+        - task_id: 문제 id
+        - submit_id: 제출 id
+        
     '''
     return crud_chatGPT.ai_code(db_cursor, info)

@@ -8,8 +8,10 @@ import zipfile
 import shutil
 from app.crud.task import task_crud
 from app.core.image import image
+from ast import literal_eval
+
 class CrudChatGPT(Crudbase):
-    def chatGPT(self, prompt):
+    def ask_ai(self, prompt):
         openai.api_key = os.getenv("CHATGPT_KEY")
         completion = openai.Completion.create(
         engine='text-davinci-003'  # 'text-curie-001'  # 'text-babbage-001' #'text-ada-001'
@@ -55,7 +57,7 @@ class CrudChatGPT(Crudbase):
 
         
         # 답변 오면 JSON 형태로 저장
-        result = self.chatGPT(prompt)
+        result = self.ask_ai(prompt)
         for item in self.extract_json_objects(result):
             result = item
         
@@ -138,7 +140,7 @@ class CrudChatGPT(Crudbase):
         ''' % (info.content)
 
         # 문제 내용 JSON 변환
-        task_result = self.chatGPT(task_prompt)
+        task_result = self.ask_ai(task_prompt)
         for item in self.extract_json_objects(task_result):
             task_result = item
         
@@ -168,7 +170,7 @@ class CrudChatGPT(Crudbase):
 
 # '''
         # 테스트 케이스 생성 후 JSON 변환
-        testcase_result = self.chatGPT(testcase_prompt)
+        testcase_result = self.ask_ai(testcase_prompt)
 
         for item in self.extract_json_objects(testcase_result):
             testcase_result = item
@@ -258,11 +260,92 @@ class CrudChatGPT(Crudbase):
         '''
             유저가 제출한 코드에 대한 ai의 추천 코드
         '''
+        # print(info)
+
+        efficient_prompt = '''
+%s
+
+다음 코드를 시간과 메모리 측면에서 효율적으로 수정해줘
+
+만약 코드 수정이 필요 없을 때 다음과 같은 형식을 사용해서 출력해줘:
+{ 
+  "code": "False"
+}
+
+코드 수정이 필요하다면 다음과 같은 형식을 사용해서 위 코드를 수정해줘:
+{
+    "code": "<리스트에 저장된 수정 코드>"
+}
+           
+        ''' % (info.code)
+
+        #  ai 답변 결과를 dict 형태로 변경
+        efficient_result = self.ask_ai(efficient_prompt)
+        start_idx = 0
+        for i in range(len(efficient_result)):
+            if efficient_result[i] == '{':
+                start_idx = i
+                break
+        efficient_result = efficient_result[start_idx: ]
+        efficient_result = literal_eval(efficient_result)
+        code = efficient_result['code']
+
+
+        # 해당 코드에 대한 ai 코드가 있는지 확인
+        exist_sql = "select count(*) as exist FROM `plugin`.`ai_code` WHERE (`task_id` = %s and `sub_id` = %s);"
+        exist = db_cursor.select_sql(exist_sql, (info.task_id, info.sub_id))
+        exist = exist[0]['exist']
+
+        if exist == 0: #ai 수정 코드가 없다면 insert
+            sql = "INSERT INTO `plugin`.`ai_code` (`task_id`, `sub_id`, `code`) VALUES (%s, %s, %s);"
+            data = (info.task_id, info.sub_id, code)
+        else: # 이미 있으면 update
+            sql = "UPDATE `plugin`.`ai_code` SET `code` = %s WHERE (`task_id` = %s) and (`sub_id` = %s);"
+            data = (code, info.task_id, info.sub_id)
+
+        db_cursor.execute_sql(sql, data)
+        return True
+        
         
 
         
 
 crud_chatGPT = CrudChatGPT()
+
+
+#         efficient_result = '''
+# 다음과 같습니다
+# {
+#     "code": """
+# import sys
+
+# tmp = sys.stdin.readline().strip()
+# tmp = tmp.upper()
+
+# # 문자 빈도수를 저장하는 딕셔너리를 사용
+# char_count = {}
+
+# for char in tmp:
+#     if char.isalpha():  # 알파벳 문자인 경우에만 처리
+#         char_count[char] = char_count.get(char, 0) + 1
+
+# # 가장 빈도수가 높은 문자 찾기
+# max_count = max(char_count.values())
+
+# # 빈도수가 가장 높은 문자를 찾기
+# max_chars = [char for char, count in char_count.items() if count == max_count]
+
+# # 결과 출력
+# if len(max_chars) == 1:
+#     print(max_chars[0])
+# else:
+#     print("??????")
+#     """
+# }
+
+# '''
+
+
 
 
 #         task_result = '''

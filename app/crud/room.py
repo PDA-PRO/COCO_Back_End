@@ -222,6 +222,7 @@ class CrudRoom(Crudbase[Room,int]):
                 if ans['check'] == 1:
                     check = True
                     break
+            # ai가 작성한 답변 
             ai_answer_sql = '''
                 select q.id, a.a_id, a.answer, a.code, a.ans_writer, a.time, a.check 
                 from plugin.qa as a, room.%s_question as q
