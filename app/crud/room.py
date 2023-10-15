@@ -33,10 +33,11 @@ class CrudRoom(Crudbase[Room,int]):
         for member in info.members:
             member_data = (last_idx, member)
             db_cursor.execute_sql(member_sql, member_data)
-            alarm_crud.create_alarm(db_cursor, {'sender':info.leader, 'receiver': member, 'context': {
-                "room_id":last_idx,
-                "room_name": info.name
-            }, 'category': 5})
+            if member != info.members[0]:
+                alarm_crud.create_alarm(db_cursor, {'sender':info.members[0], 'receiver': member, 'context': {
+                    "room_id":last_idx,
+                    "room_name": info.name
+                }, 'category': 5})
             
 
         #관련 테이블 생성

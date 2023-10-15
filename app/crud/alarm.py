@@ -3,63 +3,65 @@ import json
 
 class CrudAlarm(Crudbase):
     def create_alarm(self, db_cursor, info):
+        print(info)
         sql, data = '', ''
         # 1: 내 게시글에 댓글, 2: 내 게시글 좋아요, 3: 내 댓글 좋아요
-        if info['context'] == 1 or info['context'] == 2 or info['context'] == 3:
+        if info['category'] == 1 or info['category'] == 2 or info['category'] == 3:
             sql = '''
                 INSERT INTO `coco`.`alarm` (`receiver`, `sender`, `is_read`, `context`, `time`, `category`) 
                 VALUES (%s, %s, '0', json_object('board_id', %s), now(), %s);
             '''
             data = (info['receiver'], info['sender'], info['context']['board_id'], info['category'])
-            db_cursor.execute_sql(sql, data)
         # 5: 튜터가 튜티 스룸에 초대
-        if info['context'] == 5:
+        if info['category'] == 5:
             sql = '''
                 INSERT INTO `coco`.`alarm` (`receiver`, `sender`, `is_read`, `context`, `time`, `category`) 
                 VALUES (%s, %s, '0', json_object('room_id', %s, 'room_name', %s), now(), %s);
             '''
             data = (info['receiver'], info['sender'],info['context']['room_id'],info['context']['room_name'], info['category'])
-            db_cursor.execute_sql(sql, data) 
         # 6: 스룸 삭제
-        if info['context'] == 6:
+        if info['category'] == 6:
             sql = '''
                 INSERT INTO `coco`.`alarm` (`receiver`, `sender`, `is_read`, `context`, `time`, `category`) 
                 VALUES (%s, %s, '0', json_object('room_name', %s), now(), %s);
             '''
             data = (info['receiver'], info['sender'], info['context']['room_name'], info['category'])
-            db_cursor.execute_sql(sql, data)  
         # 7: 스룸 질문에 답변 남김
-        if info['context'] == 7:
+        if info['category'] == 7:
             sql = '''
                 INSERT INTO `coco`.`alarm` (`receiver`, `sender`, `is_read`, `context`, `time`, `category`) 
                 VALUES (%s, %s, '0', json_object('room_id', %s, 'q_id', %s), now(), %s);
             '''
             data = (info['receiver'], info['sender'], info['context']['room_id'], info['context']['q_id'], info['category'])
-            db_cursor.execute_sql(sql, data) 
         # 8: 스룸 질문에 답변 채택
-        if info['context'] == 8:
+        if info['category'] == 8:
             sql = '''
                 INSERT INTO `coco`.`alarm` (`receiver`, `sender`, `is_read`, `context`, `time`, `category`) 
                 VALUES (%s, %s, '0', json_object('room_id', %s), now(), %s);
             '''
             data = (info['receiver'], info['sender'], info['context']['room_id'], info['category'])
-            db_cursor.execute_sql(sql, data)
         # 9: 스룸에 새로운 로드맵, 10: 로드맵 업뎃
-        if info['context'] == 9 or info['context'] == 10:
+        if info['category'] == 9 or info['category'] == 10:
             sql = '''
                 INSERT INTO `coco`.`alarm` (`receiver`, `sender`, `is_read`, `context`, `time`, `category`) 
                 VALUES (%s, %s, '0', json_object('room_id', %s, 'room_name', %s, 'roadmap_name', %s, 'roadmap_id', %s), now(), %s);
             '''
             data = (info['receiver'], info['sender'], info['context']['room_id'],info['context']['room_name'], info['context']['roadmap_name'], info['context']['roadmap_id'], info['category'])
-            db_cursor.execute_sql(sql, data)  
         # 11: 스룸에 새로운 질문
-        if info['context'] ==11:
+        if info['category'] ==11:
             sql = '''
                 INSERT INTO `coco`.`alarm` (`receiver`, `sender`, `is_read`, `context`, `time`, `category`) 
                 VALUES (%s, %s, '0', json_object('room_id', %s, 'room_name', %s), now(), %s);
             '''
             data = (info['receiver'], info['sender'], info['context']['room_id'], info['context']['room_name'], info['category'])
-            db_cursor.execute_sql(sql, data)            
+        # 13: 관리자 권한 획득, 13: 튜터 권한 획득
+        if info['category'] == 13 or info['category'] == 14:
+            sql = '''
+                INSERT INTO `coco`.`alarm` (`receiver`, `is_read`, `time`, `category`) 
+                VALUES (%s, '0', now(), %s);
+            '''
+            data = (info['receiver'], info['category'])
+        db_cursor.execute_sql(sql, data) 
         return True
     
     def get_alarm(self, db_cursor, user_id):

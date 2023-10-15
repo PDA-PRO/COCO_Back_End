@@ -86,9 +86,21 @@ def update_permission(info : UpdatePermission,token: dict = Depends(security.che
         )
     if info.role is not None:
         user_crud.update(db_cursor,{"role":info.role},id=info.id)
-    if info.tutor  is not None:
+        if info.role == 1:
+            alarm_crud.create_alarm(db_cursor, {
+                'sender': None,
+                'receiver': info.id,
+                'category': 13
+            })
+    if info.tutor is not None:
         user_crud.update(db_cursor,{"tutor":info.tutor},id=info.id)
         user_crud.delete(db_cursor,table="user_tutor",user_id=info.id)
+        if info.tutor == 1:
+            alarm_crud.create_alarm(db_cursor, {
+                'sender': None,
+                'receiver': info.id,
+                'category': 14
+            })
     
     return {"code":1}
 

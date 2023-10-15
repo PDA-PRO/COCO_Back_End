@@ -210,29 +210,29 @@ def update_roadmap(info: RoomRoadMap,room_id:int, token: dict = Depends(security
         room_crud.create(db_cursor,{"roadmap_id":info.id,"task_id":i},"room",roadmap_ids_table)
 
     # 스터디룸 로드맵 수정 시 알람
-    # room_name_sql = 'SELECT name FROM coco.room where id = %s;'
-    # room_name_data = (room_id)
-    # room_result = db_cursor.select_sql(room_name_sql, room_name_data)
+    room_name_sql = 'SELECT name FROM coco.room where id = %s;'
+    room_name_data = (room_id)
+    room_result = db_cursor.select_sql(room_name_sql, room_name_data)
 
-    # users_sql = 'SELECT user_id FROM coco.room_ids where room_id = %s;'
-    # users_data = (room_id)
-    # users_result = db_cursor.select_sql(users_sql, users_data)
-    # for result in users_result:
-    #     user = result['user_id']    
-    #     alarm_crud.create_alarm(
-    #         db_cursor,
-    #         {
-    #             'sender': None,
-    #             'receiver': user,
-    #             'context': {
-    #                 'room_id': info.id,
-    #                 'room_name': room_result[0]['name'],
-    #                 'roadmap_name': info.name,
-    #                 'roadmap_id': info.roadmap_id
-    #                 },
-    #             'category': 10
-    #         }
-    #     )    
+    users_sql = 'SELECT user_id FROM coco.room_ids where room_id = %s;'
+    users_data = (room_id)
+    users_result = db_cursor.select_sql(users_sql, users_data)
+    for result in users_result:
+        user = result['user_id']    
+        alarm_crud.create_alarm(
+            db_cursor,
+            {
+                'sender': None,
+                'receiver': user,
+                'context': {
+                    'room_id': room_id,
+                    'room_name': room_result[0]['name'],
+                    'roadmap_name': info.name,
+                    'roadmap_id': info.id
+                    },
+                'category': 10
+            }
+        )    
     return {"code":1}
 
 @router.delete('/roadmap/{room_id}', tags=['room'],response_model=BaseResponse)
