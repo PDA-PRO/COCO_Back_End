@@ -28,4 +28,10 @@ class AiCode(BaseModel):
     code: str
     task_id: int
     sub_id: int
+
+
+class CodeImprovement(BaseModel):
+    data: bool
+    code: str
+    desc: str
     

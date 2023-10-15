@@ -30,6 +30,16 @@ class CrudChatGPT(Crudbase):
             스터디룸에 등록된 질문에 대한 AI 답변
         '''
 
+        # 해당 질문에 대한 ai 답변이 있는지 확인
+        exist_sql = "select count(*) as exist FROM `plugin`.`qa` WHERE (`room_id` = %s and `q_id` = %s);"
+        exist = db_cursor.select_sql(exist_sql, (info.room_id, info.q_id))
+        exist = exist[0]['exist']
+
+        # 이미 답변이 있으면 함수 종료
+        if exist != 0:
+            return False
+
+
         content = BeautifulSoup(info.content, "lxml").text
         if info.code == "": 
             prompt = '''
@@ -66,39 +76,20 @@ class CrudChatGPT(Crudbase):
             result = json.loads(result, strict=False)
         
 
-        # 해당 질문에 대한 ai 답변이 있는지 확인
-        exist_sql = "select count(*) as exist FROM `plugin`.`qa` WHERE (`room_id` = %s and `q_id` = %s);"
-        exist = db_cursor.select_sql(exist_sql, (info.room_id, info.q_id))
-        exist = exist[0]['exist']
-
-        if exist == 0: # 기존 ai 답변이 없으면
-            if info.code != "": # 질문에 코드 포함
-                ans_code =  result['code']
-                ans_content = '<p>'+result['content']+'</p>'
-                data = (info.room_id, info.q_id, ans_content, ans_code)
-            else: # 코드 없이 질문만
-                ans_content = '<p>'+result['content']+'</p>'
-                data = (info.room_id, info.q_id, ans_content, info.code)
-            
-            # 플러그인 스키마 qa에 저장
-            sql = """
-                INSERT INTO `plugin`.`qa` (`room_id`, `q_id`, `answer`, `code`, `time`, `check`)
-                VALUES (%s, %s, %s, %s, now(), 0);
-            """
-            db_cursor.execute_sql(sql, data)
-        else: # 기존 ai 답변이 있으면
-            if info.code != "":
-                ans_code =  result['code']
-                ans_content = '<p>'+result['content']+'</p>'
-                data = (ans_content, ans_code, info.room_id, info.q_id)
-            else:
-                ans_content = '<p>'+result['content']+'</p>'
-                data = (ans_content, info.code, info.room_id, info.q_id)
-                
-            # 플러그인 스키마 qa의 기존 답변 업뎃
-            sql = "UPDATE `plugin`.`qa` SET `answer` = %s, `code` = %s, `time` = now() WHERE (`room_id` = %s and `q_id` = %s);"
-            db_cursor.execute_sql(sql, data)
-
+        if info.code != "": # 질문에 코드 포함
+            ans_code =  result['code']
+            ans_content = '<p>'+result['content']+'</p>'
+            data = (info.room_id, info.q_id, ans_content, ans_code)
+        else: # 코드 없이 질문만
+            ans_content = '<p>'+result['content']+'</p>'
+            data = (info.room_id, info.q_id, ans_content, info.code)
+        
+        # 플러그인 스키마 qa에 저장
+        sql = """
+            INSERT INTO `plugin`.`qa` (`room_id`, `q_id`, `answer`, `code`, `time`, `check`)
+            VALUES (%s, %s, %s, %s, now(), 0);
+        """
+        db_cursor.execute_sql(sql, data)
         return True
 
     def create_task(self, db_cursor:DBCursor, info):
@@ -262,6 +253,21 @@ class CrudChatGPT(Crudbase):
         '''
         # print(info)
 
+        # 해당 코드에 대한 ai 코드가 있는지 확인
+        exist_sql = "select count(*) as exist FROM `plugin`.`ai_code` WHERE (`task_id` = %s and `sub_id` = %s);"
+        exist = db_cursor.select_sql(exist_sql, (info.task_id, info.sub_id))
+        exist = exist[0]['exist']
+
+        if exist == 1: #ai 개선 코드가 있다면
+            sql = "SELECT * FROM plugin.ai_code where task_id = %s and sub_id = %s;"
+            data = (info.task_id, info.sub_id)
+            result = db_cursor.select_sql(sql, data)
+            return {
+                'data': True,
+                'code': result[0]['code'],
+                'desc': result[0]['desc']
+            }
+
         efficient_prompt = '''
 %s
 
@@ -269,15 +275,19 @@ class CrudChatGPT(Crudbase):
 
 만약 코드 수정이 필요 없을 때 다음과 같은 형식을 사용해서 출력해줘:
 { 
-  "code": "False"
+    "code": "False",
+    "desc": "",
 }
 
 코드 수정이 필요하다면 다음과 같은 형식을 사용해서 위 코드를 수정해줘:
 {
-    "code": "<리스트에 저장된 수정 코드>"
+    "code": "<수정된 코드>",
+    "desc": "<수정된 코드에 대한 자세한 설명>"
 }
            
         ''' % (info.code)
+
+
 
         #  ai 답변 결과를 dict 형태로 변경
         efficient_result = self.ask_ai(efficient_prompt)
@@ -287,24 +297,22 @@ class CrudChatGPT(Crudbase):
                 start_idx = i
                 break
         efficient_result = efficient_result[start_idx: ]
+        
+        print(efficient_result)
         efficient_result = literal_eval(efficient_result)
+
         code = efficient_result['code']
+        desc = efficient_result['desc']
+        print(code, desc)
 
-
-        # 해당 코드에 대한 ai 코드가 있는지 확인
-        exist_sql = "select count(*) as exist FROM `plugin`.`ai_code` WHERE (`task_id` = %s and `sub_id` = %s);"
-        exist = db_cursor.select_sql(exist_sql, (info.task_id, info.sub_id))
-        exist = exist[0]['exist']
-
-        if exist == 0: #ai 수정 코드가 없다면 insert
-            sql = "INSERT INTO `plugin`.`ai_code` (`task_id`, `sub_id`, `code`) VALUES (%s, %s, %s);"
-            data = (info.task_id, info.sub_id, code)
-        else: # 이미 있으면 update
-            sql = "UPDATE `plugin`.`ai_code` SET `code` = %s WHERE (`task_id` = %s) and (`sub_id` = %s);"
-            data = (code, info.task_id, info.sub_id)
-
+        sql = "INSERT INTO `plugin`.`ai_code` (`task_id`, `sub_id`, `code`, `desc`) VALUES (%s, %s, %s, %s);"
+        data = (info.task_id, info.sub_id, code, desc)
         db_cursor.execute_sql(sql, data)
-        return True
+        return {
+            'data': True,
+            'code': code,
+            'desc': desc
+        }
         
         
 
@@ -313,36 +321,12 @@ class CrudChatGPT(Crudbase):
 crud_chatGPT = CrudChatGPT()
 
 
-#         efficient_result = '''
-# 다음과 같습니다
+#     efficient_result = '''
+
 # {
-#     "code": """
-# import sys
-
-# tmp = sys.stdin.readline().strip()
-# tmp = tmp.upper()
-
-# # 문자 빈도수를 저장하는 딕셔너리를 사용
-# char_count = {}
-
-# for char in tmp:
-#     if char.isalpha():  # 알파벳 문자인 경우에만 처리
-#         char_count[char] = char_count.get(char, 0) + 1
-
-# # 가장 빈도수가 높은 문자 찾기
-# max_count = max(char_count.values())
-
-# # 빈도수가 가장 높은 문자를 찾기
-# max_chars = [char for char, count in char_count.items() if count == max_count]
-
-# # 결과 출력
-# if len(max_chars) == 1:
-#     print(max_chars[0])
-# else:
-#     print("??????")
-#     """
+#     "code": "tmp = sys.stdin.readline().strip().upper()\ncnt = {}\nfor i in range(len(tmp)):\n    if tmp[i] not in cnt:\n        cnt[tmp[i]] = tmp.count(tmp[i])\n\nnewCnt = sorted(cnt.items(), key=lambda x: x[1], reverse=True)\n\nif len(newCnt) == 1:\n    print(newCnt[0][0])\nelse:\n    if newCnt[0][1] == newCnt[1][1]:\n        print('?')\n    else:\n        print(newCnt[0][0])",
+#     "desc": "입력받은 문자열을 대문자로 변환하고 이를 딕셔너리 cnt에 저장합니다. 그리고 딕셔너리를 value를 기준으로 내림차순 정렬합니다. 만약 딕셔너리의 길이가 1이라면 첫 번째 값을 출력하고, 길이가 2 이상이라면 첫 번째 값과 두  번째 값의 value가 같으면 '?'를 출력하고 같지 않다면 첫 번째 값을 출력합니다."
 # }
-
 # '''
 
 
