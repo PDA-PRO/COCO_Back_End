@@ -4,10 +4,10 @@ from app.core import security
 from app.api.deps import get_cursor,DBCursor
 from app.schemas.chatGPT import *
 
-router = APIRouter(prefix='/chatgpt')
+router = APIRouter(prefix='/ai')
 
-@router.post("/", tags=['ai'])
-def ai_answer(info: AskQ,db_cursor:DBCursor=Depends(get_cursor)):
+@router.post("/ai-answer", tags=['ai'])
+def ai_answer(info: AskQ, token: dict = Depends(security.check_token), db_cursor:DBCursor=Depends(get_cursor)):
     '''
     - info: question 생성에 필요한 입력 데이터
         - content: user가 작성한 질문
