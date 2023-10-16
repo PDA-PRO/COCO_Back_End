@@ -16,6 +16,7 @@ class BoardBase(BaseModel):
     views: int
     comments: int
     code : str|None
+    user_id: str
 
 class BoardListOut(PaginationOut):
     boardlist:list[BoardBase]
@@ -29,7 +30,7 @@ class CreateBoard(BaseModel):
     title: str
     context: str
     category: int
-    code: str=None
+    code: str|None
     
 class CommentBase(BaseModel):
     id: int

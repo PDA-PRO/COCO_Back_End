@@ -9,15 +9,15 @@ from app.schemas.common import BaseResponse
 
 router = APIRouter()
 
-@router.get("/hot", tags=['mics.'])
+@router.get("/hot", tags=['misc.'])
 def hot_list(db_cursor:DBCursor=Depends(get_cursor)):
     return hot_crud.hot_list(db_cursor)
 
-@router.get('/my_status/{user_id}', tags=['mics.'])
+@router.get('/my_status/{user_id}', tags=['misc.'])
 def my_status(user_id: str, token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     return hot_crud.my_status(db_cursor,user_id)
 
-@router.get("/notice",tags=["mics."])
+@router.get("/notice",tags=["misc."])
 def read_notice():
     """
     공지사항 조회
@@ -30,7 +30,7 @@ def read_notice():
         )
     return result
 
-@router.put('/notice', tags=["mics."])
+@router.put('/notice', tags=["misc."])
 def update_notice(content: Annotated[str, Body(embed=True)], token: dict = Depends(security.check_token)):
     """
     공지사항 업데이트
@@ -50,7 +50,7 @@ def update_notice(content: Annotated[str, Body(embed=True)], token: dict = Depen
             detail="공지사항 파일 업데이트 중 오류 발생"
         )
     
-@router.get('/request-tutor', tags = ['mics.'])
+@router.get('/request-tutor', tags = ['misc.'])
 def read_tutor_request(token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     '''
     모든 튜터 신청 정보 조회

@@ -24,6 +24,7 @@ def create_board(writeBoard: CreateBoard, token: dict = Depends(security.check_t
 
     board_id=board_crud.create_board(db_cursor,writeBoard,token["id"])
     result=board_crud.read(db_cursor,id=board_id)[0]
+    result['user_id'] = token["id"]
     return result
 
 @router.get('/', tags = ['board'],response_model=BoardListOut)
@@ -38,9 +39,23 @@ def read_board(info:PaginationIn=Depends(),db_cursor:DBCursor=Depends(get_cursor
     '''
     if info.size and info.page:
         total,result=board_crud.read_with_pagination(db_cursor,size=info.size,page=info.page,sort=True)
+        # 게시글 데이터에 작성자 추가
+        for board in result:
+            id = board['id']
+            sql = "SELECT * FROM coco.boards_ids where board_id = %s;"
+            data = (id)
+            writer = db_cursor.select_sql(sql, data)
+            board['user_id'] = writer[0]['user_id']
         return {"total":total,"size":info.size,"boardlist":result}
     else:
         result=board_crud.read(db_cursor,sort=True)
+        # 게시글 데이터에 작성자 추가
+        for board in result:
+            id = board['id']
+            sql = "SELECT * FROM coco.boards_ids where board_id = %s;"
+            data = (id)
+            writer = db_cursor.select_sql(sql, data)
+            board['user_id'] = writer[0]['user_id']
         return {"boardlist":result}
 
 @router.get('/{board_id}', tags = ['board'],response_model=BoardDetail)

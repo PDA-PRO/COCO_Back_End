@@ -6,6 +6,7 @@ from app.core.image import image
 from app.schemas.common import PaginationIn
 import os
 from app.crud.alarm import alarm_crud
+from app.crud.user import user_crud
 
 class CrudRoom(Crudbase[Room,int]):
     def create_room(self, db_cursor:DBCursor,info:CreateRoom,user_id:str):
@@ -32,10 +33,11 @@ class CrudRoom(Crudbase[Room,int]):
         for member in info.members:
             member_data = (last_idx, member)
             db_cursor.execute_sql(member_sql, member_data)
-            alarm_crud.create_alarm(db_cursor, {'sender':info.leader, 'receiver': member, 'context': {
-                "room_id":last_idx,
-                "room_name": info.name
-            }, 'category': 5})
+            if member != info.members[0]:
+                alarm_crud.create_alarm(db_cursor, {'sender':info.members[0], 'receiver': member, 'context': {
+                    "room_id":last_idx,
+                    "room_name": info.name
+                }, 'category': 5})
             
 
         #관련 테이블 생성
@@ -205,12 +207,13 @@ class CrudRoom(Crudbase[Room,int]):
         해당 study room에 등록된 모든 질문 리스트 리턴
         '''
         data = (room_id)
-        sql = 'SELECT r.* FROM room.%s_question as r, coco.user as c where r.writer = c.id order by time desc'
+        sql = 'SELECT r.*, c.exp FROM room.%s_question as r, coco.user as c where r.writer = c.id order by r.time desc'
         total,q_result = db_cursor.select_sql_with_pagination(sql, [data],pagination.size,pagination.page)
         qa = []
         for q in q_result:
             ans_sql = """
-                select q.id, a.a_id, a.answer, a.code, a.ans_writer, a.time, a.check from room.%s_qa as a, room.%s_question as q
+                select q.id, a.a_id, a.answer, a.code, a.ans_writer, a.time, a.check 
+                from room.%s_qa as a, room.%s_question as q
                 where a.q_id = q.id and q.id = %s;
             """
             ans_data = (room_id,room_id, q['id'])
@@ -223,9 +226,9 @@ class CrudRoom(Crudbase[Room,int]):
             qa.append({
                 **q,
                 'answers':ans_result,
-                'check': check
+                'check': check,
+                'q_writer_level': user_crud.get_level(q['exp'])['level']
             })
-
         return {"question_list":qa,"total":total,'size':pagination.size}
     
     def write_answer(self,db_cursor:DBCursor, info:RoomAnswer,ans_writer:str):

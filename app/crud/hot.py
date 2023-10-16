@@ -22,9 +22,7 @@ class CrudHot(Crudbase):
                 'title': board_result["title"],
              }
         else:
-            board_data = {
-                
-            }
+            board_data = False
         
         task_sql = """
             select count(*), i.task_id, t.title, t.rate, t.mem_limit, t.time_limit, t.diff 
@@ -45,9 +43,8 @@ class CrudHot(Crudbase):
                 'problem_diff': task_result["diff"]
             }
         else:
-            task_data = {
-                
-            }
+            task_data = False
+            
         return {
             'board': board_data,
             'problem': task_data

@@ -33,9 +33,10 @@ class Answer(BaseModel):
     a_id: int
     answer: str
     code: str
-    ans_writer: str
+    ans_writer: str|None
     time: datetime
     check: int
+    
 
 class Question(BaseModel):
     id: int
@@ -46,6 +47,7 @@ class Question(BaseModel):
     answers:list[Answer]
     check: bool
     time: datetime
+    q_writer_level: int
 
 class QuestionListOut(PaginationOut):
     question_list:list[Question]

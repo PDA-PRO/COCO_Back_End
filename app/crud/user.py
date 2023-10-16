@@ -81,7 +81,7 @@ class CrudUser(Crudbase[User,str]):
             - size : 페이지 크기
         """
         if info.keyword or info.role!=None or info.tutor!=None:
-            sql = "SELECT id, name, role FROM coco.user WHERE"
+            sql = "SELECT id, name, role, exp FROM coco.user WHERE"
             plus_sql=[]
             plus_data=[]
             if info.keyword:
@@ -108,6 +108,7 @@ class CrudUser(Crudbase[User,str]):
             return {"total":total,"size":info.size,"userlist":result}
         else:
             result=db_cursor.select_sql(sql, data)
+            print(result)
             for i in range(len(result)):
                 level = self.get_level(result[i]['exp'])
                 result[i]['level'] = level['level']
