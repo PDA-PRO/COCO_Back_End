@@ -24,6 +24,7 @@ def create_board(writeBoard: CreateBoard, token: dict = Depends(security.check_t
 
     board_id=board_crud.create_board(db_cursor,writeBoard,token["id"])
     result=board_crud.read(db_cursor,id=board_id)[0]
+    result['user_id'] = token["id"]
     return result
 
 @router.get('/', tags = ['board'],response_model=BoardListOut)
