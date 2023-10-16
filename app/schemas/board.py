@@ -30,7 +30,7 @@ class CreateBoard(BaseModel):
     title: str
     context: str
     category: int
-    code: str=None
+    code: str|None
     
 class CommentBase(BaseModel):
     id: int
