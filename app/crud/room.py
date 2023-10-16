@@ -223,16 +223,9 @@ class CrudRoom(Crudbase[Room,int]):
                 if ans['check'] == 1:
                     check = True
                     break
-            # ai가 작성한 답변 
-            ai_answer_sql = '''
-                select q.id, a.a_id, a.answer, a.code, a.ans_writer, a.time, a.check 
-                from plugin.qa as a, room.%s_question as q
-                where a.room_id = %s and a.q_id = q.id and q.id = %s;
-            '''
-            ai_result = db_cursor.select_sql(ai_answer_sql, ans_data)
             qa.append({
                 **q,
-                'answers':list(ans_result) + list(ai_result),
+                'answers':ans_result,
                 'check': check,
                 'q_writer_level': user_crud.get_level(q['exp'])['level']
             })
