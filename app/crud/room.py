@@ -454,11 +454,11 @@ class CrudRoom(Crudbase[Room,int]):
         db_cursor.execute_sql(sql, data)
 
         # 답변 채택 시 알람
-        if info.select == 1:
+        if info.select == 1 and info.ans_writer:
             alarm_crud.create_alarm(
                 db_cursor,
                 {
-                    'sender': info.q_writer,
+                    'sender': q_writer,
                     'receiver': info.ans_writer,
                     'context': {"room_id": info.room_id},
                     'category': 8

@@ -34,4 +34,9 @@ class CodeImprovement(BaseModel):
     data: bool
     code: str
     desc: str
+
+class CodeSelect(BaseModel):
+    task_id: int
+    sub_id: int
+    check: int
     

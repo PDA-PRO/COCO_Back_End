@@ -321,6 +321,12 @@ class CrudChatGPT(Crudbase):
             'code': code,
             'desc': desc
         }
+    
+    def code_select(self, db_cursor, info):
+        sql = "UPDATE `plugin`.`ai_code` SET `check` = %s WHERE (`task_id` = %s) and (`sub_id` = %s);"
+        data = (info.check, info.task_id, info.sub_id)
+        db_cursor.execute_sql(sql, data)
+        return True
         
         
 

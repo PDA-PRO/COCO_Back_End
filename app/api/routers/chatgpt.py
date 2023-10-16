@@ -52,7 +52,17 @@ def ai_code(info: AiCode, token: dict = Depends(security.check_token), db_cursor
     - info: AI의 코드 개선 추천
         - code: 사용자의 코드
         - task_id: 문제 id
-        - submit_id: 제출 id
+        - sub_id: 제출 id
         
     '''
     return crud_chatGPT.ai_code(db_cursor, info)
+
+@router.put("/code-select", tags=['ai'])
+def code_select(info: CodeSelect, token: dict = Depends(security.check_token), db_cursor: DBCursor=Depends(get_cursor)):
+    '''
+    - info: AI 코드 개선 채택
+        - task_id: 문제 id
+        - sub_id: 제출 id
+        - check: 채택 여부
+    '''
+    return crud_chatGPT.code_select(db_cursor, info)
