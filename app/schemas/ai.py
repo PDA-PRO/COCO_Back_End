@@ -1,5 +1,8 @@
 from pydantic import BaseModel
 
+class AiStatus(BaseModel):
+    plugin: str
+    status: int
 
 class AskQ(BaseModel):
     content: str

@@ -1,10 +1,43 @@
 from fastapi import APIRouter, Depends, security, Form
-from app.crud.chatgpt import crud_chatGPT
+from app.crud.ai import crud_ai
 from app.core import security
 from app.api.deps import get_cursor,DBCursor
-from app.schemas.chatGPT import *
+from app.schemas.ai import *
 
 router = APIRouter(prefix='/ai')
+
+@router.get("/status", tags=['ai'])
+def ai_status(db_cursor:DBCursor=Depends(get_cursor)):
+    '''
+    ai 플러그인 on/off 여부 확인
+    '''
+    return check_status(db_cursor)
+
+def check_status(db_cursor):
+    return db_cursor.select_sql("select * from `plugin`.`status`;", ())[0]
+
+
+@router.put("/status", tags=['ai'])
+def update_status(info: AiStatus, db_cursor:DBCursor=Depends(get_cursor)):
+    '''
+    - info: ai plugin on/off 설정
+        - plugin: ai 종류
+        - status: on/off 여부
+    '''
+    data = (info.status)
+    if info.plugin == 'wpc':
+        sql = "UPDATE `plugin`.`status` SET `wpc` = %s"
+        db_cursor.execute_sql(sql, data)
+    elif info.plugin == 'similar':
+        sql = "UPDATE `plugin`.`status` SET `similar` = %s"
+        db_cursor.execute_sql(sql, data)
+    else:
+        sql = "UPDATE `plugin`.`status` SET `qa` = %s"
+        db_cursor.execute_sql(sql, data)
+        sql = "UPDATE `plugin`.`status` SET `task` = %s"
+        db_cursor.execute_sql(sql, data)
+        sql = "UPDATE `plugin`.`status` SET `efficient` = %s"
+        db_cursor.execute_sql(sql, data)
 
 @router.post("/ai-answer", tags=['ai'])
 def ai_answer(info: AskQ, token: dict = Depends(security.check_token), db_cursor:DBCursor=Depends(get_cursor)):
@@ -16,7 +49,11 @@ def ai_answer(info: AskQ, token: dict = Depends(security.check_token), db_cursor
         - q_id: 답변이 달린 question id
     
     '''
-    return crud_chatGPT.ai_answer(db_cursor, info)
+    status = check_status(db_cursor)['qa']
+    if status == 0:
+        return ModuleNotFoundError
+    else:
+        return crud_ai.ai_answer(db_cursor, info)
 
 @router.post("/create-task", tags=['ai'])
 def create_task( info: CreateTask, db_cursor:DBCursor=Depends(get_cursor)):
@@ -24,7 +61,11 @@ def create_task( info: CreateTask, db_cursor:DBCursor=Depends(get_cursor)):
     - info: 처음 문제 생성 질문
         - content: 문제 생성 질문
     '''
-    return crud_chatGPT.create_task(db_cursor, info)
+    status = check_status(db_cursor)['task']
+    if status == 0:
+        return ModuleNotFoundError
+    else:
+        return crud_ai.create_task(db_cursor, info)
 
 
 @router.post("/upload-task", tags=['ai'])
@@ -44,7 +85,7 @@ def upload_task(description:str=Form(...),info: UploadAITask=Depends(), db_curso
         - category: 문제 카테고리, ','로 구문된 문자열
     - description: 문제 메인 설명
     '''
-    return crud_chatGPT.upload_task(db_cursor, info, description)
+    return crud_ai.upload_task(db_cursor, info, description)
 
 @router.post("/ai-code", tags=["ai"], response_model=CodeImprovement)
 def ai_code(info: AiCode, token: dict = Depends(security.check_token), db_cursor: DBCursor=Depends(get_cursor)):
@@ -55,7 +96,11 @@ def ai_code(info: AiCode, token: dict = Depends(security.check_token), db_cursor
         - sub_id: 제출 id
         
     '''
-    return crud_chatGPT.ai_code(db_cursor, info)
+    status = check_status(db_cursor)['efficient']
+    if status == 0:
+        return ModuleNotFoundError
+    else:
+        return crud_ai.ai_code(db_cursor, info)
 
 @router.put("/code-select", tags=['ai'])
 def code_select(info: CodeSelect, token: dict = Depends(security.check_token), db_cursor: DBCursor=Depends(get_cursor)):
@@ -65,4 +110,4 @@ def code_select(info: CodeSelect, token: dict = Depends(security.check_token), d
         - sub_id: 제출 id
         - check: 채택 여부
     '''
-    return crud_chatGPT.code_select(db_cursor, info)
+    return crud_ai.code_select(db_cursor, info)

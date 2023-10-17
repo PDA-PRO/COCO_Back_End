@@ -10,7 +10,7 @@ from app.crud.task import task_crud
 from app.core.image import image
 from ast import literal_eval
 
-class CrudChatGPT(Crudbase):
+class CrudAI(Crudbase):
     def ask_ai(self, prompt):
         openai.api_key = os.getenv("CHATGPT_KEY")
         completion = openai.Completion.create(
@@ -93,7 +93,7 @@ class CrudChatGPT(Crudbase):
 
 
         # 플러그인 스키마 qa에 저장
-        sql = "NSERT INTO `plugin`.`qa` (`room_id`, `a_id`, `q_id`) VALUES (%s, %s, %s);"
+        sql = "INSERT INTO `plugin`.`qa` (`room_id`, `a_id`, `q_id`) VALUES (%s, %s, %s);"
         data = (info.room_id, ans_id, info.q_id)
         db_cursor.execute_sql(sql, data)
         return True
@@ -338,7 +338,7 @@ class CrudChatGPT(Crudbase):
 
         
 
-crud_chatGPT = CrudChatGPT()
+crud_ai = CrudAI()
 
 
 #     efficient_result = '''
