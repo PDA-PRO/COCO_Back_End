@@ -10,7 +10,7 @@ class AbstractPlugin(metaclass=ABCMeta):
     ai 플러그인 추상클래스
     해당 `AbstractPlugin`를 상속받아 `Plugin`이름의 클래스 구현 필요
 
-    세부구현이 필요한 내부클래스
+    ai 플러그인의 데이터를 저장해야한다면 세부구현이 필요한 내부클래스
     - `TableModel` : `AbstractPlugin.AbstractTable`을 상속하는 클래스로써 ai플러그인 db 저장소 정의
 
     정의가 필요한 클래스변수
@@ -49,7 +49,7 @@ class AbstractPlugin(metaclass=ABCMeta):
     
     class AbstractTable():
         '''
-        TableModel의 이름의 클래스 명시 필수
+        TableModel의 이름으로 클래스 명시 필수
 
         ai 플러그인의 테이블 스키마 명시
         예시, ::
