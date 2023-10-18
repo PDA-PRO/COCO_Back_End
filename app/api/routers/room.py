@@ -268,15 +268,16 @@ def select_answer(info: SelectAnswer, token: dict = Depends(security.check_token
         - room_id: int
         - a_id: int
         - select: int
-        - ans_writer: str
     - token : jwt
     '''
-    try: 
-        room_crud.select_answer(db_cursor, info,token['id'])
-    except:
-        raise HTTPException(
-            status_code=403,
-            detail="권한이 없습니다.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+
+    room_crud.select_answer(db_cursor, info,token['id'])
+    # try: 
+    #     room_crud.select_answer(db_cursor, info,token['id'])
+    # except:
+    #     raise HTTPException(
+    #         status_code=403,
+    #         detail="권한이 없습니다.",
+    #         headers={"WWW-Authenticate": "Bearer"},
+    #     )
     return {"code":1}

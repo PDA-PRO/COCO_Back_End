@@ -5,7 +5,7 @@ from app.crud.user import user_crud
 from app.core import security
 from app.api.deps import get_cursor,DBCursor
 from app.core import notice
-from app.schemas.common import BaseResponse
+from app.schemas.common import BaseResponse, NoticeContent
 
 router = APIRouter()
 
@@ -31,13 +31,13 @@ def read_notice():
     return result
 
 @router.put('/notice', tags=["misc."])
-def update_notice(content: Annotated[str, Body(embed=True)], token: dict = Depends(security.check_token)):
+def update_notice(content: NoticeContent, token: dict = Depends(security.check_token)):
     """
     공지사항 업데이트
 
     - content : html형식의 공지사항 내용
     """
-    result=notice.update_notice(content)
+    result=notice.update_notice(content.content)
     if token["role"]!=1:
         raise HTTPException(
             status_code=403,

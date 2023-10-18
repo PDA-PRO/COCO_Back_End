@@ -1,4 +1,6 @@
 import os
+
+from fastapi import HTTPException
 from app.schemas.board import *
 from .base import Crudbase
 from app.core.image import image
@@ -67,11 +69,6 @@ class CrudBoard(Crudbase[Boards,int]):
         - 성공시 게시글 상세 정보 목록
         '''
 
-        #게시글 조회수 증가
-        update_views = "UPDATE `coco`.`boards` SET `views` = views+1 WHERE (`id` = %s);"
-        data=(board_id)
-        db_cursor.execute_sql(update_views,data)
-
         #게시글 정보 및 게시글 작성자 조회
         sql = """
             SELECT b.id, b.context, b.title, b.rel_task, b.time, 
@@ -81,6 +78,19 @@ class CrudBoard(Crudbase[Boards,int]):
         """
         data=(board_id)
         result = db_cursor.select_sql(sql,data)
+
+        if len(result) == 0:
+            raise HTTPException(
+                status_code=404,
+                detail="존재하지 않는 게시글입니다",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        #게시글 조회수 증가
+        update_views = "UPDATE `coco`.`boards` SET `views` = views+1 WHERE (`id` = %s);"
+        data=(board_id)
+        db_cursor.execute_sql(update_views,data)
+
 
         #조회를 요청한 유저가 게시글을 좋아요했는지 여부
         is_board_liked=False

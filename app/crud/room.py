@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from .base import Crudbase
 from app.schemas.room import *
 from app.models.room import *
@@ -331,7 +332,7 @@ class CrudRoom(Crudbase[Room,int]):
                 where r.id = rids.roadmap_id group by rids.roadmap_id;
         """
         data = (room_id,room_id)
-        result=db_cursor.select_sql(sql,data)
+        result=db_cursor.select_sql(sql,data)    
         for i in result:
             i["tasks"]=list(map(int,i["tasks"].split(",")))
         return result
@@ -365,6 +366,7 @@ class CrudRoom(Crudbase[Room,int]):
         """
         data = (room_id)
         result = db_cursor.select_sql(sql, data)
+
         members = []
         exp = 0
         for user in result:
@@ -391,6 +393,13 @@ class CrudRoom(Crudbase[Room,int]):
         roadmap_sql = "SELECT r.*, c.leader FROM room.%s_roadmap as r, coco.room as c where c.id = %s and r.id = %s;"
         roadmap_data = (room_id, room_id, roadmap_id)
         roadmap_result = db_cursor.select_sql(roadmap_sql, roadmap_data)
+
+        if len(roadmap_result) == 0:
+            raise HTTPException(
+                status_code=404,
+                detail="존재하지 않는 로드맵입니다.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
         # 로드맵에 속한 문제 리스트
         problem_sql = '''
@@ -454,11 +463,11 @@ class CrudRoom(Crudbase[Room,int]):
         db_cursor.execute_sql(sql, data)
 
         # 답변 채택 시 알람
-        if info.select == 1:
+        if info.select == 1 and info.ans_writer:
             alarm_crud.create_alarm(
                 db_cursor,
                 {
-                    'sender': info.q_writer,
+                    'sender': q_writer,
                     'receiver': info.ans_writer,
                     'context': {"room_id": info.room_id},
                     'category': 8
