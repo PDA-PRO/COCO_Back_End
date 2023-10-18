@@ -49,11 +49,11 @@ def ai_answer(info: AskQ, token: dict = Depends(security.check_token), db_cursor
         - q_id: 답변이 달린 question id
     
     '''
-    status = check_status(db_cursor)['qa']
-    if status == 0:
-        return ModuleNotFoundError
-    else:
-        return crud_ai.ai_answer(db_cursor, info)
+    # status = check_status(db_cursor)['qa']
+    # if status == 0:
+    #     return ModuleNotFoundError
+    # else:
+    return crud_ai.ai_answer(db_cursor, info)
 
 @router.post("/create-task", tags=['ai'])
 def create_task( info: CreateTask, db_cursor:DBCursor=Depends(get_cursor)):
@@ -61,11 +61,11 @@ def create_task( info: CreateTask, db_cursor:DBCursor=Depends(get_cursor)):
     - info: 처음 문제 생성 질문
         - content: 문제 생성 질문
     '''
-    status = check_status(db_cursor)['task']
-    if status == 0:
-        return ModuleNotFoundError
-    else:
-        return crud_ai.create_task(db_cursor, info)
+    # status = check_status(db_cursor)['task']
+    # if status == 0:
+    #     return ModuleNotFoundError
+    # else:
+    return crud_ai.create_task(db_cursor, info)
 
 
 @router.post("/upload-task", tags=['ai'])
@@ -96,11 +96,11 @@ def ai_code(info: AiCode, token: dict = Depends(security.check_token), db_cursor
         - sub_id: 제출 id
         
     '''
-    status = check_status(db_cursor)['efficient']
-    if status == 0:
-        return ModuleNotFoundError
-    else:
-        return crud_ai.ai_code(db_cursor, info)
+    # status = check_status(db_cursor)['efficient']
+    # if status == 0:
+    #     return ModuleNotFoundError
+    # else:
+    return crud_ai.ai_code(db_cursor, info)
 
 @router.put("/code-select", tags=['ai'])
 def code_select(info: CodeSelect, token: dict = Depends(security.check_token), db_cursor: DBCursor=Depends(get_cursor)):
