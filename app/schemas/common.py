@@ -1,3 +1,5 @@
+from typing import Annotated
+from fastapi import Body
 from pydantic import BaseModel,conint
 
 class PaginationIn(BaseModel):
@@ -10,3 +12,6 @@ class PaginationOut(BaseModel):
 
 class BaseResponse(BaseModel):
     code : int
+
+class NoticeContent(BaseModel):
+    content: Annotated[str, Body(embed=True)]

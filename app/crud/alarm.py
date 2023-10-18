@@ -54,8 +54,8 @@ class CrudAlarm(Crudbase):
                 VALUES (%s, %s, '0', json_object('room_id', %s, 'room_name', %s), now(), %s);
             '''
             data = (info['receiver'], info['sender'], info['context']['room_id'], info['context']['room_name'], info['category'])
-        # 13: 관리자 권한 획득, 13: 튜터 권한 획득
-        if info['category'] == 13 or info['category'] == 14:
+        # 13: 관리자 권한 획득, 14: 튜터 권한 획득
+        if info['category'] == 13 or info['category'] == 4:
             sql = '''
                 INSERT INTO `coco`.`alarm` (`receiver`, `is_read`, `time`, `category`) 
                 VALUES (%s, '0', now(), %s);

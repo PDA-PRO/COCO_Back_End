@@ -10,7 +10,7 @@ from app.crud.task import task_crud
 from app.core.image import image
 from ast import literal_eval
 
-class CrudChatGPT(Crudbase):
+class CrudAI(Crudbase):
     def ask_ai(self, prompt):
         openai.api_key = os.getenv("CHATGPT_KEY")
         completion = openai.Completion.create(
@@ -84,18 +84,17 @@ class CrudChatGPT(Crudbase):
         else: # 코드 없이 질문만
             ans_content = '<p>'+result['content']+'</p>'
             data = (info.room_id, info.q_id, ans_content, info.code)
-        
-        # # 플러그인 스키마 qa에 저장
-        # sql = """
-        #     INSERT INTO `plugin`.`qa` (`room_id`, `q_id`, `answer`, `code`, `time`, `check`)
-        #     VALUES (%s, %s, %s, %s, now(), 0);
-        # """
-        # db_cursor.execute_sql(sql, data)
 
         sql = """
             INSERT INTO `room`.`%s_qa` (`q_id`, `answer`, `code`, `time`, `check`) 
             VALUES (%s, %s, %s, now(), 0);
         """
+        ans_id = db_cursor.insert_last_id(sql, data)
+
+
+        # 플러그인 스키마 qa에 저장
+        sql = "INSERT INTO `plugin`.`qa` (`room_id`, `a_id`, `q_id`) VALUES (%s, %s, %s);"
+        data = (info.room_id, ans_id, info.q_id)
         db_cursor.execute_sql(sql, data)
         return True
 
@@ -188,6 +187,7 @@ class CrudChatGPT(Crudbase):
         data=(task.title, f"[{task.inputEx1}, {task.inputEx2}]",f"[{task.outputEx1}, {task.outputEx2}]",task.memLimit,task.timeLimit,task.diff)
         task_id=db_cursor.insert_last_id(sql,data)
 
+
         #카테고리 연결
         for i in map(lambda a:a.strip(),task.category.split(",")):
             sql="INSERT INTO `coco`.`task_ids` (`task_id`, `category`) VALUES (%s, %s);"
@@ -201,6 +201,12 @@ class CrudChatGPT(Crudbase):
         sql="insert into coco.descriptions values (%s,%s,%s,%s);"
         data=(task_id,maindesc,task.inputDescription,task.outputDescription)
         db_cursor.execute_sql(sql,data)
+
+
+        # 플러그인 task에 생성된 문제 아이디 저장
+        sql = "INSERT INTO `plugin`.`task` (`id`) VALUES (%s);"
+        data = (task_id)
+        db_cursor.execute_sql(sql, data)
 
 
         #테스트케이스 json 결과
@@ -321,12 +327,18 @@ class CrudChatGPT(Crudbase):
             'code': code,
             'desc': desc
         }
+    
+    def code_select(self, db_cursor, info):
+        sql = "UPDATE `plugin`.`ai_code` SET `check` = %s WHERE (`task_id` = %s) and (`sub_id` = %s);"
+        data = (info.check, info.task_id, info.sub_id)
+        db_cursor.execute_sql(sql, data)
+        return True
         
         
 
         
 
-crud_chatGPT = CrudChatGPT()
+crud_ai = CrudAI()
 
 
 #     efficient_result = '''

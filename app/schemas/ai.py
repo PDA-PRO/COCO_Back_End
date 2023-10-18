@@ -1,5 +1,8 @@
 from pydantic import BaseModel
 
+class AiStatus(BaseModel):
+    plugin: str
+    status: int
 
 class AskQ(BaseModel):
     content: str
@@ -34,4 +37,9 @@ class CodeImprovement(BaseModel):
     data: bool
     code: str
     desc: str
+
+class CodeSelect(BaseModel):
+    task_id: int
+    sub_id: int
+    check: int
     
