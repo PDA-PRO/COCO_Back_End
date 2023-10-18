@@ -1,6 +1,3 @@
-CREATE DATABASE  IF NOT EXISTS `coco` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
-CREATE DATABASE  IF NOT EXISTS `room`;
-USE `coco`;
 -- MySQL dump 10.13  Distrib 8.0.33, for Win64 (x86_64)
 --
 -- Host: localhost    Database: coco
@@ -17,6 +14,14 @@ USE `coco`;
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Current Database: `coco`
+--
+
+CREATE DATABASE /*!32312 IF NOT EXISTS*/ `coco` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+
+USE `coco`;
 
 --
 -- Table structure for table `alarm`
@@ -318,7 +323,7 @@ CREATE TABLE IF NOT EXISTS `submissions` (
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE IF NOT EXISTS `task` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `title` varchar(45) NOT NULL,
+  `title` varchar(100) NOT NULL,
   `sample` json NOT NULL,
   `rate` float DEFAULT '0',
   `mem_limit` mediumint NOT NULL,
@@ -474,20 +479,39 @@ SET @saved_cs_client     = @@character_set_client;
 SET character_set_client = @saved_cs_client;
 
 --
--- Table structure for table `wpc`
+-- Current Database: `room`
 --
 
+CREATE DATABASE /*!32312 IF NOT EXISTS*/ `room` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+
+USE `room`;
+
+
+--
+-- Current Database: `plugin`
+--
+
+CREATE DATABASE /*!32312 IF NOT EXISTS*/ `plugin` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+
+USE `plugin`;
+
+
+--
+-- Table structure for table `status`
+--
 
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE IF NOT EXISTS `wpc` (
-  `sub_id` int NOT NULL,
-  `status` tinyint NOT NULL,
-  `result` text,
-  PRIMARY KEY (`sub_id`),
-  CONSTRAINT `FK_wpc_sub` FOREIGN KEY (`sub_id`) REFERENCES `submissions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+CREATE TABLE IF NOT EXISTS `status` (
+  `plugin` varchar(45) NOT NULL,
+  `front` tinyint(1) DEFAULT 0,
+  `back` tinyint(1) DEFAULT 0,
+  `is_active` tinyint(1) DEFAULT 0,
+  PRIMARY KEY (`plugin`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+USE `coco`;
 
 --
 -- Final view structure for view `status_all`
@@ -642,4 +666,4 @@ CREATE TABLE IF NOT EXISTS `wpc` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-10-02 20:18:09
+-- Dump completed on 2023-10-18 15:36:50

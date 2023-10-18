@@ -1,5 +1,5 @@
 # 파이썬 3.10 이미지 기반
-FROM python:3.10
+FROM python:3.10.13-slim
 
 #이미지 내의 작업 디렉토리 설정
 WORKDIR /home
@@ -11,6 +11,7 @@ RUN pip install --no-cache-dir --trusted-host pypi.python.org -r /home/app/requi
 #코드 복사
 COPY ./app /home/app
 
+ADD ./base_task_set.zip /home/base_task_set.zip
 ADD start.sh .
 ADD ./profile/base.jpg /static/profile/base.jpg
 
