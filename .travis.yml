@@ -7,5 +7,5 @@ python:
 install:
   - pip install -r requirements.txt
 # command to run tests
-script:
-  - pytest
+script: # 테스트코드를 실행시킬 커맨드(스크립트)
+- python -m unittest
