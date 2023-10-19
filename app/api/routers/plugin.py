@@ -12,7 +12,7 @@ if os.getenv("PLUG_IN_LIST"):
             print(i.strip()+" 모듈이 존재하지 않습니다.")
         plugin=module.Plugin
         try:
-            plugin.creat_table()
+            plugin.create_table()
         except:
             pass
         if plugin.test():

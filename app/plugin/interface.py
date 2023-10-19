@@ -94,7 +94,7 @@ class AbstractPlugin(metaclass=ABCMeta):
     }
 
     @classmethod
-    def creat_table(cls):
+    def create_table(cls):
         '''
         ai 플러그인 db 저장소 테이블 생성
         '''
