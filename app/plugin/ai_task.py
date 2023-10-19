@@ -1,14 +1,12 @@
 from ast import literal_eval
-import datetime
 import json
 import os
 import zipfile
 from bs4 import BeautifulSoup
 from fastapi import Depends, Form
 import openai
-import requests
 from app.api.deps import get_cursor
-from app.core import image, security
+from app.core.image import image
 from app.db.base import DBCursor
 from app.plugin.interface import AbstractPlugin
 from app.schemas.ai import CreateTask
@@ -27,13 +25,13 @@ class Plugin(AbstractPlugin):
         
     @staticmethod
     def main(info: CreateTask, db_cursor:DBCursor=Depends(get_cursor)):
-        print(info.form_data)
         if info.is_final == False:
             prompt = '''
 %s
 
 
-다음과 같은 JSON 형식을 사용해서 알려주세요:
+반드시 다음과 같은 JSON 형식을 사용해서 알려주세요:
+
 {
     "problem": {
         "title": "<문제 제목>",
@@ -55,51 +53,35 @@ class Plugin(AbstractPlugin):
             }
         ]
     },
-  "constraints": {
+    "constraints": {
         "memory": "<메모리 제약 조건>",
-        "time": "<시간 제약 조건>"
-  }
+        "time": '<시간 제약 조건>'
+    },
+    "code" : {
+        "code": "<파이썬 정답 코드>"
+    }
 }
         ''' % (info.content)
 
-        # # 문제 내용 JSON 변환
-        # result = ask_ai(prompt)
-        # for item in extract_json_objects(result):
-        #     result = item
+            # 문제 내용 JSON 변환
+            result = ask_ai(prompt)
 
-            result = '''
-{
-    "problem": {
-        "title": "숫자의 합 구하기",
-        "description": "1부터 N까지의 숫자의 합을 구하는 알고리즘 문제입니다.",
-        "input": {
-            "description": "정수 N",
-            "constraint": "1 <= N <= 10000"
-        },
-        "output": {
-            "description": "1부터 N까지의 숫자의 합"
-        },
-        "examples": [
-            {
-                "input": "5",
-                "output": "15"
-            },
-            {
-                "input": "10",
-                "output": "55"
-            }
-        ]
-    },
-  "constraints": {
-        "memory": "256mb",
-        "time": "2s"
-  }
-}
-'''
-        
-        # 답변 자료형이 str일 때 json으로 변환
-            if str(type(result)) == "<class 'str'>":
-                result = json.loads(result, strict=False)
+            print(result)
+
+            start, end = 0, len(result)-1
+            for i in range(len(result)):
+                if result[i] == '{':
+                    start = i
+                    break
+            for i in range(len(result)-1, -1, -1):
+                if result[i] == '}':
+                    end = i
+                    break
+                    
+            result = result[start:end+1]
+            result = json.loads(result, strict=False)
+            print(result)
+            
             
             return {'data': True, 'result': result}
         else:   
@@ -124,18 +106,31 @@ class Plugin(AbstractPlugin):
             result = ask_ai(prompt)
             
             # TC 생성 후 JSON 변환
-            for item in extract_json_objects(result):
-                result = item
+            # for item in extract_json_objects(result):
+            #     result = item
             
-            if str(type(result)) == "<class 'str'>":
-                result = json.loads(result, strict=False)
+            # if str(type(result)) == "<class 'str'>":
+            #     result = json.loads(result, strict=False)
 
+            start, end = 0, len(result)-1
+            for i in range(len(result)):
+                if result[i] == '{':
+                    start = i
+                    break
+            for i in range(len(result)-1, -1, -1):
+                if result[i] == '}':
+                    end = i
+                    break
 
+            result = result[start:end+1]
+            result = json.loads(result, strict=False)
             testcase = result['testcase']   # TC
             task = info.task_data # 문제 정보
 
-            #time_limit, diff는 한자리 숫자 task 테이블에 문제 먼저 삽입해서 id추출
-            sql="INSERT INTO `coco`.`task` ( `title`, `sample`,`mem_limit`, `time_limit`, `diff` ) VALUES ( %s, json_object('input', %s, 'output',%s), %s, %s, %s );"
+            print(testcase, task)
+
+            # #time_limit, diff는 한자리 숫자 task 테이블에 문제 먼저 삽입해서 id추출
+            sql="INSERT INTO `coco`.`task` ( `title`, `sample`,`mem_limit`, `time_limit`, `diff`, `is_ai` ) VALUES ( %s, json_object('input', %s, 'output',%s), %s, %s, %s, 1 );"
             data=(task['title'], f"[{task['inputEx1']}, {task['inputEx2']}]",f"[{task['outputEx1']}, {task['outputEx2']}]",task['memLimit'],task['timeLimit'],task['diff'])
             task_id=db_cursor.insert_last_id(sql,data)
 
@@ -146,6 +141,7 @@ class Plugin(AbstractPlugin):
             
             #desc에서 임시 이미지 삭제 및 실제 이미지 저장
             maindesc=image.save_update_image(os.path.join(os.getenv("TASK_PATH"),"temp"),os.path.join(os.getenv("TASK_PATH"),str(task_id)),description,task_id,"s")
+
                     
             #desc 저장
             sql="insert into coco.descriptions values (%s,%s,%s,%s);"
@@ -153,7 +149,8 @@ class Plugin(AbstractPlugin):
             db_cursor.execute_sql(sql,data)
 
             # 플러그인 task에 생성된 문제 아이디 저장
-            Plugin.TableModel(id=task_id)
+            task_result = Plugin.TableModel(id=task_id)
+            Plugin.create(db_cursor, task_result)
 
 
             #테스트케이스 json 결과
