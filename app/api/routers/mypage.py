@@ -4,6 +4,7 @@ from app.core import security
 from app.crud.user import user_crud
 from app.crud.board import board_crud
 from app.api.deps import get_cursor,DBCursor
+from app.schemas.board import UpdateBoard
 
 router = APIRouter()
 
@@ -67,3 +68,7 @@ def delete_mytask(task_id:int, token:dict = Depends(security.check_token),db_cur
     - token : jwt
     """
     return user_crud.delete_mytask(db_cursor,token['id'],task_id)
+
+@router.put("/board/update-board", tags=['mypage'])
+def update_board(info: UpdateBoard, token:dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
+    return user_crud.update_board(db_cursor, info, token['id'])

@@ -47,3 +47,10 @@ class CommentLikes(LikesBase):
 class CreateComment(BaseModel):
     context: str
     board_id: int
+
+class UpdateBoard(BaseModel):
+    board_id: int
+    title: str
+    context: str
+    category: int
+    code: str | None

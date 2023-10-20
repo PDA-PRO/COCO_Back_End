@@ -72,15 +72,19 @@ class Plugin(AbstractPlugin):
 
         #  ai 답변 결과를 dict 형태로 변경
         efficient_result = ask_ai(efficient_prompt)
-        start_idx = 0
+        start_idx, end_idx = 0, 0
         for i in range(len(efficient_result)):
             if efficient_result[i] == '{':
                 start_idx = i
                 break
-        efficient_result = efficient_result[start_idx: ]
+        for i in range(len(efficient_result)-1, -1, -1):
+            if efficient_result[i] == '}':
+                end_idx = i
+                break
+        efficient_result = efficient_result[start_idx: end_idx+1]
         
         print(efficient_result)
-        efficient_result = literal_eval(efficient_result)
+        efficient_result = json.loads(efficient_result, strict=False)
 
         code = efficient_result['code']
         desc = efficient_result['desc']

@@ -173,6 +173,17 @@ class CrudUser(Crudbase[User,str]):
                 break
 
         return {'level': level, 'points': points}
+    
+    def update_board(self, db_cursor:DBCursor, info, user_id):
+        if info.code == None:
+            sql = "UPDATE `coco`.`boards` SET `context` = %s, `title` = %s WHERE (`id` = %s);"
+            data = (info.context, info.title, info.board_id)
+        else:
+            sql = "UPDATE `coco`.`boards` SET `context` = %s, `title` = %s, `code` = %s WHERE (`id` = %s);"
+            data = (info.context, info.title, info.code, info.board_id)
+        db_cursor.execute_sql(sql, data)
+        return {'id': info.board_id}
+        
 
 
 

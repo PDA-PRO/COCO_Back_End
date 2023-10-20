@@ -30,7 +30,7 @@ class Plugin(AbstractPlugin):
 %s
 
 
-반드시 다음과 같은 JSON 형식을 사용해서 알려주세요:
+반드시 다음과 같은 형식을 사용해서 알려주세요:
 
 {
     "problem": {
@@ -58,7 +58,7 @@ class Plugin(AbstractPlugin):
         "time": '<시간 제약 조건>'
     },
     "code" : {
-        "code": "<파이썬 정답 코드>"
+        "code": "<줄바꿈으로 구분되는 파이썬 정답 코드>"
     }
 }
         ''' % (info.content)
@@ -66,7 +66,7 @@ class Plugin(AbstractPlugin):
             # 문제 내용 JSON 변환
             result = ask_ai(prompt)
 
-            print(result)
+
 
             start, end = 0, len(result)-1
             for i in range(len(result)):
@@ -79,8 +79,9 @@ class Plugin(AbstractPlugin):
                     break
                     
             result = result[start:end+1]
+            print('origin', result)
             result = json.loads(result, strict=False)
-            print(result)
+            print('result', result)
             
             
             return {'data': True, 'result': result}
