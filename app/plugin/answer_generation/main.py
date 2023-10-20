@@ -23,7 +23,7 @@ class Plugin(AbstractPlugin):
 
     class TableModel(AbstractPlugin.AbstractTable):
         __key__='a_id'
-        __tablename__='qa'
+        __tablename__='answer_geration'
         room_id: int
         a_id: int
         q_id: int
@@ -74,12 +74,19 @@ class Plugin(AbstractPlugin):
         
         # 답변 오면 JSON 형태로 저장
         result = ask_ai(prompt)
-        for item in extract_json_objects(result):
-            result = item
-        
-        # 답변 자료형이 str일 때 json으로 변환
-        if str(type(result)) == "<class 'str'>":
-            result = json.loads(result, strict=False)
+
+        start, end = 0, len(result)-1
+        for i in range(len(result)):
+            if result[i] == '{':
+                start = i
+                break
+        for i in range(len(result)-1, -1, -1):
+            if result[i] == '}':
+                end = i
+                break
+
+        result = result[start:end+1]
+        result = json.loads(result, strict=False)
         
 
         if info.code != "": # 질문에 코드 포함
@@ -116,19 +123,19 @@ def ask_ai(prompt):
     , presence_penalty=0)
     return completion['choices'][0]['text']
 
-def extract_json_objects(text):
-    """
-        문자열 속 json 추출
-    """
-    decoder = json.JSONDecoder()
-    pos = 0
-    while True:
-        match = text.find('{', pos)
-        if match == -1:
-            break
-        try:
-            result, index = decoder.raw_decode(text[match:])
-            yield result
-            pos = match + index
-        except ValueError:
-            pos = match + 1
+# def extract_json_objects(text):
+#     """
+#         문자열 속 json 추출
+#     """
+#     decoder = json.JSONDecoder()
+#     pos = 0
+#     while True:
+#         match = text.find('{', pos)
+#         if match == -1:
+#             break
+#         try:
+#             result, index = decoder.raw_decode(text[match:])
+#             yield result
+#             pos = match + index
+#         except ValueError:
+#             pos = match + 1

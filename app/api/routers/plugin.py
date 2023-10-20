@@ -7,9 +7,9 @@ from pydantic import BaseModel
 
 router = APIRouter(tags=['plugin'])
 
-if os.getenv("PLUG_PATH"):
-    for i in os.listdir(os.getenv("PLUG_PATH")):
-        if i == "__pycache__" or os.path.isfile(os.path.join(os.getenv("PLUG_PATH"),i)):
+if os.getenv("PLUGIN_PATH"):
+    for i in os.listdir(os.getenv("PLUGIN_PATH")):
+        if i == "__pycache__" or os.path.isfile(os.path.join(os.getenv("PLUGIN_PATH"),i)):
             continue
         print(i+"플러그인 불러오기 시도")
         module=importlib.import_module(f'app.plugin.{i}.main')

@@ -33,7 +33,7 @@ class Plugin(AbstractPlugin):
 
     class TableModel(AbstractPlugin.AbstractTable):
         __key__='sub_id'
-        __tablename__='ai_code'
+        __tablename__='code_improvement'
         task_id: int
         sub_id: int
         code: str

@@ -23,7 +23,7 @@ class Plugin(AbstractPlugin):
 
     class TableModel(AbstractPlugin.AbstractTable):
         __key__='id'
-        __tablename__='task'
+        __tablename__='problem_generation'
         id: int
 
     @staticmethod
@@ -37,7 +37,7 @@ class Plugin(AbstractPlugin):
 %s
 
 
-반드시 다음과 같은 JSON 형식을 사용해서 알려주세요:
+반드시 다음과 같은 형식을 사용해서 알려주세요:
 
 {
     "problem": {
@@ -65,7 +65,7 @@ class Plugin(AbstractPlugin):
         "time": "<시간 제약 조건>"
     },
     "code" : {
-        "code": "<파이썬 정답 코드>"
+        "code": "<줄바꿈으로 구분된 파이썬 정답 코드>"
     }
 }
         ''' % (info.content)
