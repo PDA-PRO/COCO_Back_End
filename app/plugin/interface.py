@@ -22,6 +22,8 @@ class AbstractPlugin(metaclass=ABCMeta):
     '''
 
     router_path=''
+    feature_docs=''
+    base=''
 
     @staticmethod
     @abstractmethod
@@ -37,7 +39,7 @@ class AbstractPlugin(metaclass=ABCMeta):
 
     @staticmethod
     @abstractmethod
-    def main(db_cursor:DBCursor=Depends(get_cursor)):
+    def endpoint_main(db_cursor:DBCursor=Depends(get_cursor)):
         '''
         ai 플러그인의 메인 동작을 구현
 
@@ -94,7 +96,7 @@ class AbstractPlugin(metaclass=ABCMeta):
     }
 
     @classmethod
-    def create_table(cls):
+    def create_table(cls,table_name,plugin_name,cursor):
         '''
         ai 플러그인 db 저장소 테이블 생성
         '''
@@ -113,17 +115,33 @@ class AbstractPlugin(metaclass=ABCMeta):
                 col_type_list.append(temp_col_type+" not null")
             else:
                 col_type_list.append(temp_col_type)
-        table_name=cls.TableModel.__tablename__
-        
+
         sql=f'''
         CREATE TABLE IF NOT EXISTS `plugin`.`{table_name}` (
             {", ".join(col_type_list)},
             PRIMARY KEY ({", ".join(key_list)}));
             '''
+        
+        create_status=f"INSERT INTO `plugin`.`status` VALUES ('{plugin_name}', 1, 1, 0,'{cls.feature_docs}','{cls.base}');"
+        cursor.execute_sql(sql)
+        cursor.execute_sql(create_status)
 
-        with contextmanager(get_cursor)() as curosr:
-            curosr.execute_sql(sql)
+    @classmethod
+    def ready_db(cls):
+        '''
+        ai 플러그인 db 저장소 테이블 생성
+        '''
+        with contextmanager(get_cursor)() as cursor:
+            plugin_name=cls.__module__.split('.')[-2]
+            table_name=getattr(cls.TableModel,'__tablename__',None)
+            if table_name is None:
+                table_name=plugin_name
 
+            result=cursor.select_sql(f"SELECT * FROM `plugin`.`status` where `plugin`='{plugin_name}';")
+            if len(result)<=0:
+                cls.create_table(table_name,plugin_name,cursor)
+            cursor.execute_sql(f"UPDATE `plugin`.`status` SET `is_active` = 1 WHERE (`plugin` = '{plugin_name}');")
+        
     @classmethod
     def read_all(cls,db_cursor:DBCursor)->list:
         '''
@@ -184,7 +202,7 @@ class AbstractPlugin(metaclass=ABCMeta):
         return return_value
 
     @classmethod
-    def create(cls,db_cursor:DBCursor,tuple):
+    def create(cls,db_cursor:DBCursor,tableModel_obj):
         '''
         Plugin 클래스 클래스 메소드
 
@@ -202,11 +220,14 @@ class AbstractPlugin(metaclass=ABCMeta):
 
         '''
         table_name=cls.TableModel.__tablename__
-        
+        attrs=[]
+        for i in tableModel_obj.__dict__.keys():
+            attrs.append(f"`{i}`")
         sql=f'''
-        INSERT INTO `plugin`.`{table_name}` ({", ".join(tuple.__dict__.keys())}) VALUES ({", ".join(["%s" for i in range(len(tuple.__dict__))])});
+        INSERT INTO `plugin`.`{table_name}` ({", ".join(attrs)}) VALUES ({", ".join(["%s" for i in range(len(tableModel_obj.__dict__))])});
             '''
-        data=list(tuple.__dict__.values())
+        print(sql)
+        data=list(tableModel_obj.__dict__.values())
         db_cursor.execute_sql(sql,data)
 
     @classmethod
@@ -232,3 +253,4 @@ class AbstractPlugin(metaclass=ABCMeta):
                 assert col_list[cls.TableModel.__key__]==int, "키값 에러"
 
                 return [cls.TableModel.__key__]
+            

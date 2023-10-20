@@ -7,10 +7,19 @@ from app.api.deps import get_cursor
 from app.core import security
 from app.db.base import DBCursor
 from app.plugin.interface import AbstractPlugin
-from app.schemas.ai import *
+from pydantic import BaseModel
+
+class AskQ(BaseModel):
+    content: str
+    code: str | None
+    room_id: int
+    q_id: int
+
 
 class Plugin(AbstractPlugin):
     router_path='/qa'
+    feature_docs='스터디룸 Q&A에서 질문에 대한 답을 생성해주는 AI'
+    base='ChatGPT 3.5-turbo'
 
     class TableModel(AbstractPlugin.AbstractTable):
         __key__='a_id'
@@ -24,7 +33,7 @@ class Plugin(AbstractPlugin):
         return 1
         
     @staticmethod
-    def main(info: AskQ,token: dict = Depends(security.check_token), db_cursor:DBCursor=Depends(get_cursor)):
+    def endpoint_main(info: AskQ,token: dict = Depends(security.check_token), db_cursor:DBCursor=Depends(get_cursor)):
         print(info)
         
         # 해당 질문에 대한 ai 답변이 있는지 확인

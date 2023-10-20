@@ -91,20 +91,17 @@ def ready():
                         task={
                             'title': i[1]['title']+"  wpc:"+i[0]
                             ,'inputDescription': i[1]['input_desc']
-                            ,'inputEx1': inEx1
-                            ,'inputEx2': inEx2
                             ,'outputDescription': i[1]['output_desc']
-                            ,'outputEx1': outEx1
-                            ,'outputEx2': outEx2
                             ,'diff': diff
                             ,'timeLimit': int(i[1]['limit']['time'])//1000
                             ,'memLimit': int(i[1]['limit']['memory'])//1024
                             ,'category': 'wpc,기본 문제'
                         }
-                        
+                        sample={'input':[inEx1,inEx2],'output':[outEx1,outEx2]}
+                        sample_str=json.dumps(sample)
                         #time_limit, diff는 한자리 숫자 task 테이블에 문제 먼저 삽입해서 id추출
-                        sql="INSERT INTO `coco`.`task` ( `title`, `sample`,`mem_limit`, `time_limit`, `diff` ) VALUES ( %s, json_object('input', %s, 'output',%s), %s, %s, %s );"
-                        data=(task['title'], f"[{task['inputEx1']}, {task['inputEx2']}]",f"[{task['outputEx1']}, {task['outputEx2']}]",task['memLimit'],task['timeLimit'],task['diff'])
+                        sql="INSERT INTO `coco`.`task` ( `title`, `sample`,`mem_limit`, `time_limit`, `diff` ) VALUES ( %s, %s, %s, %s, %s );"
+                        data=(task['title'], sample_str,task['memLimit'],task['timeLimit'],task['diff'])
                         task_id=db_cursor.insert_last_id(sql,data)
                         
                         #카테고리 연결

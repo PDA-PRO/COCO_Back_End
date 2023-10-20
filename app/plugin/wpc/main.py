@@ -10,6 +10,8 @@ from app.crud.task import task_crud
 class Plugin(AbstractPlugin):
     router_path='/wpc'
     wpc_docker_url='http://localhost:7555'
+    feature_docs='TC 판별 중 틀린 코드에 대해, 틀린 부분을 찾아 고쳐주는 AI'
+    base='GraphCodeBERT기반 제작 WPC AI 모델'
     
     class TableModel(AbstractPlugin.AbstractTable):
         __key__='sub_id'
@@ -31,7 +33,7 @@ class Plugin(AbstractPlugin):
         return 1
         
     @staticmethod
-    def main(sub_id:int,task_id:int,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
+    def endpoint_main(sub_id:int,task_id:int,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
         """
         WPC:Wrong Part of Code 분석 결과 조회
         서버에 WPC 확장기능이 적용되어 있어야함.
