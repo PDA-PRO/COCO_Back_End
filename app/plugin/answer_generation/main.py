@@ -11,9 +11,9 @@ from pydantic import BaseModel
 
 class AskQ(BaseModel):
     content: str
-    code: str | None
-    room_id: int
-    q_id: int
+    code: str|None
+    room_id: int|None
+    q_id: int|None
 
 
 class Plugin(AbstractPlugin):
@@ -34,8 +34,53 @@ class Plugin(AbstractPlugin):
         
     @staticmethod
     def endpoint_main(info: AskQ,token: dict = Depends(security.check_token), db_cursor:DBCursor=Depends(get_cursor)):
-        print(info)
-        
+        #커뮤니티에서 질문하기
+        if info.room_id == None or info.q_id == None:
+            if info.code == "": 
+                prompt = '''
+%s
+
+
+반드시 다음과 같은 JSON 형식을 사용해서 알려주세요:
+{
+    "code": "<답변에 필요한 예시 코드>",
+    "content": "<질문에 대한 답변>"
+}
+            ''' % (info.content)
+            # GPT에 보낼 질문
+            else:
+                prompt = '''
+%s
+
+%s
+
+반드시 다음과 같은 JSON 형식을 사용해서 알려주세요:
+{
+    "code": "<답변에 필요한 예시 코드>",
+    "content": "<질문에 대한 답변>"
+}
+        ''' % (info.content, info.code)
+            result = ask_ai(prompt)
+            print('origin', result)
+            start, end = 0, len(result)-1
+            for i in range(len(result)):
+                if result[i] == '{':
+                    start = i
+                    break
+            for i in range(len(result)-1, -1, -1):
+                if result[i] == '}':
+                    end = i
+                    break
+            
+            result = result[start:end+1]
+            print(result)
+
+            result = json.loads(result, strict=False)
+
+
+            return {'result': True, 'content': result['content'], 'code': result['code']}
+
+
         # 해당 질문에 대한 ai 답변이 있는지 확인
         exist_sql = "SELECT count(*) as cnt FROM room.%s_qa where q_id = %s and ans_writer is Null;"
         exist = db_cursor.select_sql(exist_sql, (info.room_id, info.q_id))
