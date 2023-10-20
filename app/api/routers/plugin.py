@@ -7,24 +7,25 @@ from pydantic import BaseModel
 
 router = APIRouter(tags=['plugin'])
 
-for i in os.listdir(os.getenv("PLUG_PATH")):
-    if i == "__pycache__" or os.path.isfile(os.path.join(os.getenv("PLUG_PATH"),i)):
-        continue
-    print(i+"플러그인 불러오기 시도")
-    module=importlib.import_module(f'app.plugin.{i}.main')
-    plugin=module.Plugin
-    
-    if plugin.test():
-        print(i+"플러그인 테스트 성공")
-        plugin.ready_db()
-        print(i+"플러그인 DB 최초 생성")
-        for method in dir(plugin):
-            method_split=method.split("_")
-            if method_split[0]=='endpoint':
-                print(i+"플러그인 엔드포인트 추가 : "+plugin.router_path+'/'+method_split[1])
-                router.add_api_route(plugin.router_path+'/'+method_split[1],endpoint=getattr(plugin,method),methods=['post'])
-    else:
-        print(i+"플러그인 테스트 실패")
+if os.getenv("PLUG_PATH"):
+    for i in os.listdir(os.getenv("PLUG_PATH")):
+        if i == "__pycache__" or os.path.isfile(os.path.join(os.getenv("PLUG_PATH"),i)):
+            continue
+        print(i+"플러그인 불러오기 시도")
+        module=importlib.import_module(f'app.plugin.{i}.main')
+        plugin=module.Plugin
+        
+        if plugin.test():
+            print(i+"플러그인 테스트 성공")
+            plugin.ready_db()
+            print(i+"플러그인 DB 최초 생성")
+            for method in dir(plugin):
+                method_split=method.split("_")
+                if method_split[0]=='endpoint':
+                    print(i+"플러그인 엔드포인트 추가 : "+plugin.router_path+'/'+method_split[1])
+                    router.add_api_route(plugin.router_path+'/'+method_split[1],endpoint=getattr(plugin,method),methods=['post'])
+        else:
+            print(i+"플러그인 테스트 실패")
 
 class AiStatus(BaseModel):
     plugin: str
