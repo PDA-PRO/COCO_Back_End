@@ -36,58 +36,6 @@ class CrudSubmission(Crudbase):
         data=(sub_id)
         row=db_cursor.select_sql(sql,data)
         return row
-
-    def update_status(self, db_cursor:DBCursor,sub_id:int, status:int):
-        """
-        status만 업데이트
-
-        - sub_id
-        - status : 채점 상태 1 - 대기, 2 - 채점중, 3 - 정답, 4 - 오답
-        """
-        sql="UPDATE coco.submissions SET status=%s WHERE id=%s;"
-        data=(status, sub_id)
-        db_cursor.execute_sql(sql,data)
-
-    def update_sub(self, db_cursor:DBCursor,sub_id:int,exit_code:int,status:int=4,stdout:str=None,stderr:str=None,message:str=None,number_of_runs:int=100,status_id:str=None):
-        """
-        제출 정보 업데이트
-
-        - sub_id
-        - exit_code : 런타임 채점시 종료 코드 0 - 정상종료, 1 - 런타임 오류
-        - status : 채점 상태 1 - 대기, 2 - 채점중, 3 - 정답, 4 - 오답
-        - stdout : 표준 출력값
-        - stderr : 표준 에러값
-        - message : 채점 결과
-        - number_of_runs : 테스트케이스 통과 개수
-        - status_id : isolate 런타임 결과 RE - 런타임 오류, TO - 시간 초과, SG - 메모리 초과
-        """
-        
-        sql="UPDATE coco.submissions SET status_id=%s ,exit_code=%s, stdout=%s, stderr=%s, message=%s, number_of_runs=%s, status=%s WHERE id=%s;"
-        data=(
-            status_id,
-            exit_code,
-            stdout,
-            stderr,
-            message,
-            number_of_runs,
-            status,
-            sub_id)
-        db_cursor.execute_sql(sql,data)
-    
-    def calc_rate(self, db_cursor:DBCursor,task_id:int):
-        """
-        문제의 정답률 수정을 위해 제출 회수 대비 맞은 제출 비율 조회
-
-        - task_id
-        """
-        sql="SELECT status FROM coco.status_list where task_id=%s;"
-        data=(task_id)
-        all_sub=db_cursor.select_sql(sql,data)
-        right_sub=0
-        for i in all_sub:
-            if i.get("status")==3:
-                right_sub+=1
-        return round(right_sub/len(all_sub)*100,1)
     
     def get_solved(self, db_cursor:DBCursor,user_id:str):
         """

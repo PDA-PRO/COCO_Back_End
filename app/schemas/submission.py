@@ -33,6 +33,8 @@ class subDetail(BaseModel):
     lang:conint(le=1,ge=0)
     rate:float
     diff:int
+    used_memory:int=None
+    used_time:float=None
 
 class SubResult(BaseModel):
     subDetail: subDetail

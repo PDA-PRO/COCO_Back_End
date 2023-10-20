@@ -43,23 +43,6 @@ class CrudUser(Crudbase[User,str]):
         data=(user.id, security.get_password_hash(user.pw), user.name, 0, user.email)
         db_cursor.execute_sql(sql,data)
         return 1
-    
-    def update_exp(self,db_cursor:DBCursor,user_id:str):
-        """
-        user 경험치 업데이트
-
-        - user_id : id
-        """
-        sql="SELECT distinct user_id,task_id,diff FROM coco.user_problem where user_id=%s and status=3;"
-        data=(user_id)
-        result=db_cursor.select_sql(sql,data)
-
-        new_exp=0
-        for i in result:
-            new_exp+=i.get("diff")*100
-        sql="UPDATE coco.user SET exp = %s WHERE (id = %s);"
-        data=(new_exp,user_id)
-        db_cursor.execute_sql(sql,data)
 
     def search_user(self, db_cursor:DBCursor,info:UserListIn):
         """
@@ -173,9 +156,5 @@ class CrudUser(Crudbase[User,str]):
                 break
 
         return {'level': level, 'points': points}
-
-
-
-
-
+    
 user_crud=CrudUser(User)

@@ -23,7 +23,7 @@ class ScoringResult():
         - number_of_runs : 테스트케이스 통과 개수
         - status : 채점 상태 1 - 대기, 2 - 채점중, 3 - 정답, 4 - 오답
     """
-    def __init__(self,status_id:int=None,stdout:str=None,stderr:str=None,exit_code:int=None,message:str=None,number_of_runs:int=0,status:int=4) -> None:
+    def __init__(self,status_id:int=None,stdout:str=None,stderr:str=None,exit_code:int=None,message:str=None,number_of_runs:int=0,status:int=4,used_memory:int=None,used_time:float=None) -> None:
         self.status_id=status_id
         self.stdout=stdout
         self.stderr=stderr
@@ -31,6 +31,8 @@ class ScoringResult():
         self.message=message
         self.number_of_runs=number_of_runs
         self.status=status
+        self.used_memory=used_memory
+        self.used_time=used_time
 
     def to_dict(self):
         print(self.__dict__)
@@ -195,9 +197,9 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
                     #isolate 환경에서 실행 C언어는 a.out 실행파일로 채점
                     #warning docker 환경에서는 /usr/local/bin/python3
                     if lang==1:
-                        subprocess.run('isolate --meta '+meta_path+' -t '+str(result["time_limit"])+' -d /etc:noexec -m '+str(result["mem_limit"]*1500)+' -b '+str(box_id)+' --run ./a.out < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
+                        subprocess.run('isolate -M '+meta_path+' -t '+str(result["time_limit"])+' -d /etc:noexec -m '+str(result["mem_limit"]*1500)+' -b '+str(box_id)+' --run ./a.out < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
                     else:
-                        subprocess.run('isolate --meta '+meta_path+' -t '+str(result["time_limit"])+' -d /etc:noexec -m '+str(result["mem_limit"]*1500)+' -b '+str(box_id)+' --run /usr/local/bin/python3 src.py < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
+                        subprocess.run('isolate -M '+meta_path+' -t '+str(result["time_limit"])+' -d /etc:noexec -m '+str(result["mem_limit"]*1500)+' -b '+str(box_id)+' --run /usr/bin/python3 src.py < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
                     
                     #실행결과 분석
                     exec_result=txt_to_dic(meta_path)
@@ -253,6 +255,8 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
 
                 if task_result==1:#모든 TC를 통과했다면 정답처리
                     print('맞음')
+                    scoring_res.used_time=float(exec_result["time"])
+                    scoring_res.used_memory=int(exec_result["max-rss"])
                     crud_base.update(db_cursor,scoring_res.to_dict(),'coco','submissions',id=sub_id)
                     #유저의 경험치 업데이트
                     user_solved_list=crud_base.read(db_cursor,['task_id','diff'],'coco','user_problem',user_id=user_id,status=3)
