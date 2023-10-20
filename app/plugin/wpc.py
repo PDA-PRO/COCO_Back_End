@@ -9,6 +9,7 @@ from app.crud.task import task_crud
 
 class Plugin(AbstractPlugin):
     router_path='/wpc'
+    wpc_docker_url='http://localhost:7555'
     
     class TableModel(AbstractPlugin.AbstractTable):
         __key__='sub_id'
@@ -16,12 +17,13 @@ class Plugin(AbstractPlugin):
         sub_id:int
         status:int
         result:str
+        raw_code:str
         
     @staticmethod
     def test():
         res=None
         try:
-            res= requests.get('http://localhost:7555/hello')
+            res= requests.get(Plugin.wpc_docker_url+'/hello')
             print(res.content)
         except:
             return False
@@ -44,7 +46,7 @@ class Plugin(AbstractPlugin):
         - status : wpc 분석 결과 `1`분석 성공 `2`TC틀림 오답이 아님 `3`wpc 불가능 문제 `4`512토큰 초과
         """
         
-        prev_result=Plugin.read(db_cursor,sub_id=sub_id)
+        prev_result:Plugin.TableModel=Plugin.read(db_cursor,sub_id=sub_id)
         if prev_result:
             if prev_result.status==2: #TC 실패로 틀린 제출이 아님
                 return {"status":2}
@@ -53,7 +55,7 @@ class Plugin(AbstractPlugin):
             elif prev_result.status==4: #wpc의 제한사항(512토큰 이하)을 초과
                 return {"status":4}
             else:
-                return {"status":1,"wpc_result":prev_result.result}
+                return {"status":1,"wpc_result":prev_result.result,"bug_code":prev_result.raw_code}
         else:
             pass
             task_title=task_crud.read(db_cursor,["title"],id=task_id)
@@ -71,7 +73,7 @@ class Plugin(AbstractPlugin):
             wpc_desc_id=task_title[0]["title"].split("wpc:")[-1]
             wpc_result=None
             try: 
-                wpc_result=requests.post('http://localhost:7555/process',params={"p_id":wpc_desc_id},json={"code":sub_data[0]["code"]})
+                wpc_result=requests.post(Plugin.wpc_docker_url+'/process',params={"p_id":wpc_desc_id},json={"code":sub_data[0]["code"]})
                 wpc_result=wpc_result.json()
             except:
                 wpc_result=None
@@ -79,6 +81,6 @@ class Plugin(AbstractPlugin):
                 new_wpc=Plugin.TableModel(sub_id=sub_id,status=4)
                 Plugin.create(db_cursor,new_wpc)
                 return {"status":4}
-            new_wpc=Plugin.TableModel(sub_id=sub_id,status=1,result=wpc_result['fixed_code'])
+            new_wpc=Plugin.TableModel(sub_id=sub_id,status=1,result=wpc_result['fixed_code'],raw_code=wpc_result['bug_code'])
             Plugin.create(db_cursor,new_wpc)
-            return {"status":1,"wpc_result":wpc_result['fixed_code']}
+            return {"status":1,"wpc_result":wpc_result['fixed_code'],"bug_code":wpc_result['bug_code']}
