@@ -50,3 +50,4 @@ class TaskDetail(BaseModel):
     timeLimit: int
     memLimit: int
     category:list[str]
+    is_ai:int|None

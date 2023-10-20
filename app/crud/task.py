@@ -263,6 +263,7 @@ class CrudTask(Crudbase[Task,int]):
             'mainDesc': desc_result[0]["main"],
             'inDesc': desc_result[0]["in"],
             'outDesc': desc_result[0]["out"],
+            'is_ai': result[0]['is_ai']
         }
         return task
     

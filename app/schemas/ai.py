@@ -1,3 +1,4 @@
+from fastapi import Form
 from pydantic import BaseModel
 
 class AiStatus(BaseModel):
@@ -12,7 +13,11 @@ class AskQ(BaseModel):
 
 
 class CreateTask(BaseModel):
-    content: str
+    content: str | None
+    form_data: str
+    task_data: dict|None
+    is_final: bool
+
 
 class UploadAITask(BaseModel):
     title: str

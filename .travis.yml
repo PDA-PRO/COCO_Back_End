@@ -1,0 +1,11 @@
+language: python
+python:
+  - "3.8"
+  - "3.9"
+  - "3.9-dev"
+# command to install dependencies
+install:
+  - pip install -r requirements.txt
+# command to run tests
+script: # 테스트코드를 실행시킬 커맨드(스크립트)
+- python -m unittest

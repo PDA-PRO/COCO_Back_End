@@ -215,7 +215,7 @@ class CrudRoom(Crudbase[Room,int]):
             ans_sql = """
                 select q.id, a.a_id, a.answer, a.code, a.ans_writer, a.time, a.check 
                 from room.%s_qa as a, room.%s_question as q
-                where a.q_id = q.id and q.id = %s;
+                where a.q_id = q.id and q.id = %s order by time desc;
             """
             ans_data = (room_id,room_id, q['id'])
             ans_result = db_cursor.select_sql(ans_sql, ans_data)
