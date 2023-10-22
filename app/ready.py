@@ -7,6 +7,8 @@ from app.core.security import get_password_hash
 import os
 from tenacity import retry, stop_after_attempt, wait_fixed
 from app.crud.task import task_crud
+import sys
+import subprocess
 
 @retry(wait=wait_fixed(5),stop=stop_after_attempt(10),)
 def ready():
@@ -133,6 +135,36 @@ def ready():
     except Exception as e:
         print(e)
         raise e
+    
+    if os.getenv("PLUGIN_PATH"):
+        for i in os.listdir(os.getenv("PLUGIN_PATH")):
+            if i == "__pycache__" or os.path.isfile(os.path.join(os.getenv("PLUGIN_PATH"),i)):
+                continue
+            # implement pip as a subprocess:
+            is_new=True
+
+            # 종속성 패키지 추출
+            reqs=[]
+            with open(os.path.join(os.getenv("PLUGIN_PATH"),i,'requirements.txt'),"r") as req_file:
+                for i in req_file.readlines():
+                    reqs.append(i.split("=")[0])
+            reqs.sort()
+
+            # .cache 파일 존재 확인 및 패키지 비교
+            if os.path.exists(os.path.join(os.getenv("PLUGIN_PATH"),i,'.cache')):
+                with open(os.path.join(os.getenv("PLUGIN_PATH"),i,'.cache'),"r") as cache_file:
+                    for i,v in enumerate(cache_file.readlines()):
+                        if reqs[i]!=v:
+                            is_new=False
+                            break
+
+            # 새로운 플러그인이라면 종속 패키지 설치
+            if is_new:
+                if subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-r',os.path.join(os.getenv("PLUGIN_PATH"),i,'requirements.txt')]):
+                    with open(os.path.join(os.getenv("PLUGIN_PATH"),i,'.cache'),"w") as cache_file:
+                        for i in reqs:
+                            cache_file.write(i+'\n')
+
 
 if __name__=="__main__":
     ready()
