@@ -99,7 +99,7 @@ def update_permission(info : UpdatePermission,token: dict = Depends(security.che
             alarm_crud.create_alarm(db_cursor, {
                 'sender': None,
                 'receiver': info.id,
-                'category': 14
+                'category': 4
             })
     
     return {"code":1}
