@@ -10,18 +10,20 @@ from app.db.base import DBCursor
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-def create_access_token(data: dict, exp_time:int=168):
+def create_access_token(data: dict, exp_time:int=None):
     """
     필요한 data들을 통해 JWT 엑세스 토큰 생성
 
     params
     - data : jwt에 들어갈 데이터
-    - exp_time : jwt의 유효 기간
+    - exp_time : jwt의 유효 기간 **시간 기준**
     ---------------
     returns
     - jwt : data와 유효기간을 jwt로 만들어 반환
     """
     to_encode = data.copy()
+    if exp_time is None:
+        exp_time=int(os.getenv("ACCESS_TOKEN_EXPIRE_HOURS"))*24
     expire = datetime.utcnow() + timedelta(hours=exp_time)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, os.getenv("SECRET_KEY"), algorithm=os.getenv("ALGORITHM"))

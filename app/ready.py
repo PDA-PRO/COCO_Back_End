@@ -40,6 +40,7 @@ def ready():
                 data=(os.getenv("ADMIN_ID"), get_password_hash(os.getenv("ADMIN_PW")), 'admin', 1, 'admin@dot.com')
                 cur.execute_sql(sql,data)
     except Exception as e:
+        print(e)
         raise e
         
     # 기본 문제 셋 추가
@@ -51,15 +52,19 @@ def ready():
                 zip_path='/home/base_task_set'
 
                 #base_task_set.zip 압축해제
-                with zipfile.ZipFile(zip_path+'.zip') as encrypt_zip:
-                    encrypt_zip.extractall(
-                        zip_path,
-                        None
-                    )
+                if not os.path.exists(zip_path):
+                    with zipfile.ZipFile(zip_path+'.zip') as encrypt_zip:
+                        encrypt_zip.extractall(
+                            zip_path,
+                            None
+                        )
 
                 #기본 문제 Set 카테고리 생성
-                task_crud.create(db_cursor,{"category":'wpc'},table="task_category")
-                task_crud.create(db_cursor,{"category":'기본 문제'},table="task_category")
+                try:
+                    task_crud.create(db_cursor,{"category":'wpc'},table="task_category")
+                    task_crud.create(db_cursor,{"category":'기본 문제'},table="task_category")
+                except:
+                    pass
 
                 
                 with open(zip_path+'/task_detail.json','r',encoding='utf8') as file:
@@ -126,6 +131,7 @@ def ready():
                         except:
                             print(i[0]+" TC 존재")
     except Exception as e:
+        print(e)
         raise e
 
 if __name__=="__main__":

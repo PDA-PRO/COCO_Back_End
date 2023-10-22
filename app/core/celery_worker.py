@@ -199,7 +199,7 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
                     if lang==1:
                         subprocess.run('isolate -M '+meta_path+' -t '+str(result["time_limit"])+' -d /etc:noexec -m '+str(result["mem_limit"]*1500)+' -b '+str(box_id)+' --run ./a.out < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
                     else:
-                        subprocess.run('isolate -M '+meta_path+' -t '+str(result["time_limit"])+' -d /etc:noexec -m '+str(result["mem_limit"]*1500)+' -b '+str(box_id)+' --run /usr/bin/python3 src.py < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
+                        subprocess.run('isolate -M '+meta_path+' -t '+str(result["time_limit"])+' -d /etc:noexec -m '+str(result["mem_limit"]*1500)+' -b '+str(box_id)+' --run /usr/local/bin/python3 src.py < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
                     
                     #실행결과 분석
                     exec_result=txt_to_dic(meta_path)

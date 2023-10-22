@@ -310,6 +310,8 @@ CREATE TABLE IF NOT EXISTS `submissions` (
   `number_of_runs` tinyint DEFAULT NULL,
   `status` tinyint DEFAULT NULL,
   `lang` int DEFAULT NULL,
+  `used_memory` int DEFAULT NULL,
+  `used_time` float DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -504,9 +506,11 @@ USE `plugin`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE IF NOT EXISTS `status` (
   `plugin` varchar(45) NOT NULL,
-  `front` tinyint(1) DEFAULT 0,
-  `back` tinyint(1) DEFAULT 0,
-  `is_active` tinyint(1) DEFAULT 0,
+  `front` tinyint(1) DEFAULT '0',
+  `back` tinyint(1) DEFAULT '0',
+  `is_active` tinyint(1) DEFAULT '0',
+  `feature_docs` varchar(100) DEFAULT NULL,
+  `base` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`plugin`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

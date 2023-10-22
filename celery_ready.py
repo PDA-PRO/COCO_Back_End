@@ -5,7 +5,7 @@ def ready():
     worker에 필요한 sandbox 폴더들 초기화
     '''
     if not os.path.exists(os.getenv("SANDBOX_PATH")):
-        os.mkdir(os.getenv("SANDBOX_PATH"))
+        os.makedirs(os.getenv("SANDBOX_PATH"))
     if os.listdir(os.getenv("SANDBOX_PATH")):
         print("샌드박스 폴더 있음 폴더 비움")
         for i in os.listdir(os.getenv("SANDBOX_PATH")):
