@@ -3,14 +3,14 @@ import json
 import os
 import zipfile
 from .base import Crudbase
-from core.image import image
-from schemas.task import *
-from models.task import *
-from db.base import DBCursor
+from app.core.image import image
+from app.schemas.task import *
+from app.models.task import *
+from app.db.base import DBCursor
 
 
 class CrudTask(Crudbase[Task,int]):
-    def create_task(self,db_cursor:DBCursor,description:str,task:Task):
+    def create_task(self,db_cursor:DBCursor,description:str,task:TaskBase):
         """ 
         새로운 문제를 생성
             
@@ -28,12 +28,14 @@ class CrudTask(Crudbase[Task,int]):
             - timeLimit: 시간제한
             - memLimit: 메모리제한
             - category: 문제 카테고리 ','로 구분된 문자열
-        - token : 사용자 인증
         """
-
+        input=[task.inputEx1,task.inputEx2]
+        output=[task.outputEx1,task.outputEx2]
+        sample={'input':input,'output':output}
+        sample_str=json.dumps(sample)
         #time_limit, diff는 한자리 숫자 task 테이블에 문제 먼저 삽입해서 id추출
-        sql="INSERT INTO `coco`.`task` ( `title`, `sample`,`mem_limit`, `time_limit`, `diff` ) VALUES ( %s, json_object('input', %s, 'output',%s), %s, %s, %s );"
-        data=(task.title, f"[{task.inputEx1}, {task.inputEx2}]",f"[{task.outputEx1}, {task.outputEx2}]",task.memLimit,task.timeLimit,task.diff)
+        sql="INSERT INTO `coco`.`task` ( `title`, `sample`,`mem_limit`, `time_limit`, `diff` ) VALUES ( %s, %s, %s, %s, %s );"
+        data=(task.title, sample_str,task.memLimit,task.timeLimit,task.diff)
         task_id=db_cursor.insert_last_id(sql,data)
 
         #카테고리 연결
@@ -43,7 +45,7 @@ class CrudTask(Crudbase[Task,int]):
             db_cursor.execute_sql(sql,data)
 
         #desc에서 임시 이미지 삭제 및 실제 이미지 저장
-        maindesc=image.save_update_image(os.path.join(os.getenv("TASK_PATH"),"temp"),os.path.join(os.getenv("TASK_PATH"),str(id)),description,id,"s")
+        maindesc=image.save_update_image(os.path.join(os.getenv("TASK_PATH"),"temp"),os.path.join(os.getenv("TASK_PATH"),str(task_id)),description,task_id,"s")
 
         #desc 및 테스트케이스 저장
         sql="insert into coco.descriptions values (%s,%s,%s,%s);"
@@ -53,11 +55,12 @@ class CrudTask(Crudbase[Task,int]):
 
         return 1
 
-    def read_task_with_pagination(self, db_cursor:DBCursor,query:ReadTask):
+    def read_task_with_pagination(self, db_cursor:DBCursor,query:TaskListIn):
         """
         문제 리스트에서 쿼리에 맞는 문제들의 정보만 리턴
         keyword, diff, category는 AND 로 결합
         
+        params
         - query : 문제 쿼리 정보
             - keyword: 검색할 id 혹은 title 정보
             - diff: 문제 난이도 | 1~5의 정수 값이 ','로 구분된 문자열 다중값 가능
@@ -65,8 +68,12 @@ class CrudTask(Crudbase[Task,int]):
             - rateSort: 정답률 기준 정렬 | 0 - 기본 정렬 1 - 오름차순 2 - 내림차순 
             - size: 한페이지의 크기
             - page: 페이지 번호
+        -----------------------------
+        returns
+        - [total,result]
+            - total : 전체 문제 수
+            - result : 조건에 맞는 문제 수
         """
-
         #기본 sql 뼈대.
         sql="SELECT * FROM coco.task_list"
         data=[]
@@ -91,9 +98,12 @@ class CrudTask(Crudbase[Task,int]):
             else:
                 condition.append(" title like %s")
                 data.append("%"+query.keyword+"%")
+        #각 문제별 제출수     
+        sql+=" left outer join coco.sub_per_task s on id=s.task_id"
+
         #where 조건이 존재한다면 sql에 추가
         if len(condition):
-            sql+=" WHERE "+"AND".join(condition)
+            sql+=" WHERE"+" AND".join(condition)
 
         #정렬 기준 추가
         if query.rateSort==1:
@@ -105,7 +115,7 @@ class CrudTask(Crudbase[Task,int]):
 
         return total,result
 
-    def update_task(self,db_cursor:DBCursor,task_id:int,description:str,task:Task):
+    def update_task(self,db_cursor:DBCursor,task_id:int,description:str,task:TaskBase):
         """ 
         문제 수정
             
@@ -128,8 +138,12 @@ class CrudTask(Crudbase[Task,int]):
         """
 
         #task 테이블에서 정보 업데이트
-        sql="UPDATE `coco`.`task` SET `title` = %s , `sample` = json_object('input', %s, 'output',%s) ,`mem_limit` = %s, `time_limit` = %s, `diff` = %s WHERE (`id` = '%s')"
-        data=(task.title, f"[{task.inputEx1}, {task.inputEx2}]",f"[{task.outputEx1}, {task.outputEx2}]",task.memLimit,task.timeLimit,task.diff,task_id)
+        input=[task.inputEx1,task.inputEx2]
+        output=[task.outputEx1,task.outputEx2]
+        sample={'input':input,'output':output}
+        sample_str=json.dumps(sample)
+        sql="UPDATE `coco`.`task` SET `title` = %s , `sample` = %s ,`mem_limit` = %s, `time_limit` = %s, `diff` = %s WHERE (`id` = '%s')"
+        data=(task.title, sample_str,task.memLimit,task.timeLimit,task.diff,task_id)
         db_cursor.execute_sql(sql,data)
 
         #카테고리 삭제
@@ -169,35 +183,6 @@ class CrudTask(Crudbase[Task,int]):
         db_cursor.execute_sql(sql,data)
         image.delete_image(os.path.join(os.getenv("TASK_PATH"),str(task_id)))
         return 1
-
-    def create_category(self,db_cursor:DBCursor,category:str):
-        """
-        문제 카테고리 생성
-
-        - category : 카테고리
-        """
-        sql="INSERT INTO `coco`.`task_category` (`category`) VALUES (%s);"
-        data=(category)
-        db_cursor.execute_sql(sql,data)
-
-        return 1
-    
-    def read_category(self,db_cursor:DBCursor):
-        """
-        문제 카테고리 조회
-
-        - category : 카테고리
-        """
-        sql="SELECT group_concat(category) as category FROM `coco`.`task_category`;"
-        
-        result=db_cursor.select_sql(sql)[0]["category"]
-        
-        if result:
-            result=list(result.split(","))
-        else:
-            result=[]
-
-        return result
     
     def delete_category(self,db_cursor:DBCursor,category:str):
         """
@@ -259,7 +244,7 @@ class CrudTask(Crudbase[Task,int]):
         result = db_cursor.select_sql(sql,data)
         if not len(result):
             return None
-        sample = self.sample_json(result[0]["sample"])
+        sample = json.loads(result[0]["sample"])
         desc_sql = "SELECT * FROM coco.descriptions where task_id = %s;"
         data=(task_id)
         desc_result = db_cursor.select_sql(desc_sql,data)
@@ -271,83 +256,14 @@ class CrudTask(Crudbase[Task,int]):
             'timeLimit': result[0]["time_limit"],   
             'diff': result[0]["diff"],
             'category': list(result[0]["category"].split(',')),
-            'inputEx1': sample[0],
-            'inputEx2': sample[1],
-            'outputEx1': sample[2],
-            'outputEx2': sample[3],
+            'inputEx1': sample['input'][0],
+            'inputEx2': sample['input'][1],
+            'outputEx1': sample['output'][0],
+            'outputEx2': sample['output'][0],
             'mainDesc': desc_result[0]["main"],
             'inDesc': desc_result[0]["in"],
-            'outDesc': desc_result[0]["out"],
+            'outDesc': desc_result[0]["out"]
         }
         return task
-
-    def sample_json(self,text:str):
-        """
-        sample column을 json parsing
-
-        - text : json 형식의 str
-        """
-        sample = json.loads(text)
-        input = sample['input']
-        output = sample['output']
-        input = self.modify_string(input)
-        output = self.modify_string(output)
-        return [input[0], input[1], output[0], output[1]]
-
-    def modify_string(self,text:str):
-        """
-        json parsing해서 리스트에 저장위해 전처리
-
-        - text : 문자열
-        """
-        text = text[1:-1]
-        text = text.replace("'", "")
-        text = text.split(",")
-        result = []
-        for i in text:
-            if i[0] == " ":
-                i = i[1:]
-            result.append(i)
-        return result
-
-    def update_rate(self, db_cursor:DBCursor,task_id:int,rate:float):
-        """
-        문제 정답률 업데이트
-
-        - task_id : task id
-        - rate : 업데이트 될 값
-        """
-        sql = "UPDATE task SET rate = %s WHERE (id = %s);"
-        data=(rate,task_id)
-        db_cursor.execute_sql(sql,data)
-
-    def read_task_limit(self,db_cursor:DBCursor,id):
-        """
-        문제 제한 사항 조회
-
-        - id : 문제 id
-        """
-        sql="SELECT time_limit,mem_limit FROM coco.task WHERE id=%s"
-        data=id
-        result = db_cursor.select_sql(sql,data)
-        return result[0]
-    
-    def read_task_with_count(self,db_cursor:DBCursor,info : PaginationIn):
-        """
-        간단한 문제 목록 조회 
-        문제별 제출 회수 포함
-
-        - info
-            - size : 한 페이지의 크기
-            - page : 페이지 번호
-        """
-        sql="SELECT t.id,t.title,t.rate,t.diff,s.count FROM coco.task t left outer join coco.sub_per_task s on t.id=s.task_id"
-        total,result=db_cursor.select_sql_with_pagination(sql,size=info.size,page=info.page)
-
-        return {
-            "total":total,
-            "size":info.size,
-            "tasks":result
-            }
     
 task_crud=CrudTask(Task)

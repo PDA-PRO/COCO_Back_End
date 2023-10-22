@@ -1,9 +1,10 @@
 from fastapi import HTTPException,status
-from schemas.user import *
+from app.schemas.user import *
 from .base import Crudbase
-from core import security
-from models.user import User
-from db.base import DBCursor
+from app.core import security
+from app.models.user import User
+from app.db.base import DBCursor
+from app.crud.alarm import alarm_crud
 
 class CrudUser(Crudbase[User,str]):
     def get_user(self, db_cursor:DBCursor,user_id:int, user_pw:int):
@@ -15,14 +16,16 @@ class CrudUser(Crudbase[User,str]):
         - user_id : id
         - user_pw : pw
         """
-        sql = "SELECT id, pw, name, role, exp, level FROM `coco`.`user` where id = %s;"
+        sql = "SELECT id, pw, name, role, exp, tutor FROM `coco`.`user` where id = %s;"
         data=(user_id)
         result = db_cursor.select_sql(sql,data)
+
+        alarm = alarm_crud.read_alarm(db_cursor, user_id)
         if len(result) == 0:#로그인 정보가 없다면
             return None
         else:#로그인 정보가 있다면
             if security.verify_password(user_pw, result[0]["pw"]):#패스워드가 맞다면
-                return result[0]
+                return (result[0], alarm)
             return None
 
     def create_user(self,db_cursor:DBCursor, user:SignUp):
@@ -41,129 +44,27 @@ class CrudUser(Crudbase[User,str]):
         db_cursor.execute_sql(sql,data)
         return 1
 
-
-    def exist_id(self,db_cursor:DBCursor, id:str):
-        """
-        아이디 조회
-        존재하면 1 존재하지 않으면 0
-
-        - id : user id
-        """
-        sql = "SELECT id FROM `coco`.`user` where id = %s;"
-        data=(id)
-        result = db_cursor.select_sql(sql,data)
-        if len(result):
-            return id
-        else:
-            raise HTTPException(            
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="id가 존재하지 않습니다.")
-
-    def get_id(self, db_cursor:DBCursor,info:FindId):
-        """
-        id 찾기
-
-        - info
-            - name : 실명
-            - email : 이메일
-        """
-        sql = "SELECT id FROM `coco`.`user` WHERE name = %s AND email = %s"
-        data=(info.name,info.email)
-        result = db_cursor.select_sql(sql,data)
-        if len(result) == 0:
-            return 0
-        else:
-            return result[0]["id"]
-
-    def update_pw(self, db_cursor:DBCursor,info:Login):
-        """
-        해당 user의 pw 업데이트
-
-        - info 
-            - id : id
-            - pw : pw
-        """
-        sql = "UPDATE coco.user SET pw = %s WHERE id = %s;"
-        data = (security.get_password_hash(info.pw), info.id)
-        db_cursor.execute_sql(sql, data)
-        
-    def update_email(self, db_cursor:DBCursor,info:UpdateEmail):
-        """
-        해당 user의 email 업데이트
-
-        - info 
-            - id : id
-            - email : email
-        """
-        
-        sql = "UPDATE coco.user SET email = %s WHERE id = %s;"
-        data = (info.email, info.id)
-        db_cursor.execute_sql(sql, data)
-        return 1
-    
-    def update_role(self, db_cursor:DBCursor,info:UpdateRole):
-        """
-        해당 user의 role 업데이트
-
-        - info 
-            - id : id
-            - role : role | 0 -> 일반 유저 1 -> 관리자
-        """
-        
-        sql = "UPDATE coco.user SET role = %s WHERE id = %s;"
-        data = (info.role, info.id)
-        db_cursor.execute_sql(sql, data)
-        return 1
-    
-    def update_exp(self,db_cursor:DBCursor,user_id:str):
-        """
-        user 경험치 업데이트
-
-        - user_id : id
-        """
-        sql="SELECT distinct user_id,task_id,diff FROM coco.user_problem where user_id=%s and status=3;"
-        data=(user_id)
-        result=db_cursor.select_sql(sql,data)
-
-        new_exp=0
-        for i in result:
-            new_exp+=i.get("diff")*100
-        sql="UPDATE coco.user SET exp = %s WHERE (id = %s);"
-        data=(new_exp,user_id)
-        db_cursor.execute_sql(sql,data)
-    
-    def add_manager(self, db_cursor:DBCursor,user_id:str):
-        """
-        일반 user에서 관리자로 업데이트
-
-        - user_id 
-        """
-        sql = "UPDATE `coco`.`user` SET `role` = '1' WHERE (`id` = %s);"
-        data = (user_id)
-        db_cursor.execute_sql(sql, data)
-        return True
-    
-    def read_manager(self,db_cursor:DBCursor):
-        """
-        모든 관리자 조회
-
-        """
-        sql = "select id, name, role from `coco`.`user` where `role` = 1"
-        return db_cursor.select_sql(sql)
-
     def search_user(self, db_cursor:DBCursor,info:UserListIn):
         """
-        user의 id나 name으로 검색
-        id, name, role 값 리턴
+        user의 id나 name, role, tutor로 검색
+        id, name, role, tutor 값 리턴
 
+        params
         - info
             - keyword : user의 id나 name | 값이 없을 시 모든 user 리스트 리턴
             - size : 한 페이지의 크기
             - page : 페이지
             - role : 0 -> 일반 유저 1-> 관리자
+            - tutor : 0 -> 일반 유저 1-> 튜터
+        -----------------------------------------------
+        returns
+        - userlist : 쿼리 결과
+        - size와 page가 있을 경우 
+            - total : 전체 결과
+            - size : 페이지 크기
         """
-        if info.keyword or info.role!=None:
-            sql = "SELECT id, name, role FROM coco.user WHERE"
+        if info.keyword or info.role!=None or info.tutor!=None:
+            sql = "SELECT id, name, role, exp FROM coco.user WHERE"
             plus_sql=[]
             plus_data=[]
             if info.keyword:
@@ -173,13 +74,28 @@ class CrudUser(Crudbase[User,str]):
             if info.role!=None:
                 plus_sql.append(" role=%s")
                 plus_data.append(info.role)
+            if info.tutor!=None:
+                plus_sql.append(" tutor=%s")
+                plus_data.append(info.tutor)
             sql+=" and".join(plus_sql)
             data=tuple(plus_data)
         else:
-            sql = "SELECT id, name, role FROM coco.user"
+            sql = "SELECT id, name, role, exp FROM coco.user"
             data = ()
-        total,result=db_cursor.select_sql_with_pagination(sql, data,info.size,info.page)
-        return {"total":total,"size":info.size,"userlist":result}
+        
+        if info.size and info.page:
+            total,result=db_cursor.select_sql_with_pagination(sql, data,info.size,info.page)
+            for i in range(len(result)):
+                level = self.get_level(result[i]['exp'])
+                result[i]['level'] = level['level']
+            return {"total":total,"size":info.size,"userlist":result}
+        else:
+            result=db_cursor.select_sql(sql, data)
+            print(result)
+            for i in range(len(result)):
+                level = self.get_level(result[i]['exp'])
+                result[i]['level'] = level['level']
+            return {"userlist":result}
 
     def create_mytask(self,db_cursor:DBCursor, user_id,task_id):
         data = (user_id, task_id)
@@ -210,4 +126,45 @@ class CrudUser(Crudbase[User,str]):
         db_cursor.execute_sql(sql, data)
         return True
 
+    def user_level(self, db_cursor:DBCursor, user_id):
+        sql = 'SELECT id, exp FROM coco.user where id = %s;'
+        data = (user_id)
+        result = db_cursor.select_sql(sql, data)
+        level_info = self.get_level(result[0]['exp'])
+
+        # 전체에서 몇등인지
+        rank_sql = 'SELECT ROW_NUMBER() OVER ( ORDER BY exp desc ) AS ranking, id, exp FROM coco.user;'
+        rank_result = db_cursor.select_sql(rank_sql, ())
+        for i in range(len(rank_result)):
+            if user_id == rank_result[i]['id']:
+                rank = rank_result[i]['ranking']
+                break
+
+        return {'user_id': user_id, 'exp': result[0]['exp'], 
+                'level': level_info['level'], 'points': level_info['points'], 'rank': rank}
+
+    # 레벨 계산
+    def get_level(self, exp):
+        level = 1
+        points = 0
+        # 레벨 도달 포인트
+        arr_points = [0, 200, 700, 1500, 3100, 6300, 12700, 25500, 55300]
+        for i in range(1, len(arr_points)):
+            if exp < arr_points[i]:
+                level = i
+                points = arr_points[i] - exp
+                break
+
+        return {'level': level, 'points': points}
+
+    def update_board(self, db_cursor:DBCursor, info, user_id):
+        if info.code == None:
+            sql = "UPDATE `coco`.`boards` SET `context` = %s, `title` = %s WHERE (`id` = %s);"
+            data = (info.context, info.title, info.board_id)
+        else:
+            sql = "UPDATE `coco`.`boards` SET `context` = %s, `title` = %s, `code` = %s WHERE (`id` = %s);"
+            data = (info.context, info.title, info.code, info.board_id)
+        db_cursor.execute_sql(sql, data)
+        return {'id': info.board_id}
+    
 user_crud=CrudUser(User)

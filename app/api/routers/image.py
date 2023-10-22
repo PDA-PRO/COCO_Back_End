@@ -1,12 +1,12 @@
 from fastapi import APIRouter, HTTPException,UploadFile,Depends,Request,status
 from fastapi.responses import FileResponse
-from core import security
-from core.image import image
+from app.core import security
+from app.core.image import image
 
 router = APIRouter(prefix="/image")
     
 @router.post("/upload-temp",tags=["image"],)
-async def image_upload(request: Request,type:int,file:UploadFile,token: dict = Depends(security.check_token)):
+def image_upload(request: Request,type:int,file:UploadFile,token: dict = Depends(security.check_token)):
     """
     텍스트 에디터 작성시 임시로 저장되는 사진을 type별로 저장하고 요청된 url로 사진url을 리턴
     JWT토큰 필요
@@ -40,7 +40,7 @@ async def image_upload(request: Request,type:int,file:UploadFile,token: dict = D
     )
 
 @router.get("/download/{type}/{filename}",tags=["image"],)
-async def image_download(filename:str,type:int,id:str=None,time:str=None):
+def image_download(filename:str,type:int,id:str=None,time:str=None):
     """
     실제로 저장된 사진을 리턴
 
@@ -69,7 +69,7 @@ async def image_download(filename:str,type:int,id:str=None,time:str=None):
     return FileResponse(image_path)
 
 @router.get("/download/{type}/{filename}/temp",tags=["image"])
-async def image_download(filename:str,type:int,id:str=None):
+def image_download(filename:str,type:int,id:str=None):
     """
     텍스트 에디터 작성시 임시로 저장한 사진을 리턴
 
@@ -99,7 +99,7 @@ async def image_download(filename:str,type:int,id:str=None):
     return FileResponse(image_path)
 
 @router.delete("/delete-image",tags=["image"])
-async def delete_image(token: dict = Depends(security.check_token)):
+def delete_image(token: dict = Depends(security.check_token)):
     """
     서버에 저장된 프로필 이미지 삭제
 

@@ -1,23 +1,43 @@
-from core.celery_app import celery_task
 import time
-import redis
 import subprocess
-from contextlib import contextmanager
 import os
 import glob
-from crud.task import task_crud
-from crud.submission import submission_crud
-from crud.user import user_crud
-from dotenv import load_dotenv
-from api.deps import get_cursor
-import json
-from googletrans import Translator
+import traceback
+import redis
+from contextlib import contextmanager
+from app.api.deps import get_cursor
+from app.crud.base import Crudbase
+from app.core.celery_app import celery_task
 
-redis_client = redis.Redis(host='127.0.0.1', port=6379)
-
-load_dotenv(verbose=True)
-
+crud_base=Crudbase()
 get_cursor=contextmanager(get_cursor)
+
+class ScoringResult():
+    """
+        채점 결과
+        - status_id : isolate 런타임 결과 1 - 런타임 오류, 2 - 시간 초과, 3 - 메모리 초과
+        - stdout : 표준 출력값
+        - stderr : 표준 에러값
+        - exit_code : 채점시 런타임 종료 코드 0 - 정상종료, 1 - 런타임 오류
+        - message : 채점 결과
+        - number_of_runs : 테스트케이스 통과 개수
+        - status : 채점 상태 1 - 대기, 2 - 채점중, 3 - 정답, 4 - 오답
+    """
+    def __init__(self,status_id:int=None,stdout:str=None,stderr:str=None,exit_code:int=None,message:str=None,number_of_runs:int=0,status:int=4,used_memory:int=None,used_time:float=None) -> None:
+        self.status_id=status_id
+        self.stdout=stdout
+        self.stderr=stderr
+        self.exit_code=exit_code
+        self.message=message
+        self.number_of_runs=number_of_runs
+        self.status=status
+        self.used_memory=used_memory
+        self.used_time=used_time
+
+    def to_dict(self):
+        print(self.__dict__)
+        return self.__dict__
+
 
 def txt_to_dic(file_path):
     """
@@ -53,7 +73,7 @@ def ready_C(db_cursor,box_id,sub_id):
     #output data 저장공간
     output_path=os.getenv("SANDBOX_PATH")+str(box_id)+'/out/compile.txt'
     
-    subprocess.run('isolate --meta '+meta_path+' -E PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" -p5 --cg -d /etc:noexec -b '+str(box_id)+' --run /usr/bin/gcc src.c > '+output_path+' 2> '+error_path,shell=True)
+    subprocess.run('isolate --meta '+meta_path+' -E PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" -p5 -d /etc:noexec -b '+str(box_id)+' --run /usr/bin/gcc src.c > '+output_path+' 2> '+error_path,shell=True)
 
     #실행결과 분석
     exec_result=txt_to_dic(meta_path)
@@ -64,7 +84,8 @@ def ready_C(db_cursor,box_id,sub_id):
         error_file=open(error_path,'r')
         error=error_file.readlines()
         print(error)
-        submission_crud.update_sub(db_cursor,sub_id,int(exec_result["exitcode"]),message="컴파일 에러",status_id=exec_result["status"],stderr="".join(error),status=4)
+        scoring_res=ScoringResult(exec_result["status"],None,"".join(error),int(exec_result["exitcode"]),"컴파일 에러")
+        crud_base.update(db_cursor,scoring_res.to_dict(),db='coco',table='submissions',id=sub_id)
         return False
 
 @contextmanager
@@ -85,16 +106,17 @@ def get_isolate(timelimit:int)->int|None:
     """
     box_id=1
     timeover=0
-    with redis.StrictRedis(host='127.0.0.1', port=6379, db=0) as conn:
+    with redis.StrictRedis(host=os.getenv('REDIS_HOST'), port=os.getenv('REDIS_PORT'), db=os.getenv('REDIS_DB')) as conn:
         try:
             while timeover<timelimit:#폴링으로 box가 사용가능한지 계속 확인
                 if conn.set(str(box_id),1,nx=True):
                     #isolate box 초기화
-                    subprocess.run(['isolate', '--cg', '-b',str(box_id),'--init'],capture_output=True,text=True)
+                    subprocess.run(['isolate', '-b',str(box_id),'--init'],capture_output=True,text=True)
                     time.sleep(0.2)#격리 공간 생기는 거 기다리기
                     yield box_id
                     break
-                box_id=((box_id+1)%9)
+                
+                box_id=((box_id+1)%int(os.getenv("CELERY_CONCURRENCY"))+1)
                 if box_id==0:
                     box_id=1
                 time.sleep(0.1)
@@ -105,29 +127,13 @@ def get_isolate(timelimit:int)->int|None:
         finally:
             if box_id:
                 #사용가능한 box id를 획득했다면 사용종료 후 isolate box 삭제
-                subprocess.run(['isolate', '--cg', '-b',str(box_id),'--cleanup'],capture_output=True)
+                subprocess.run(['isolate', '-b',str(box_id),'--cleanup'],capture_output=True)
             #isolate box id 사용가능으로 설정하기 위해 box id를 삭제
             conn.delete(str(box_id))
 
-def run_pylint(py_file_path, sub_id):
-    translator = Translator()             
+def run_pylint(py_file_path, sub_id):     
     json_path = os.path.join(os.getenv("LINT_PATH"),f"{sub_id}.json")
-    os.system(f'pylint {py_file_path} --disable=W,C --output-format=json:{json_path}')     
-    # err_msg = []
-    # with open(json_path, 'r') as file:
-    #     datas = json.load(file)
-    #     for data in datas:
-    #         type = data['type']
-    #         line = data['line']
-    #         symbol = data['symbol']
-    #         msg = data['message']
-    #         err_msg.append({
-    #             'type': type,
-    #             'line': line,
-    #             'symbol': symbol,
-    #             'msg': translator.translate(msg, 'ko').text
-    #         })
-    # return err_msg
+    os.system(f'pylint {py_file_path} --disable=W,C --output-format=json:{json_path}')   
 
 @celery_task.task(ignore_result=True)
 def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
@@ -135,7 +141,6 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
     유저가 제출한 코드를 컴파일, 실행하고 해당 문제의 테스트 케이스를 넣고 출력값을 비교하여 알맞은 코드인지 확인
     db에 저장된 submission 값을 수정하며 채점 정보 저장
     status값은 1 = 대기, 2 = 채점중, 3 = 정답, 4 = 오답
-    
     
     - taskid : 문제 id
     - sourcecode : 제출 code
@@ -150,17 +155,17 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
             return
                 
         #문제의 제한사항 조회
-        result=task_crud.read_task_limit(db_cursor,taskid)
-
+        result=crud_base.read(db_cursor,db='coco',table='task',id=taskid)[0]
+        
         #제출 현재 상태를 2("채점중")으로 변경
-        submission_crud.update_status(db_cursor,sub_id,2)
+        crud_base.update(db_cursor,{"status":2},db='coco',table='submissions',id=sub_id)
 
-        #채점
         #TC data 저장공간
         task_path=os.getenv("TASK_PATH")+str(taskid)+'/input/'
         code_file_path='/var/local/lib/isolate/'+str(box_id)+'/box/'
         TC_list=os.listdir(task_path)
         compile_res=False
+        scoring_res=ScoringResult(exit_code=0,message="정답!",number_of_runs=len(TC_list),status=3)
 
         
         if lang==1:#C언어 컴파일
@@ -188,16 +193,22 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
                     input_path=os.getenv("TASK_PATH")+str(taskid)+'/input/'+TC_list[TC_num]
                     #test case output data 저장공간
                     answer_path=os.getenv("TASK_PATH")+str(taskid)+'/output/'+TC_list[TC_num]
+
                     #isolate 환경에서 실행 C언어는 a.out 실행파일로 채점
+                    #warning docker 환경에서는 /usr/local/bin/python3
                     if lang==1:
-                        subprocess.run('isolate --meta '+meta_path+' --cg -t '+str(result["time_limit"])+' -d /etc:noexec --cg-mem='+str(result["mem_limit"]*1000)+' -b '+str(box_id)+' --run ./a.out < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
+                        subprocess.run('isolate -M '+meta_path+' -t '+str(result["time_limit"])+' -d /etc:noexec -m '+str(result["mem_limit"]*1500)+' -b '+str(box_id)+' --run ./a.out < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
                     else:
-                        subprocess.run('isolate --meta '+meta_path+' --cg -t '+str(result["time_limit"])+' -d /etc:noexec --cg-mem='+str(result["mem_limit"]*1000)+' -b '+str(box_id)+' --run /usr/bin/python3 src.py < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
+                        subprocess.run('isolate -M '+meta_path+' -t '+str(result["time_limit"])+' -d /etc:noexec -m '+str(result["mem_limit"]*1500)+' -b '+str(box_id)+' --run /usr/local/bin/python3 src.py < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
                     
                     #실행결과 분석
                     exec_result=txt_to_dic(meta_path)
                     if exec_result.get("exitcode")==None:#샌드박스에 의해서 종료됨 -> 문제의 제한사항에 걸려서 종료됨
-                        submission_crud.update_sub(db_cursor,sub_id,2,message="제한사항에 걸림",status_id=exec_result["status"])
+                        scoring_res.status_id=exec_result["status"]
+                        scoring_res.exit_code=2
+                        scoring_res.message="제한사항에 걸림"
+                        scoring_res.number_of_runs=TC_num
+                        scoring_res.status=4
                         task_result=0
                         break
                     else:
@@ -206,17 +217,24 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
                             output=output_file.readlines()
                             answer_file=open(answer_path,'r')
                             answer=answer_file.readlines()
-                            print(output)
+                            scoring_res.status_id=None
                             if len(output):
                                 for line_num in range(len(answer)):
                                     if output[line_num].rstrip()!=answer[line_num].rstrip():
-                                        submission_crud.update_sub(db_cursor,sub_id,int(exec_result["exitcode"]),stdout="".join(output),number_of_runs=TC_num,message="TC 실패")
+                                        scoring_res.stdout="".join(output)
+                                        scoring_res.exit_code=int(exec_result["exitcode"])
+                                        scoring_res.message="TC 실패"
+                                        scoring_res.number_of_runs=TC_num
+                                        scoring_res.status=4
                                         task_result=0
                                         output_file.close()
                                         answer_file.close()
                                         break
                             else:
-                                submission_crud.update_sub(db_cursor,sub_id,int(exec_result["exitcode"]),number_of_runs=TC_num,message="TC 실패")
+                                scoring_res.exit_code=int(exec_result["exitcode"])
+                                scoring_res.message="TC 실패"
+                                scoring_res.number_of_runs=TC_num
+                                scoring_res.status=4
                                 task_result=0
                                 output_file.close()
                                 answer_file.close()
@@ -225,20 +243,37 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
                             
                         else:#제출코드 실행 결과가 정상적이지 않다. -> 런타임 에러 등 
                             error_file=open(error_path,'r')
-                            
                             error=error_file.readlines()
-                            print(error)
-                            submission_crud.update_sub(db_cursor,sub_id,int(exec_result["exitcode"]),message="런타임 에러",number_of_runs=TC_num,status_id=exec_result["status"],stderr="".join(error))
+                            scoring_res.status_id=exec_result["status"]
+                            scoring_res.stderr="".join(error)
+                            scoring_res.exit_code=int(exec_result["exitcode"])
+                            scoring_res.message="런타임 에러"
+                            scoring_res.number_of_runs=TC_num
+                            scoring_res.status=4
                             task_result=0
                             break
 
                 if task_result==1:#모든 TC를 통과했다면 정답처리
-                    submission_crud.update_sub(db_cursor,sub_id,int(exec_result["exitcode"]),message="정답!",status=3)
-                    user_crud.update_exp(db_cursor,user_id)
+                    print('맞음')
+                    scoring_res.used_time=float(exec_result["time"])
+                    scoring_res.used_memory=int(exec_result["max-rss"])
+                    crud_base.update(db_cursor,scoring_res.to_dict(),'coco','submissions',id=sub_id)
+                    #유저의 경험치 업데이트
+                    user_solved_list=crud_base.read(db_cursor,['task_id','diff'],'coco','user_problem',user_id=user_id,status=3)
+                    new_exp=0
+                    dupe=[]
+                    for i in user_solved_list:
+                        if i['task_id'] not in dupe:
+                            dupe.append(i['task_id'])
+                            new_exp+=i["diff"]*100
+                    crud_base.update(db_cursor,{'exp':new_exp},'coco','user',id=user_id)
                 else:
+                    print('틀림')
+                    crud_base.update(db_cursor,scoring_res.to_dict(),'coco','submissions',id=sub_id)
                     if lang==0:
                         run_pylint(code_file_path,sub_id)
             except:
+                print(traceback.format_exc())
                 print("채점 중 오류 발생")
         
         #폴더 초기화
@@ -256,5 +291,10 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
             os.remove(i)
 
         #정답률 수정
-        rate=submission_crud.calc_rate(db_cursor,taskid)
-        task_crud.update_rate(db_cursor,taskid,rate)
+        all_sub=crud_base.read(db_cursor,['status'],'coco','status_list',task_id=taskid)
+        right_sub=0
+        for i in all_sub:
+            if i.get("status")==3:
+                right_sub+=1
+        rate=round(right_sub/len(all_sub)*100,1)
+        crud_base.update(db_cursor,{"rate":rate},'coco','task',id=taskid)
