@@ -245,6 +245,9 @@ class CrudTask(Crudbase[Task,int]):
         if not len(result):
             return None
         sample = json.loads(result[0]["sample"])
+        in_ex1, in_ex2 = sample['input'].split(",")
+        out_ex1, out_ex2 = sample['output'].split(",")
+        
         desc_sql = "SELECT * FROM coco.descriptions where task_id = %s;"
         data=(task_id)
         desc_result = db_cursor.select_sql(desc_sql,data)
@@ -256,10 +259,10 @@ class CrudTask(Crudbase[Task,int]):
             'timeLimit': result[0]["time_limit"],   
             'diff': result[0]["diff"],
             'category': list(result[0]["category"].split(',')),
-            'inputEx1': sample['input'][0],
-            'inputEx2': sample['input'][1],
-            'outputEx1': sample['output'][0],
-            'outputEx2': sample['output'][0],
+            'inputEx1': in_ex1[1:],
+            'inputEx2': in_ex2[1:-1],
+            'outputEx1': out_ex1[1:],
+            'outputEx2': out_ex2[1:-1],
             'mainDesc': desc_result[0]["main"],
             'inDesc': desc_result[0]["in"],
             'outDesc': desc_result[0]["out"]
