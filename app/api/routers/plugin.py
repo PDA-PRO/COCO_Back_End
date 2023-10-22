@@ -12,8 +12,12 @@ if os.getenv("PLUGIN_PATH"):
         if i == "__pycache__" or os.path.isfile(os.path.join(os.getenv("PLUGIN_PATH"),i)):
             continue
         print(i+"플러그인 불러오기 시도")
-        module=importlib.import_module(f'app.plugin.{i}.main')
-        plugin=module.Plugin
+        try:
+            module=importlib.import_module(f'app.plugin.{i}.main')
+            plugin=module.Plugin
+        except:
+            print(i+"플러그인 불러오기 실패")
+            continue
         
         if plugin.test():
             print(i+"플러그인 테스트 성공")
@@ -25,6 +29,7 @@ if os.getenv("PLUGIN_PATH"):
                     print(i+"플러그인 엔드포인트 추가 : "+plugin.router_path+'/'+method_split[1])
                     router.add_api_route(plugin.router_path+'/'+method_split[1],endpoint=getattr(plugin,method),methods=['post'])
         else:
+            plugin.ready_db(False)
             print(i+"플러그인 테스트 실패")
 
 class AiStatus(BaseModel):

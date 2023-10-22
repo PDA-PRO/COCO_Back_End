@@ -127,7 +127,7 @@ class AbstractPlugin(metaclass=ABCMeta):
         cursor.execute_sql(create_status)
 
     @classmethod
-    def ready_db(cls):
+    def ready_db(cls,is_available:bool=True):
         '''
         ai 플러그인 db 저장소 테이블 생성
         '''
@@ -140,8 +140,10 @@ class AbstractPlugin(metaclass=ABCMeta):
             result=cursor.select_sql(f"SELECT * FROM `plugin`.`status` where `plugin`='{plugin_name}';")
             if len(result)<=0:
                 cls.create_table(table_name,plugin_name,cursor)
-            cursor.execute_sql(f"UPDATE `plugin`.`status` SET `is_active` = 1 WHERE (`plugin` = '{plugin_name}');")
-        
+            if is_available:
+                cursor.execute_sql(f"UPDATE `plugin`.`status` SET `is_active` = 1 WHERE (`plugin` = '{plugin_name}');")
+            else:
+                cursor.execute_sql(f"UPDATE `plugin`.`status` SET `is_active` = 0, `back` = 0 WHERE (`plugin` = '{plugin_name}');")
     @classmethod
     def read_all(cls,db_cursor:DBCursor)->list:
         '''
