@@ -2,8 +2,8 @@ FROM python:3.10.13-slim
 
 WORKDIR /home
 
-COPY worker_requirments.txt /home/app/worker_requirments.txt
-RUN pip install --no-cache-dir --trusted-host pypi.python.org -r /home/app/worker_requirments.txt
+COPY celeryworker_requirments.txt /home/app/celeryworker_requirments.txt
+RUN pip install --no-cache-dir --trusted-host pypi.python.org -r /home/app/celeryworker_requirments.txt
 
 #isolate 및 필요한 패키지 설치
 RUN apt-get update && apt-get install libcap-dev -y && apt-get install git -y && apt-get install make -y && apt-get install gcc -y

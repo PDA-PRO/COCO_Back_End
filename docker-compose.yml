@@ -2,7 +2,7 @@ version: "3"
 services:
   mysql:
     image: styughjvbn/coco_db
-    container_name: con_mysql
+    container_name: coco_db
     platform: linux/x86_64
     build: ./mysql/
     ports: #host 3307과 컨테이너의 3306포트 연결
@@ -11,32 +11,45 @@ services:
       - ./mysql/local.env
     tty: true
     restart: always
+    networks:
+      - coco_network
 
   fastapi:
     image: styughjvbn/coco_backend
     depends_on:
       - mysql
-    container_name: con_fast_api
+    container_name: coco_backend
     platform: linux/x86_64
     build: ./
     restart: always
     tty: true
     volumes: # static 볼륨과 연결
       - static:/static
+      - type: bind
+        source: ./plugin
+        target: /home/app/plugin
+        volume:
+          nocopy: false
     ports: #host 1000과 컨테이너의 8000포트 연결
       - 1000:8000
     env_file:
-      - ./product.env
+      - ./envs/common.env
+      - ./envs/backend.env
+    networks:
+      - coco_network
 
   # celery broker
   redis:
     image: styughjvbn/coco_mq
-    container_name: redis
+    container_name: coco_mq
     tty: true
+    networks:
+      - coco_network
 
   #celery worker
   celery_worker:
     image: styughjvbn/coco_worker
+    container_name: coco_worker
     depends_on:
       - redis
     build:
@@ -45,9 +58,15 @@ services:
     volumes: # static 볼륨과 연결
       - static:/static
     env_file:
-      - ./product.env
+      - ./envs/common.env
+      - ./envs/celeryworker.env
     privileged: true # isolate의 sandbox마다 컴퓨터 자원 제한을 하기 위해 필요한 설정값
-
+    networks:
+      - coco_network
 volumes: # task의 test case와 같이 유지되는 파일들을 저장하는 볼륨
   static:
-#TODO : 환경변수파일 dev, product 정리 및 세부 서비스별 지정
+
+networks:
+  coco_network:
+    name: coco_network
+    attachable: true

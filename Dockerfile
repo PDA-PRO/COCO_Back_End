@@ -5,8 +5,8 @@ FROM python:3.10.13-slim
 WORKDIR /home
 
 #필요한 라이브러리 설치
-COPY requirements.txt /home/app/requirements.txt
-RUN pip install --no-cache-dir --trusted-host pypi.python.org -r /home/app/requirements.txt
+COPY requirements.prod.txt /home/app/requirements.prod.txt
+RUN pip install --no-cache-dir --trusted-host pypi.python.org -r /home/app/requirements.prod.txt
 
 #코드 복사
 COPY ./app /home/app
