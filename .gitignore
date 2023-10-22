@@ -10,6 +10,7 @@ __pycache__/
 /notice/*
 /roadmap/*
 /lint/*
-!.keep
 !base.jpg
 .env
+/plugin/*
+!.keep

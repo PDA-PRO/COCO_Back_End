@@ -146,15 +146,15 @@ def ready():
             # 종속성 패키지 추출
             reqs=[]
             with open(os.path.join(os.getenv("PLUGIN_PATH"),i,'requirements.txt'),"r") as req_file:
-                for i in req_file.readlines():
-                    reqs.append(i.split("=")[0])
+                for j in req_file.readlines():
+                    reqs.append(j.split("=")[0])
             reqs.sort()
 
             # .cache 파일 존재 확인 및 패키지 비교
             if os.path.exists(os.path.join(os.getenv("PLUGIN_PATH"),i,'.cache')):
                 with open(os.path.join(os.getenv("PLUGIN_PATH"),i,'.cache'),"r") as cache_file:
-                    for i,v in enumerate(cache_file.readlines()):
-                        if reqs[i]!=v:
+                    for j,v in enumerate(cache_file.readlines()):
+                        if reqs[j]!=v:
                             is_new=False
                             break
 
@@ -162,8 +162,8 @@ def ready():
             if is_new:
                 if subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-r',os.path.join(os.getenv("PLUGIN_PATH"),i,'requirements.txt')]):
                     with open(os.path.join(os.getenv("PLUGIN_PATH"),i,'.cache'),"w") as cache_file:
-                        for i in reqs:
-                            cache_file.write(i+'\n')
+                        for j in reqs:
+                            cache_file.write(j+'\n')
 
 
 if __name__=="__main__":
