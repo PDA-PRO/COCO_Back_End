@@ -93,14 +93,23 @@ class CrudHot(Crudbase):
 
         growth.sort(reverse=True)
  
-        diff = {'1': 0, '2': 0, '3': 0, '4': 0, '5': 0}
+        diff = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
         problem_diff_sql = """
             SELECT diff, count(*) as cnt FROM coco.status_all as s, coco.view_task as t
             where s.user_id = %s and s.status = 3 and s.task_id = t.id group by diff;
         """
         problem_diff_result = db_cursor.select_sql(problem_diff_sql, data)
+
+
+        task_cnt_sql = 'SELECT diff, count(*) as cnt FROM coco.task group by diff order by diff;'
+        task_cnt_result = db_cursor.select_sql(task_cnt_sql, ())
+        cnt = {}
+        for item in task_cnt_result:
+            cnt[item['diff']] = item['cnt']
+
         for i in problem_diff_result:
-            diff[i['diff']] = i['cnt']
+            diff[i['diff']] = i['cnt'] / cnt[i['diff']]
+        
         return {
             'growth': growth,
             'diff': diff
