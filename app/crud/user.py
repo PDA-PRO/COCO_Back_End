@@ -130,6 +130,9 @@ class CrudUser(Crudbase[User,str]):
         sql = 'SELECT id, exp FROM coco.user where id = %s;'
         data = (user_id)
         result = db_cursor.select_sql(sql, data)
+        if not result:
+            raise HTTPException(status_code=404, detail="user not found")
+        
         level_info = self.get_level(result[0]['exp'])
 
         # 전체에서 몇등인지
