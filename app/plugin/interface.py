@@ -15,10 +15,12 @@ class AbstractPlugin(metaclass=ABCMeta):
 
     정의가 필요한 클래스변수
     - `router_path` : ai플러그인 엔드포인트 접두사
+    - `feature_docs` : 플러그인의 간략한 설명
+    - `base` : ai 플러그인일 경우 모델 정보
 
     세부구현이 필요한 함수
     - `test` : ai플러그인 테스트
-    - `main` : ai플러그인 메인동작
+    - `endpoint_main` : ai플러그인 메인동작
     '''
 
     router_path=''
@@ -129,7 +131,7 @@ class AbstractPlugin(metaclass=ABCMeta):
     @classmethod
     def ready_db(cls,is_available:bool=True):
         '''
-        ai 플러그인 db 저장소 테이블 생성
+        ai 플러그인 db 저장소 관리
         '''
         with contextmanager(get_cursor)() as cursor:
             plugin_name=cls.__module__.split('.')[-2]
@@ -141,9 +143,10 @@ class AbstractPlugin(metaclass=ABCMeta):
             if len(result)<=0:
                 cls.create_table(table_name,plugin_name,cursor)
             if is_available:
-                cursor.execute_sql(f"UPDATE `plugin`.`status` SET `is_active` = 1 WHERE (`plugin` = '{plugin_name}');")
+                cursor.execute_sql(f"UPDATE `plugin`.`status` SET `is_active` = 1, `back` = 1 WHERE (`plugin` = '{plugin_name}');")
             else:
                 cursor.execute_sql(f"UPDATE `plugin`.`status` SET `is_active` = 0, `back` = 0 WHERE (`plugin` = '{plugin_name}');")
+
     @classmethod
     def read_all(cls,db_cursor:DBCursor)->list:
         '''
