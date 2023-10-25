@@ -219,15 +219,15 @@ class CrudRoom(Crudbase[Room,int]):
             """
             ans_data = (room_id,room_id, q['id'])
             ans_result = db_cursor.select_sql(ans_sql, ans_data)
-            check = False
+            check_cnt = 0
             for ans in ans_result:
                 if ans['check'] == 1:
-                    check = True
-                    break
+                    check_cnt += 1
+        
             qa.append({
                 **q,
                 'answers':ans_result,
-                'check': check,
+                'check': True if check_cnt > 0 else False,
                 'q_writer_level': user_crud.get_level(q['exp'])['level']
             })
         return {"question_list":qa,"total":total,'size':pagination.size}
@@ -460,6 +460,7 @@ class CrudRoom(Crudbase[Room,int]):
 
         sql = "UPDATE `room`.`%s_qa` SET `check` = %s WHERE (`a_id` = '%s')"
         data = (info.room_id, info.select, info.a_id)
+        print('select', data)
         db_cursor.execute_sql(sql, data)
 
         # 답변 채택 시 알람
