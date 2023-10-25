@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from app.crud.submission import submission_crud
 from app.core import security
 from app.crud.user import user_crud
@@ -8,36 +8,37 @@ from app.schemas.board import UpdateBoard
 
 router = APIRouter()
 
-@router.get('/myPageOne/{user_id}', tags=['mypage'])
-def mypage_one(user_id: str,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
+
+@router.get('/mypage/{type}/{user_id}', tags=['mypage'])
+def mypage_one(type: int, user_id: str,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     """
     사용자의 기본 정보 조회
-
+    - type: 1=사용자의 기본 정보 조회, 2=타 사용자의 기본 정보 조회
     - user_id
     - token : jwt
     """
-        
-    return user_crud.read(db_cursor,["id","name","role","email","exp"],id=user_id)
+    user_info = user_crud.read(db_cursor,["id","name","role","email","exp"],id=user_id)
+    if not user_info:
+        raise HTTPException(status_code=404, detail="user not found")
+    sub_result = submission_crud.read_mysub(db_cursor,user_id)
+    level = user_crud.user_level(db_cursor, user_id)
 
-@router.get('/myPageTwo/{user_id}', tags = ['mypage'])
-def mypage_two(user_id: str, token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
-    """
-    사용자의 역량 정보 조회
-
-    - user_id
-    - token : jwt
-    """
-    return submission_crud.read_mysub(db_cursor,user_id)
-
-@router.get('/myPageThree/{user_id}', tags=['mypage'])
-def mypage_three(user_id: str, token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
-    """
-    사용자의 게시글 정보 조회
-
-    - user_id
-    - token : jwt
-    """
-    return board_crud.read_myboard(db_cursor,user_id)
+    if type == 1:
+        board = board_crud.read_myboard(db_cursor,user_id)
+        task = user_crud.read_mytask(db_cursor,token['id'])
+        return {
+            "user_info": user_info[0],
+            "sub_result": sub_result,
+            'level': level,
+            'board': board,
+            'task': task
+        }
+    elif type == 2:
+        return {
+            "user_info": user_info[0],
+            "sub_result": sub_result,
+            'level': level,
+        }
 
 @router.post("/mytask/", tags=['mypage'])
 def add_mytask(task_id:int, token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
@@ -48,16 +49,6 @@ def add_mytask(task_id:int, token: dict = Depends(security.check_token),db_curso
     - token : jwt
     """
     return user_crud.create_mytask(db_cursor,token['id'],task_id)
-
-@router.get("/mytask/", tags = ['mypage'])
-def read_mytask(token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
-    """
-    내 문제집 조회
-
-    - task_id
-    - token : jwt
-    """
-    return user_crud.read_mytask(db_cursor,token['id'])
 
 @router.delete("/mytask/", tags=['mypage'])
 def delete_mytask(task_id:int, token:dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
