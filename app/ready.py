@@ -160,7 +160,7 @@ def ready():
                             is_new=True
                             break
             else:
-                is_new=False
+                is_new=True
 
             # 새로운 플러그인이라면 종속 패키지 설치
             if is_new:

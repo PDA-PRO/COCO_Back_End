@@ -1,5 +1,5 @@
 from abc import *
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from app.api.deps import get_cursor
 from contextlib import contextmanager
 
@@ -96,6 +96,20 @@ class AbstractPlugin(metaclass=ABCMeta):
         int:"int",
         str:"text"
     }
+
+    @classmethod
+    def enable_onoff(cls,db_cursor:DBCursor):
+        '''
+        ai 플러그인 엔드포인트 동적 om/off
+        '''
+        plugin_name=cls.__module__.split('.')[-2]
+        result=db_cursor.select_sql(f"SELECT * FROM `plugin`.`status` where `plugin`='{plugin_name}';")
+        if result and result[0]['is_active']!=1:
+            raise HTTPException(
+            status_code=404,
+            detail="Not found - The plugin is not active."
+        )
+        return db_cursor
 
     @classmethod
     def create_table(cls,table_name,plugin_name,cursor):
@@ -263,4 +277,3 @@ class AbstractPlugin(metaclass=ABCMeta):
                 assert col_list[cls.TableModel.__key__]==int, "키값 에러"
 
                 return [cls.TableModel.__key__]
-            
