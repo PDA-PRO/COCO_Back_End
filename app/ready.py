@@ -137,11 +137,13 @@ def ready():
         raise e
     
     if os.getenv("PLUGIN_PATH"):
+        if not os.path.exists(os.path.join(os.getenv("PLUGIN_PATH"),'interface.py')):
+            shutil.move('/home/temp/plugin/interface.py',os.path.join(os.getenv("PLUGIN_PATH"),'interface.py'))
         for i in os.listdir(os.getenv("PLUGIN_PATH")):
             if i == "__pycache__" or os.path.isfile(os.path.join(os.getenv("PLUGIN_PATH"),i)):
                 continue
             # implement pip as a subprocess:
-            is_new=True
+            is_new=False
 
             # 종속성 패키지 추출
             reqs=[]
@@ -154,16 +156,21 @@ def ready():
             if os.path.exists(os.path.join(os.getenv("PLUGIN_PATH"),i,'.cache')):
                 with open(os.path.join(os.getenv("PLUGIN_PATH"),i,'.cache'),"r") as cache_file:
                     for j,v in enumerate(cache_file.readlines()):
-                        if reqs[j]!=v:
-                            is_new=False
+                        if reqs[j].strip()!=v.strip():
+                            is_new=True
                             break
+            else:
+                is_new=False
 
             # 새로운 플러그인이라면 종속 패키지 설치
             if is_new:
-                if subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-r',os.path.join(os.getenv("PLUGIN_PATH"),i,'requirements.txt')]):
+                try:
+                    subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-r',os.path.join(os.getenv("PLUGIN_PATH"),i,'requirements.txt')])
                     with open(os.path.join(os.getenv("PLUGIN_PATH"),i,'.cache'),"w") as cache_file:
                         for j in reqs:
-                            cache_file.write(j+'\n')
+                            cache_file.write(j)
+                except:
+                    pass
 
 
 if __name__=="__main__":

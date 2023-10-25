@@ -123,10 +123,8 @@ class AbstractPlugin(metaclass=ABCMeta):
             {", ".join(col_type_list)},
             PRIMARY KEY ({", ".join(key_list)}));
             '''
-        
-        create_status=f"INSERT INTO `plugin`.`status` VALUES ('{plugin_name}', 1, 1, 0,'{cls.feature_docs}','{cls.base}');"
         cursor.execute_sql(sql)
-        cursor.execute_sql(create_status)
+
 
     @classmethod
     def ready_db(cls,is_available:bool=True):
@@ -135,13 +133,20 @@ class AbstractPlugin(metaclass=ABCMeta):
         '''
         with contextmanager(get_cursor)() as cursor:
             plugin_name=cls.__module__.split('.')[-2]
-            table_name=getattr(cls.TableModel,'__tablename__',None)
+            is_has_table=getattr(cls,'TableModel',None)
+            if is_has_table:
+                table_name=getattr(cls.TableModel,'__tablename__',None)
+            else:
+                table_name=plugin_name
             if table_name is None:
                 table_name=plugin_name
 
             result=cursor.select_sql(f"SELECT * FROM `plugin`.`status` where `plugin`='{plugin_name}';")
             if len(result)<=0:
-                cls.create_table(table_name,plugin_name,cursor)
+                create_status=f"INSERT INTO `plugin`.`status` VALUES ('{plugin_name}', 1, 1, 0,'{cls.feature_docs}','{cls.base}');"
+                cursor.execute_sql(create_status)
+                if is_has_table is not None:
+                    cls.create_table(table_name,plugin_name,cursor)
             if is_available:
                 cursor.execute_sql(f"UPDATE `plugin`.`status` SET `is_active` = 1, `back` = 1 WHERE (`plugin` = '{plugin_name}');")
             else:
