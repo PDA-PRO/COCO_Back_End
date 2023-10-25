@@ -133,6 +133,32 @@ def get_id(name:str,email:EmailStr,db_cursor:DBCursor=Depends(get_cursor)):
     else:
         return {"code": result[0]["id"]}
     
+@router.patch("/pw", tags=["user"])
+def update_pw_temp(info:SignUp,db_cursor:DBCursor=Depends(get_cursor)):
+    """
+    pw 재설정
+
+    - info
+        - name : 실명
+        - email : 이메일
+        - id : id
+        - pw : 새로운 비밀번호
+    --------------------------
+    returns
+    존재하지 않는 계정에 접근시 0리턴
+    비밀번호 재설정에 설공하면 1리턴
+    """
+    result=user_crud.read(db_cursor,["id"],name=info.name,email=info.email,id=info.id)
+    if len(result) == 0:
+        raise HTTPException(
+            status_code=404,
+            detail="일치하는 계정이 존재하지 않습니다.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    else:
+        user_crud.update(db_cursor,{'pw':security.get_password_hash(info.pw)},id=info.id)
+        return {"code": 1}
+    
 @router.get("/alarm", tags=['user'])
 def get_alarm(token: dict = Depends(security.check_token), db_cursor:DBCursor=Depends(get_cursor)):
     return alarm_crud.get_alarm(db_cursor, token['id'])
