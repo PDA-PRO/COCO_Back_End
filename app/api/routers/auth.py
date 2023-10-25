@@ -42,14 +42,15 @@ def login_for_access_token(autologin:bool=False,form_data: OAuth2PasswordRequest
         using HTTP Basic auth, as: client_id:client_secret
     """
     user_data = user_crud.get_user(db_cursor,form_data.username, form_data.password)
-    user = user_data[0]
-    alarm = user_data[1]
-    if not user:
+    if not user_data:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    user = user_data[0]
+    alarm = user_data[1]
+
     if autologin:
         access_token = security.create_access_token( data={"sub": user["id"],"role":user["role"],"tutor":user["tutor"], "name": user["name"], "user_exp":user["exp"],})
     else:
