@@ -213,33 +213,28 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
                         break
                     else:
                         if exec_result["exitcode"]=="0":#제출 코드 실행 결과가 정상적
-                            output_file=open(output_path,'r')
-                            output=output_file.readlines()
-                            answer_file=open(answer_path,'r')
-                            answer=answer_file.readlines()
-                            scoring_res.status_id=None
-                            if len(output):
-                                for line_num in range(len(answer)):
-                                    if output[line_num].rstrip()!=answer[line_num].rstrip():
+                            with open(output_path,'r') as output_file,open(answer_path,'r') as answer_file:
+                                output=output_file.readlines()
+                                answer=answer_file.readlines()
+                                scoring_res.status_id=None
+                                max_len=max(len(output),len(answer))
+                                for line_num in range(max_len):
+                                    output_line=""
+                                    answer_line=""
+                                    if line_num<len(output):
+                                        output_line=output[line_num].rstrip()
+                                    if line_num<len(answer):
+                                        answer_line=answer[line_num].rstrip()                                    
+                                    if output_line!=answer_line:
                                         scoring_res.stdout="".join(output)
-                                        scoring_res.exit_code=int(exec_result["exitcode"])
-                                        scoring_res.message="TC 실패"
-                                        scoring_res.number_of_runs=TC_num
-                                        scoring_res.status=4
                                         task_result=0
-                                        output_file.close()
-                                        answer_file.close()
                                         break
-                            else:
-                                scoring_res.exit_code=int(exec_result["exitcode"])
-                                scoring_res.message="TC 실패"
-                                scoring_res.number_of_runs=TC_num
-                                scoring_res.status=4
-                                task_result=0
-                                output_file.close()
-                                answer_file.close()
-                            if task_result==0:
-                                break
+                                if task_result==0: #TC를 틀린 경우
+                                    scoring_res.exit_code=int(exec_result["exitcode"])
+                                    scoring_res.message="TC 실패"
+                                    scoring_res.number_of_runs=TC_num
+                                    scoring_res.status=4
+                                    break
                             
                         else:#제출코드 실행 결과가 정상적이지 않다. -> 런타임 에러 등 
                             error_file=open(error_path,'r')
