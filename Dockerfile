@@ -15,6 +15,8 @@ ADD ./base_task_set.zip /home/base_task_set.zip
 ADD start.sh .
 ADD ./profile/base.jpg /static/profile/base.jpg
 
+RUN sed -i 's/\r$//' ./start.sh
+
 COPY ./app/plugin /home/temp/plugin
 #8000포트 외부로 열기
 EXPOSE 8000

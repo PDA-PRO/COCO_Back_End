@@ -19,6 +19,7 @@ COPY ./app/db/ /home/app/db/
 # 초기화, 시작 스크립트 복사
 ADD celery_start.sh .
 ADD celery_ready.py .
+RUN sed -i 's/\r$//' ./celery_start.sh
 
 # 컨테이너가 시작될때마다 시작 스크립트 실행
 ENTRYPOINT ["./celery_start.sh"]
