@@ -21,6 +21,18 @@ def create_user(user: SignUp,db_cursor:DBCursor=Depends(get_cursor)):
     """
     return {"code": user_crud.create_user(db_cursor,user)}
 
+@router.get("/", tags=["auth"])
+def create_user(token: dict = Depends(security.check_token)):
+    """
+    JWT 토큰 검증
+    
+    token : JWT
+    -----------------------
+    returns
+    - role : 토큰이 유효하다면 role 리턴
+    """
+    return {"role": token["role"]}
+
 @router.post("/login", response_model=Token,tags=["auth"])
 def login_for_access_token(autologin:bool=False,form_data: OAuth2PasswordRequestForm = Depends(),db_cursor:DBCursor=Depends(get_cursor)):
     """
