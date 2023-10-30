@@ -10,7 +10,7 @@ from app.crud.task import task_crud
 import sys
 import subprocess
 
-@retry(wait=wait_fixed(5),stop=stop_after_attempt(10),)
+@retry(wait=wait_fixed(10),stop=stop_after_attempt(20),)
 def ready():
     #fastapi 시작
     print("백엔드 static 폴더 검증")
