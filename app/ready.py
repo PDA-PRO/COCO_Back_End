@@ -65,6 +65,7 @@ def ready():
                 try:
                     task_crud.create(db_cursor,{"category":'wpc'},table="task_category")
                     task_crud.create(db_cursor,{"category":'기본 문제'},table="task_category")
+                    task_crud.create(db_cursor,{"category":'ai'},table="task_category")
                 except:
                     pass
 
@@ -156,19 +157,26 @@ def ready():
             if os.path.exists(os.path.join(os.getenv("PLUGIN_PATH"),i,'.cache')):
                 with open(os.path.join(os.getenv("PLUGIN_PATH"),i,'.cache'),"r") as cache_file:
                     for j,v in enumerate(cache_file.readlines()):
-                        if reqs[j].strip()!=v.strip():
-                            is_new=True
-                            break
+                        try:
+                            if reqs[j].strip()!=v.strip():
+                                is_new=True
+                                break
+                        except:
+                            pass
             else:
                 is_new=True
 
             # 새로운 플러그인이라면 종속 패키지 설치
             if is_new:
+                print("======================================================================")
+                print(i+" 종속 패키지 설치")
+                print("======================================================================")
                 try:
                     subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-r',os.path.join(os.getenv("PLUGIN_PATH"),i,'requirements.txt')])
                     with open(os.path.join(os.getenv("PLUGIN_PATH"),i,'.cache'),"w") as cache_file:
                         for j in reqs:
-                            cache_file.write(j)
+                            if j.strip()!="":
+                                cache_file.write(j+"\n")
                 except:
                     pass
 
