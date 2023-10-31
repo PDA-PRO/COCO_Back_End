@@ -291,6 +291,7 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
         for i in all_sub:
             if i.get("status")==3:
                 right_sub+=1
-        rate=round(right_sub/len(all_sub)*100,1)
-        crud_base.update(db_cursor,{"rate":rate},'coco','task',id=taskid)
+        if all_sub!=0:
+            rate=round(right_sub/len(all_sub)*100,1)
+            crud_base.update(db_cursor,{"rate":rate},'coco','task',id=taskid)
 
