@@ -304,7 +304,7 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
         else:
             for value in result:
                 print('result[0]', result)
-                sql = "select status from coco.submissions where id = %s";
+                sql = "select status from coco.submissions where id = %s;"
                 data = (value['sub_id'])
                 status = db_cursor.select_sql(sql, data)
                 status = status[0]['status']
