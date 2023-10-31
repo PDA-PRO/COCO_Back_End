@@ -293,3 +293,27 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
                 right_sub+=1
         rate=round(right_sub/len(all_sub)*100,1)
         crud_base.update(db_cursor,{"rate":rate},'coco','task',id=taskid)
+
+        # 내 문제집 문제 풀이 여부 수정
+        sql = "select i.task_id, i.sub_id from coco.sub_ids as i, coco.my_tasks as t where t.user_id = %s and t.user_id = i.user_id and t.task_num = i.task_id and i.task_id = %s order by i.sub_id desc;"
+        data = (user_id, taskid)
+        result = db_cursor.select_sql(sql, data)
+        print('result', result)
+        if not result:
+            pass
+        else:
+            for value in result:
+                print('result[0]', result)
+                sql = "select status from coco.submissions where id = %s";
+                data = (value['sub_id'])
+                status = db_cursor.select_sql(sql, data)
+                status = status[0]['status']
+                if status == 3:
+                    sql = "UPDATE coco.my_tasks SET solved = 1 WHERE user_id = %s and task_num = %s;"
+                    data = (user_id, taskid)
+                    db_cursor.execute_sql(sql, data)
+                    break
+            else:
+                sql = "UPDATE coco.my_tasks SET solved = -1 WHERE user_id = %s and task_num = %s;"
+                data = (user_id, taskid)
+                db_cursor.execute_sql(sql, data) 
