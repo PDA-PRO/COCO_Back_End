@@ -25,13 +25,26 @@ def mypage_one(type: int, user_id: str,token: dict = Depends(security.check_toke
 
     if type == 1:
         board = board_crud.read_myboard(db_cursor,user_id)
-        task = user_crud.read_mytask(db_cursor,token['id'])
+        solved = sub_result['solved_list']
+        unsolved = sub_result['unsolved_list']
+        before_task = user_crud.read_mytask(db_cursor,token['id'])
+        # 내 문제집 풀이여부 수정
+        for value in before_task:
+            if value['id'] in solved:
+                sql = "UPDATE coco.my_tasks SET solved = 1 WHERE user_id = %s and task_num = %s;"
+                data = (user_id, value['id'])
+                db_cursor.execute_sql(sql, data)
+            elif value['id'] in unsolved:
+                sql = "UPDATE coco.my_tasks SET solved = -1 WHERE user_id = %s and task_num = %s;"
+                data = (user_id, value['id'])
+                db_cursor.execute_sql(sql, data)
+        after_task = user_crud.read_mytask(db_cursor,token['id'])
         return {
             "user_info": user_info[0],
             "sub_result": sub_result,
             'level': level,
             'board': board,
-            'task': task
+            'task': after_task
         }
     elif type == 2:
         return {
