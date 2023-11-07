@@ -21,15 +21,10 @@ services:
     container_name: coco_backend
     platform: linux/x86_64
     build: ./
-    restart: unless-stopped
+    restart: always
     tty: true
     volumes: # static 볼륨과 연결
       - static:/static
-      - type: bind
-        source: ./app
-        target: /home/app/
-        volume:
-          nocopy: false
       - type: bind
         source: ./plugin
         target: /home/app/plugin
