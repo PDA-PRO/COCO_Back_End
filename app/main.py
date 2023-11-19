@@ -12,6 +12,7 @@ origins = [
     "http://localhost:3000",
     "http://localhost:1000",
     "http://localhost:8080",
+    "http://codingcoach.co.kr/"
 ]
 
 # 미들웨어 추가 -> CORS 해결위해 필요(https://ghost4551.tistory.com/46)
