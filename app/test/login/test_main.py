@@ -1,7 +1,7 @@
-from fastapi.testclient import TestClient
-from app.main import app
+# from fastapi.testclient import TestClient
+# from app.main import app
 
-client = TestClient(app)
+# client = TestClient(app)
 
 # def test_signup():
 #     response = client.post("/auth/signup",json={"name":"test","id":"test","pw":"test1234!","email":"test@dot.com"})
