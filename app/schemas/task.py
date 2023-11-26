@@ -17,23 +17,23 @@ class TaskBase(BaseModel):
     category:str
     
 class TaskListIn(PaginationIn):
-    keyword:str|None
-    diff:str|None
-    category:str|None
-    rateSort:conint(ge=0,le=2)|None
-    user_id: str|None
+    keyword:str| None=None
+    diff:str| None=None
+    category:str| None=None
+    rateSort:conint(ge=0,le=2)| None=None
+    user_id: str| None=None
 
 class TaskMeta(BaseModel):
     id : int
     title : str
     diff : int
     rate : int
-    count :int|None
+    count :int| None=None
 
 class TaskListOut(PaginationOut):
     tasks : list[TaskMeta]
-    solved_list : list[int]|None
-    wrong_list : list[int]|None
+    solved_list : list[int]| None=None
+    wrong_list : list[int]| None=None
 
 class TaskDetail(BaseModel):
     id:int
@@ -50,4 +50,4 @@ class TaskDetail(BaseModel):
     timeLimit: int
     memLimit: int
     category:list[str]
-    is_ai:int|None
+    is_ai:int| None=None

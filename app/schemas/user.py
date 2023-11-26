@@ -3,17 +3,20 @@ from pydantic import (
     conint,
     EmailStr
 )
+from pydantic_core import core_schema
 import re
 from .common import *
 
 class PasswordStr(str):
     @classmethod
-    def __modify_schema__(cls, field_schema: dict[str]) -> None:
-        field_schema.update(type='string', format='password')
+    def __get_pydantic_core_schema__(cls,_source,_handler,):
+        return core_schema.no_info_after_validator_function(cls.password_validator, core_schema.str_schema())
 
     @classmethod
-    def __get_validators__(cls):
-        yield cls.password_validator
+    def __get_pydantic_json_schema__(cls, core_schema, handler):
+        field_schema = handler(core_schema)
+        field_schema.update(type='string', format='password',example='qwer1234!')
+        return field_schema
     
     @classmethod
     def password_validator(cls, v: str) -> str:
@@ -33,18 +36,18 @@ class SignUp(Login):
     email: EmailStr
 
 class UpdateUser(BaseModel):
-    pw:PasswordStr|None
-    name:str|None
-    email:EmailStr|None
-    cur_pw:PasswordStr|None
+    pw:PasswordStr|None=None
+    name:str|None=None
+    email:EmailStr|None=None
+    cur_pw:PasswordStr|None=None
 class UpdateEmail(BaseModel):
     id: str
     email :EmailStr
 
 class UpdatePermission(BaseModel):
     id: str
-    role: conint(le=1,ge=0)|None
-    tutor:conint(le=1,ge=0)|None
+    role: conint(le=1,ge=0)|None=None
+    tutor:conint(le=1,ge=0)|None=None
     
 class FindId(BaseModel):
     name: str
@@ -56,9 +59,9 @@ class Token(BaseModel):
     alarm: int
 
 class UserListIn(PaginationIn):
-    keyword: str | None
-    role: conint(le=1,ge=0)|None
-    tutor:conint(le=1,ge=0)|None
+    keyword: str | None=None
+    role: conint(le=1,ge=0)|None=None
+    tutor:conint(le=1,ge=0)|None=None
 
 class UserList(BaseModel):
     id: str

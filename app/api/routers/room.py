@@ -68,7 +68,7 @@ def insert_members(member: RoomMember,token: dict = Depends(security.check_token
     '''
     security.check_leader(db_cursor,member.room_id,token['id'])
     try:
-        room_crud.create(db_cursor,member.dict(),table='room_ids')
+        room_crud.create(db_cursor,member.model_dump(),table='room_ids')
         return {"code":1}
     except Exception as e:
         raise HTTPException(status_code=409, detail=str(e))
@@ -85,7 +85,7 @@ def delete_members(member: RoomMember,token: dict = Depends(security.check_token
     '''
     security.check_leader(db_cursor,member.room_id,token['id'])
     try:
-        room_crud.delete(db_cursor,table='room_ids',**member.dict())
+        room_crud.delete(db_cursor,table='room_ids',**member.model_dump())
         return {"code":1}
     except Exception as e:
         raise HTTPException(status_code=409, detail=str(e))

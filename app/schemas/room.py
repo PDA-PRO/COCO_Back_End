@@ -10,10 +10,10 @@ class RoomBase(BaseModel):
     leader:str
     members:int
     exp: int
-    ranking: int|None
+    ranking: int| None=None
 
 class RoomBaseIn(PaginationIn):
-    query:str|None
+    query:str| None=None
 
 class RoomBaseOut(PaginationOut):
     room_list:list[RoomBase]
@@ -33,7 +33,7 @@ class Answer(BaseModel):
     a_id: int
     answer: str
     code: str
-    ans_writer: str|None
+    ans_writer: str| None=None
     time: datetime
     check: int
     
@@ -80,7 +80,7 @@ class RoomRoadMap(BaseModel):
     id: int
     name: str
     desc: str
-    last_modify:datetime|None
+    last_modify:datetime| None=None
     tasks: list[int]
 
 class RoomRoadMapList(BaseModel):
@@ -91,4 +91,4 @@ class SelectAnswer(BaseModel):
     room_id: int
     a_id: int
     select: int
-    ans_writer: str|None
+    ans_writer: str| None=None

@@ -9,13 +9,13 @@ class LikesBase(BaseModel):
 class BoardBase(BaseModel):
     id: int    
     title: str
-    rel_task:int|None
+    rel_task:int| None=None
     time: datetime
     category: int
     likes: int
     views: int
     comments: int
-    code : str|None
+    code : str| None=None
     user_id: str
 
 class BoardListOut(PaginationOut):
@@ -30,7 +30,7 @@ class CreateBoard(BaseModel):
     title: str
     context: str
     category: int
-    code: str|None
+    code: str| None=None
     
 class CommentBase(BaseModel):
     id: int
@@ -39,7 +39,7 @@ class CommentBase(BaseModel):
     likes : int
     user_id: str
     board_id: int
-    is_liked : bool|None
+    is_liked : bool| None=None
 
 class CommentLikes(LikesBase):
     comment_id: int
@@ -53,4 +53,4 @@ class UpdateBoard(BaseModel):
     title: str
     context: str
     category: int
-    code: str | None
+    code: str | None=None

@@ -61,7 +61,7 @@ def update_user(info:UpdateUser,token: dict = Depends(security.check_token),db_c
         )
         else:
             info.pw=security.get_password_hash(info.pw)
-    update_info=info.dict(exclude=set(["cur_pw"]),exclude_none=True)
+    update_info=info.model_dump(exclude=set(["cur_pw"]),exclude_none=True)
     user_crud.update(db_cursor,update_info,id=token["id"])
 
     return {"code":1}

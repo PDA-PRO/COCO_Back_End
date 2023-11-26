@@ -6,8 +6,8 @@ class Lint(BaseModel):
     type:str
     line:int
     column:int
-    endLine:int|None
-    endColumn:int|None
+    endLine:int| None=None
+    endColumn:int| None=None
     symbol:str
     message:str
     message_id :str
@@ -19,16 +19,16 @@ class Submit(BaseModel):
 
 class subDetail(BaseModel):
     id:int
-    status_id:str|None
+    status_id:str| None=None
     code:str
-    stdout:str|None
+    stdout:str| None=None
     time:datetime
-    stderr:str|None
+    stderr:str| None=None
     token:str
     callback_url:str
-    exit_code:int|None
-    message:str|None
-    number_of_runs:int|None
+    exit_code:int| None=None
+    message:str| None=None
+    number_of_runs:int| None=None
     status:int
     lang:conint(le=1,ge=0)
     rate:float
@@ -38,7 +38,7 @@ class subDetail(BaseModel):
 
 class SubResult(BaseModel):
     subDetail: subDetail
-    lint: list[Lint]|None
+    lint: list[Lint]| None=None
 
 class StatusBase(BaseModel):
     sub_id:int
@@ -51,11 +51,11 @@ class StatusBase(BaseModel):
     is_solved:bool=False
 
 class StatusListIn(PaginationIn):
-    task_id:conint(ge=1)|None
-    lang:conint(le=1,ge=0)|None
-    onlyme:bool|None
-    answer:bool|None
-    user_id:str|None
+    task_id:conint(ge=1)| None=None
+    lang:conint(le=1,ge=0)| None=None
+    onlyme:bool| None=None
+    answer:bool| None=None
+    user_id:str| None=None
 
 class StatusListOut(PaginationOut):
     statuslist:list[StatusBase]
