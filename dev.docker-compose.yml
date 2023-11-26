@@ -1,0 +1,43 @@
+version: "3"
+services:
+  mysql:
+    image: styughjvbn/coco_db
+    container_name: coco_db
+    platform: linux/x86_64
+    build: ./mysql/
+    volumes:
+      - mysql_dev:/var/lib/mysql
+    ports: #host 3307과 컨테이너의 3306포트 연결
+      - "3307:3306"
+    env_file: # 설정에 필요한 환경변수
+      - ./mysql/local.env
+    tty: true
+    restart: always
+    networks:
+      - coco_network_dev
+
+  fastapi:
+    image: styughjvbn/coco_backend_dev
+    depends_on:
+      - mysql
+    container_name: coco_backend_dev
+    platform: linux/x86_64
+    build:
+      context: ./
+      dockerfile: dev.dockerfile
+    restart: always
+    tty: true
+    volumes:
+      - ./:/home/
+    ports: #host 1000과 컨테이너의 8000포트 연결
+      - 1000:8000
+    networks:
+      - coco_network_dev
+
+volumes: # task의 test case와 같이 유지되는 파일들을 저장하는 볼륨
+  mysql_dev:
+
+networks:
+  coco_network_dev:
+    name: coco_network_dev
+    attachable: true
