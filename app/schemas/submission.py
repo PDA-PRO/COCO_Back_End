@@ -19,7 +19,7 @@ class Submit(BaseModel):
 
 class subDetail(BaseModel):
     id:int
-    status_id:str| None=None
+    status_id:int| None=None
     code:str
     stdout:str| None=None
     time:datetime
@@ -33,8 +33,8 @@ class subDetail(BaseModel):
     lang:conint(le=1,ge=0)
     rate:float
     diff:int
-    used_memory:int=None
-    used_time:float=None
+    used_memory:int|None=None
+    used_time:float|None=None
 
 class SubResult(BaseModel):
     subDetail: subDetail
@@ -61,4 +61,4 @@ class StatusListOut(PaginationOut):
     statuslist:list[StatusBase]
 class Wpc(BaseModel):
     status:int
-    wpc_result:str=None
+    wpc_result:str|None=None
