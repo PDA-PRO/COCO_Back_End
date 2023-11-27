@@ -33,6 +33,7 @@ services:
       - 1000:8000
     networks:
       - coco_network_dev
+    privileged: true # isolate의 sandbox마다 컴퓨터 자원 제한을 하기 위해 필요한 설정값
 
 volumes: # task의 test case와 같이 유지되는 파일들을 저장하는 볼륨
   mysql_dev:
