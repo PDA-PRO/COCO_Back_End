@@ -172,7 +172,7 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
             code_file_path+="src.c"
             with open(code_file_path,'w') as code_file:
                 code_file.write(sourcecode)
-            compile_res=ready_C(box_id,sub_id)
+            compile_res=ready_C(db_cursor,box_id,sub_id)
         else:#파이썬이라면 실행파일만 생성
             code_file_path+="src.py"
             with open(code_file_path,'w') as code_file:

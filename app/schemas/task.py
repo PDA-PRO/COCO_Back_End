@@ -27,7 +27,7 @@ class TaskMeta(BaseModel):
     id : int
     title : str
     diff : int
-    rate : int
+    rate : float
     count :int| None=None
 
 class TaskListOut(PaginationOut):
