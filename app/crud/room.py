@@ -60,6 +60,7 @@ class CrudRoom(Crudbase[Room,int]):
             `code` MEDIUMTEXT NULL,             
             `writer` VARCHAR(45) NULL,
             `time` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+            `lang` TINYINT NULL DEFAULT NULL,
             PRIMARY KEY (`id`));
         """)
         table_sql.append("""
@@ -71,6 +72,7 @@ class CrudRoom(Crudbase[Room,int]):
             `ans_writer` VARCHAR(45) NULL,
             `time` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
             `check` TINYINT NULL,
+            `lang` TINYINT NULL DEFAULT NULL,
             PRIMARY KEY (`a_id`),
             foreign key (`q_id`) REFERENCES `%s_question` (`id`));
         """)
