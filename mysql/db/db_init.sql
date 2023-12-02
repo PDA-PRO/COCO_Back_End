@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS `boards` (
   `views` smallint DEFAULT '0',
   `comments` smallint DEFAULT '0',
   `code` longtext,
+  `lang` tinyint DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FK_rel` (`rel_task`),
   CONSTRAINT `FK_rel_task` FOREIGN KEY (`rel_task`) REFERENCES `task` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
@@ -166,6 +167,22 @@ CREATE TABLE IF NOT EXISTS `descriptions` (
   `out` text,
   PRIMARY KEY (`task_id`),
   CONSTRAINT `FK_desc_task` FOREIGN KEY (`task_id`) REFERENCES `task` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `lang`
+--
+
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE IF NOT EXISTS `lang` (
+  `id` tinyint NOT NULL,
+  `name` varchar(10) NOT NULL,
+  `compile_path` varchar(60) DEFAULT NULL,
+  `interpreter_path` varchar(60) DEFAULT NULL,
+  `version` varchar(10) NOT NULL,
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -670,4 +687,4 @@ USE `coco`;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-10-18 15:36:50
+-- Dump completed on 2023-12-02 12:14:54
