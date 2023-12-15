@@ -5,7 +5,7 @@ from app.core.image import image
 
 router = APIRouter(prefix="/image")
     
-@router.post("/upload-temp",tags=["image"],)
+@router.post("",tags=["image"],)
 def image_upload(request: Request,type:int,file:UploadFile,token: dict = Depends(security.check_token)):
     """
     텍스트 에디터 작성시 임시로 저장되는 사진을 type별로 저장하고 요청된 url로 사진url을 리턴
@@ -19,19 +19,19 @@ def image_upload(request: Request,type:int,file:UploadFile,token: dict = Depends
     image_name=""
     if type==1:
         image_name=image.upload_temp(file,type)
-        return str(request.base_url)+"image/download/"+str(type)+"/"+image_name
+        return str(request.base_url)+"image/"+str(type)+"/"+image_name
     elif type==2:
         image_name=image.upload_temp(file,type,token["id"])
-        return str(request.base_url)+"image/download/"+str(type)+"/"+image_name+"/temp?id="+token["id"]
+        return str(request.base_url)+"image/"+str(type)+"/"+image_name+"/temp?id="+token["id"]
     elif type==3:
         image_name=image.upload_temp(file,type)
-        return str(request.base_url)+"image/download/"+str(type)+"/"+image_name+"/temp"
+        return str(request.base_url)+"image/"+str(type)+"/"+image_name+"/temp"
     elif type==4:
         image_name=image.upload_temp(file,type,token["id"])
-        return str(request.base_url)+"image/download/"+str(type)+"/"+image_name
+        return str(request.base_url)+"image/"+str(type)+"/"+image_name
     elif type==5:
         image_name=image.upload_temp(file,type,token["id"])
-        return str(request.base_url)+"image/download/"+str(type)+"/"+image_name+"/temp?id="+token["id"]
+        return str(request.base_url)+"image/"+str(type)+"/"+image_name+"/temp?id="+token["id"]
     else:
         raise HTTPException(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -39,7 +39,7 @@ def image_upload(request: Request,type:int,file:UploadFile,token: dict = Depends
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-@router.get("/download/{type}/{filename}",tags=["image"],)
+@router.get("/{type}/{filename}",tags=["image"],)
 def image_download(filename:str,type:int,id:str=None,time:str=None):
     """
     실제로 저장된 사진을 리턴
@@ -68,7 +68,7 @@ def image_download(filename:str,type:int,id:str=None,time:str=None):
     
     return FileResponse(image_path)
 
-@router.get("/download/{type}/{filename}/temp",tags=["image"])
+@router.get("/{type}/{filename}/temp",tags=["image"])
 def image_download(filename:str,type:int,id:str=None):
     """
     텍스트 에디터 작성시 임시로 저장한 사진을 리턴
@@ -98,7 +98,7 @@ def image_download(filename:str,type:int,id:str=None):
     
     return FileResponse(image_path)
 
-@router.delete("/delete-image",tags=["image"])
+@router.delete("",tags=["image"])
 def delete_image(token: dict = Depends(security.check_token)):
     """
     서버에 저장된 프로필 이미지 삭제
