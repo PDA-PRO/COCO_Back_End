@@ -170,17 +170,17 @@ class CrudRoom(Crudbase[Room,int]):
         """
         return db_cursor.select_sql(sql, data)
     
-    def write_question(self,db_cursor:DBCursor, info:RoomQuestion,writer:str):
+    def write_question(self,db_cursor:DBCursor, room_id:int,info:CreateQuestion,writer:str):
         '''
         Study room의 질문 생성
         
+        - room_id: question이 등록될 study room의 id
         - info: question 생성에 필요한 입력 데이터
-            - room_id: question이 등록될 study room의 id
             - question: user가 작성한 질문
             - code: user가 작성한 코드
         - writer: 질문 작성 user
         '''
-        data = (info.room_id, info.title, info.question, info.code, writer)
+        data = (room_id, info.title, info.question, info.code, writer)
         sql = """
             INSERT INTO `room`.`%s_question` (`title`, `question`, `code`, `writer`, `time`) 
             VALUES (%s, %s, %s, %s, now());
@@ -189,7 +189,7 @@ class CrudRoom(Crudbase[Room,int]):
 
         # 질문 생성 시 스터디룸 튜터에게 알람
         room_sql = 'SELECT name, leader FROM coco.room where id = %s;'
-        room_data = (info.room_id)
+        room_data = (room_id)
         room_result = db_cursor.select_sql(room_sql,room_data)[0]
         alarm_crud.create_alarm(
             db_cursor,
@@ -197,7 +197,7 @@ class CrudRoom(Crudbase[Room,int]):
                 'sender': writer,
                 'receiver': room_result['leader'],
                 'context': {
-                    "room_id": info.room_id,
+                    "room_id": room_id,
                     "room_name": room_result['name'],
                     },
                 'category': 11
@@ -234,19 +234,19 @@ class CrudRoom(Crudbase[Room,int]):
             })
         return {"question_list":qa,"total":total,'size':pagination.size}
     
-    def write_answer(self,db_cursor:DBCursor, info:RoomAnswer,ans_writer:str):
+    def write_answer(self,db_cursor:DBCursor, room_id:int,info:CreateAnswer,ans_writer:str):
         '''
         해당 study room에 등록된 모든 질문 리스트 리턴
 
+        - room_id: 질문이 등록된 room id
         - info: answer 생성에 필요한 입력 데이터
-            - room_id: 질문이 등록된 room id
             - q_id: 답변이 달릴 질문 id
             - answer: 답변
             - code: 코드
         - ans_writer : 답변 작성자
         '''
         
-        data = (info.room_id, info.q_id, info.answer, info.code, ans_writer)
+        data = (room_id, info.q_id, info.answer, info.code, ans_writer)
         sql = """
             INSERT INTO `room`.`%s_qa` (`q_id`, `answer`, `code`, `ans_writer`, `time`, `check`) 
             VALUES (%s, %s, %s, %s, now(), 0);
@@ -254,7 +254,7 @@ class CrudRoom(Crudbase[Room,int]):
         db_cursor.execute_sql(sql, data)
 
         q_writer_sql = 'SELECT writer FROM room.`%s_question` where id = %s;'
-        q_writer_data = (info.room_id,info.q_id)
+        q_writer_data = (room_id,info.q_id)
         q_writer_result = db_cursor.select_sql(q_writer_sql, q_writer_data)
 
         alarm_crud.create_alarm(
@@ -262,33 +262,33 @@ class CrudRoom(Crudbase[Room,int]):
             {
                 'sender': ans_writer,
                 'receiver': q_writer_result[0]['writer'],
-                'context': {"room_id": info.room_id, "q_id": info.q_id},
+                'context': {"room_id": room_id, "q_id": info.q_id},
                 'category': 7
             }
         )
         return 1
 
-    def create_roadmap(self,db_cursor:DBCursor, info:RoomRoadMap, user_id:str):
+    def create_roadmap(self,db_cursor:DBCursor,room_id:int, info:RoadmapBody, user_id:str):
         '''
         Study room의 roadmap 생성
         
+        - room_id: room id
         - info: roadmap 생성에 필요한 입력 데이터
-            - room_id: room id
             - name: roadmap 제목
             - desc: roadmap 메인 설명
             - task_id: 관련 문제 목록
         - user_id
         '''
-        data = (info.id, info.name, info.desc)
+        data = (room_id, info.name, info.desc)
         sql = """
             INSERT INTO `room`.`%s_roadmap` ( `name`, `desc`) 
             VALUES (%s, %s);
         """
         last_idx=db_cursor.insert_last_id(sql, data)
-        new_desc=image.save_update_image(os.path.join(os.getenv("ROADMAP_PATH"),"temp",user_id),os.path.join(os.getenv("ROADMAP_PATH"),f"{str(info.id)}_{str(last_idx)}"),info.desc,f"{str(info.id)}_{str(last_idx)}","s")
-        self.update(db_cursor,{"`desc`":new_desc},"`room`",f"`{str(info.id)}_roadmap`",id=last_idx)
+        new_desc=image.save_update_image(os.path.join(os.getenv("ROADMAP_PATH"),"temp",user_id),os.path.join(os.getenv("ROADMAP_PATH"),f"{str(room_id)}_{str(last_idx)}"),info.desc,f"{str(room_id)}_{str(last_idx)}","s")
+        self.update(db_cursor,{"`desc`":new_desc},"`room`",f"`{str(room_id)}_roadmap`",id=last_idx)
         for i in info.tasks:
-            data = (info.id,last_idx, i)
+            data = (room_id,last_idx, i)
             sql = """
                 INSERT INTO `room`.`%s_roadmap_ids` ( `roadmap_id`, `task_id`) 
                 VALUES (%s, %s);
@@ -297,11 +297,11 @@ class CrudRoom(Crudbase[Room,int]):
         
         # 스터디룸 로드맵 생성 시 알람
         room_name_sql = 'SELECT name FROM coco.room where id = %s;'
-        room_name_data = (info.id)
+        room_name_data = (room_id)
         room_result = db_cursor.select_sql(room_name_sql, room_name_data)
 
         users_sql = 'SELECT user_id FROM coco.room_ids where room_id = %s;'
-        users_data = (info.id)
+        users_data = (room_id)
         users_result = db_cursor.select_sql(users_sql, users_data)
         for result in users_result:
             user = result['user_id']    
@@ -311,7 +311,7 @@ class CrudRoom(Crudbase[Room,int]):
                     'sender': None,
                     'receiver': user,
                     'context': {
-                        "room_id": info.id,
+                        "room_id": room_id,
                         "room_name": room_result[0]['name'],
                         "roadmap_name": info.name,
                         "roadmap_id": last_idx
@@ -444,7 +444,7 @@ class CrudRoom(Crudbase[Room,int]):
             'solved_list': solved_result
         }
     
-    def select_answer(self, db_cursor: DBCursor, info:SelectAnswer,q_writer:str):
+    def select_answer(self, db_cursor: DBCursor, room_id:int,info:SelectAnswer,q_writer:str):
         '''
         스터디룸 내 질문에 달린 답변 채택
 
@@ -455,13 +455,13 @@ class CrudRoom(Crudbase[Room,int]):
         - q_writer: 질문 작성자
         '''
         sql="SELECT qa.q_id,q.writer,qa.ans_writer FROM room.`%s_qa` as qa, room.`%s_question` as q where qa.a_id=%s and  qa.q_id=q.id and q.writer=%s;"
-        data = (info.room_id,info.room_id, info.a_id, q_writer)
+        data = (room_id,room_id, info.a_id, q_writer)
         result=db_cursor.select_sql(sql, data)
         if not result:
             raise Exception("질문 작성자가 아닙니다.")
 
         sql = "UPDATE `room`.`%s_qa` SET `check` = %s WHERE (`a_id` = '%s')"
-        data = (info.room_id, info.select, info.a_id)
+        data = (room_id, info.select, info.a_id)
         print('select', data)
         db_cursor.execute_sql(sql, data)
 
@@ -472,7 +472,7 @@ class CrudRoom(Crudbase[Room,int]):
                 {
                     'sender': q_writer,
                     'receiver': info.ans_writer,
-                    'context': {"room_id": info.room_id},
+                    'context': {"room_id": room_id},
                     'category': 8
                 }
             )
