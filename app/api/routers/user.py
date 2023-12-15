@@ -7,7 +7,7 @@ from app.crud.alarm import alarm_crud
 
 router = APIRouter(prefix="/user")
     
-@router.get("/", tags=['user'],response_model=UserListOut)
+@router.get("", tags=['user'],response_model=UserListOut)
 def read_userlist(info : UserListIn=Depends(),db_cursor:DBCursor=Depends(get_cursor)):
     """
     user의 id나 name, role, tutor로 검색
@@ -29,7 +29,7 @@ def read_userlist(info : UserListIn=Depends(),db_cursor:DBCursor=Depends(get_cur
     """
     return user_crud.search_user(db_cursor,info)
 
-@router.patch("/", tags=["user"])
+@router.patch("", tags=["user"])
 def update_user(info:UpdateUser,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     """
     해당 user의 정보 업데이트
