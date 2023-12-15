@@ -23,8 +23,7 @@ class CreateRoom(BaseModel):
     desc: str
     members: list[str]
 
-class RoomQuestion(BaseModel):
-    room_id: int
+class CreateQuestion(BaseModel):
     title: str
     question: str
     code: str
@@ -37,7 +36,6 @@ class Answer(BaseModel):
     time: datetime
     check: int
     
-
 class Question(BaseModel):
     id: int
     title: str
@@ -60,15 +58,10 @@ class MyRoom(BaseModel):
     exp: int
     ranking: int 
 
-class RoomAnswer(BaseModel):
-    room_id: int
+class CreateAnswer(BaseModel):
     q_id: int
     answer: str
     code: str
-
-class RoomMember(BaseModel):
-    room_id: int
-    user_id: str
 
 class RoomMemberExp(BaseModel):
     user_id: str
@@ -76,19 +69,24 @@ class RoomMemberExp(BaseModel):
 
 class RoomDetail(RoomBase):
     members:list[RoomMemberExp]
-class RoomRoadMap(BaseModel):
-    id: int
+    
+class RoadmapBody(BaseModel):
+    name: str
+    desc: str
+    tasks: list[int]
+    
+class RoadMap(BaseModel):
+    id:int
     name: str
     desc: str
     last_modify:datetime| None=None
     tasks: list[int]
 
-class RoomRoadMapList(BaseModel):
-    room_info :list[RoomRoadMap]
+class RoadMapList(BaseModel):
+    room_info :list[RoadMap]
     solved_task : list[int]
 
 class SelectAnswer(BaseModel):
-    room_id: int
     a_id: int
     select: int
     ans_writer: str| None=None

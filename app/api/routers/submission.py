@@ -8,7 +8,7 @@ import json
 import os
 router = APIRouter()
 
-@router.post("/submission/", tags=["submission"],response_model=BaseResponse)
+@router.post("/submission", tags=["submission"],response_model=BaseResponse)
 def scoring(submit:Submit,token: dict = Depends(security.check_token),db_cursor=Depends(get_cursor)):
     """
     제출된 코드 채점
@@ -58,7 +58,7 @@ def load_result(sub_id: int,token: dict = Depends(security.check_token),db_curso
 
 
 
-@router.get("/status/", tags=["submission"],response_model=StatusListOut)
+@router.get("/status", tags=["submission"],response_model=StatusListOut)
 def read_status(info:StatusListIn=Depends(),db_cursor:DBCursor=Depends(get_cursor)):
     """
     제출 조회

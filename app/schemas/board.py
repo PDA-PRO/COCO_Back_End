@@ -2,10 +2,6 @@ from datetime import datetime
 from pydantic import BaseModel
 from .common import *
 
-class LikesBase(BaseModel):
-    board_id: int
-    type: bool
-
 class BoardBase(BaseModel):
     id: int    
     title: str
@@ -22,11 +18,10 @@ class BoardListOut(PaginationOut):
     boardlist:list[BoardBase]
 
 class BoardDetail(BoardBase):
-    user_id:str
     context:str
     is_board_liked:bool
 
-class CreateBoard(BaseModel):
+class BoardBody(BaseModel):
     title: str
     context: str
     category: int
@@ -41,16 +36,5 @@ class CommentBase(BaseModel):
     board_id: int
     is_liked : bool| None=None
 
-class CommentLikes(LikesBase):
-    comment_id: int
-
 class CreateComment(BaseModel):
     context: str
-    board_id: int
-
-class UpdateBoard(BaseModel):
-    board_id: int
-    title: str
-    context: str
-    category: int
-    code: str | None=None

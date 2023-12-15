@@ -5,6 +5,7 @@ from app.api.routers import auth,submission, task, board, miscellaneous, mypage,
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+app.router.redirect_slashes = False
 
 #CORS(https://www.jasonchoi.dev/posts/fastapi/cors-allow-setting)
 origins = [

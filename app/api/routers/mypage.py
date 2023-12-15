@@ -4,16 +4,14 @@ from app.core import security
 from app.crud.user import user_crud
 from app.crud.board import board_crud
 from app.api.deps import get_cursor,DBCursor
-from app.schemas.board import UpdateBoard
 
 router = APIRouter()
 
 
-@router.get('/mypage/{type}/{user_id}', tags=['mypage'])
-def mypage_one(type: int, user_id: str,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
+@router.get('/mypage/{user_id}', tags=['mypage'])
+def mypage_one(user_id: str,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     """
     사용자의 기본 정보 조회
-    - type: 1=사용자의 기본 정보 조회, 2=타 사용자의 기본 정보 조회
     - user_id
     - token : jwt
     """
@@ -22,8 +20,10 @@ def mypage_one(type: int, user_id: str,token: dict = Depends(security.check_toke
         raise HTTPException(status_code=404, detail="user not found")
     sub_result = submission_crud.read_mysub(db_cursor,user_id)
     level = user_crud.user_level(db_cursor, user_id)
-
-    if type == 1:
+    is_me=False
+    if token['id']==user_id:
+        is_me=True
+    if is_me == 1:
         board = board_crud.read_myboard(db_cursor,user_id)
         solved = sub_result['solved_list']
         unsolved = sub_result['unsolved_list']
@@ -46,14 +46,14 @@ def mypage_one(type: int, user_id: str,token: dict = Depends(security.check_toke
             'board': board,
             'task': after_task
         }
-    elif type == 2:
+    elif is_me == 2:
         return {
             "user_info": user_info[0],
             "sub_result": sub_result,
             'level': level,
         }
 
-@router.post("/mytask/", tags=['mypage'])
+@router.post("/mytask", tags=['mypage'])
 def add_mytask(task_id:int, token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     """
     내 문제집에 문제 추가
@@ -63,7 +63,7 @@ def add_mytask(task_id:int, token: dict = Depends(security.check_token),db_curso
     """
     return user_crud.create_mytask(db_cursor,token['id'],task_id)
 
-@router.delete("/mytask/", tags=['mypage'])
+@router.delete("/mytask", tags=['mypage'])
 def delete_mytask(task_id:int, token:dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     """
     내 문제집에서 문제 삭제
@@ -72,16 +72,3 @@ def delete_mytask(task_id:int, token:dict = Depends(security.check_token),db_cur
     - token : jwt
     """
     return user_crud.delete_mytask(db_cursor,token['id'],task_id)
-
-@router.put("/board/update-board", tags=['mypage'])
-def update_board(info: UpdateBoard, token:dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
-    '''
-    사용자가 작성한 게시글을 수정
-    - info: 게시글 수정에 필요한 정보
-      - board_id: 게시글 id
-      - title: 게시글 타이틀
-      - context: 게시글 본문
-      - category: 게시글 카테고리
-      - code: 코드
-    '''
-    return user_crud.update_board(db_cursor, info, token['id'])

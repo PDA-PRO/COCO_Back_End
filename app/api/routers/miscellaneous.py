@@ -1,5 +1,4 @@
-from typing import Annotated
-from fastapi import APIRouter, Body, Depends,HTTPException,status
+from fastapi import APIRouter, Depends,HTTPException,status
 from app.crud.hot import hot_crud
 from app.crud.user import user_crud
 from app.core import security
@@ -14,7 +13,7 @@ def hot_list(db_cursor:DBCursor=Depends(get_cursor)):
     return hot_crud.hot_list(db_cursor)
 
 @router.get('/my_status/{user_id}', tags=['misc.'])
-def my_status(user_id: str, token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
+def my_status(user_id: str, db_cursor:DBCursor=Depends(get_cursor)):
     return hot_crud.my_status(db_cursor,user_id)
 
 @router.get("/notice",tags=["misc."])
@@ -58,7 +57,7 @@ def read_tutor_request(token: dict = Depends(security.check_token),db_cursor:DBC
     security.check_admin(token)
     return user_crud.read(db_cursor,table="user_tutor")
 
-@router.post('/request-tutor', tags=['mics.'],response_model=BaseResponse)
+@router.post('/request-tutor', tags=['misc.'],response_model=BaseResponse)
 def create_tutor_request(reason:str="",token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     '''
     튜터 권한 신청

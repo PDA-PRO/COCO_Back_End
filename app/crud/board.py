@@ -9,7 +9,7 @@ from app.db.base import DBCursor
 from app.crud.alarm import alarm_crud
 
 class CrudBoard(Crudbase[Boards,int]):
-    def create_board(self,db_cursor:DBCursor, writeBoard:CreateBoard, user_id:str):
+    def create_board(self,db_cursor:DBCursor, writeBoard:BoardBody, user_id:str):
         """
         새로운 게시글을 생성
 
@@ -108,6 +108,16 @@ class CrudBoard(Crudbase[Boards,int]):
             'is_board_liked': is_board_liked,
         }
 
+    def update_board(self, db_cursor:DBCursor, board_id:int,info:BoardBody):
+        if info.code == None:
+            sql = "UPDATE `coco`.`boards` SET `context` = %s, `title` = %s WHERE (`id` = %s);"
+            data = (info.context, info.title, board_id)
+        else:
+            sql = "UPDATE `coco`.`boards` SET `context` = %s, `title` = %s, `code` = %s WHERE (`id` = %s);"
+            data = (info.context, info.title, info.code, board_id)
+        db_cursor.execute_sql(sql, data)
+        return {'id': board_id}
+    
     def delete_board(self,db_cursor:DBCursor, board_id:int):
         """
         게시글 삭제
@@ -127,41 +137,40 @@ class CrudBoard(Crudbase[Boards,int]):
         image.delete_image(os.path.join(os.getenv("BOARD_PATH"),str(board_id)))
         return 1
 
-    def update_board_likes(self,db_cursor:DBCursor, boardLikes:LikesBase, user_id:str):
+    def update_board_likes(self,db_cursor:DBCursor, board_id:int,like_type:bool, user_id:str):
         """
         게시글의 좋아요 업데이트
 
         params
-        - boardLikes : 게시글의 요소들
-            - board_id : board id
-            - type: True = 감소 , False = 증가
+        - board_id : board id
+        - like_type: True = 감소 , False = 증가
         - user_id : user id
         ---------------------------------
         return
         - 성공시 1
         """
 
-        if boardLikes.type:
+        if like_type:
             update_sql = "UPDATE `coco`.`boards` SET `likes` = likes-1 WHERE (`id` = %s);"
             type_sql = "DELETE FROM `coco`.`boards_likes` WHERE (`user_id` = %s) and (`boards_id` = %s);"
         else:
             update_sql = "UPDATE `coco`.`boards` SET `likes` = likes+1 WHERE (`id` = %s);"
             type_sql = "INSERT INTO `coco`.`boards_likes` (`user_id`, `boards_id`) VALUES (%s, %s);" 
-        update_data=(boardLikes.board_id)
+        update_data=(board_id)
         db_cursor.execute_sql(update_sql,update_data)
-        type_data=(user_id,boardLikes.board_id)
+        type_data=(user_id,board_id)
         db_cursor.execute_sql(type_sql,type_data)
 
         board_writer_sql = "select user_id from `coco`.`boards_ids` where board_id = %s"
-        board_writer_data = (boardLikes.board_id)
+        board_writer_data = (board_id)
         board_writer_result = db_cursor.select_sql(board_writer_sql, board_writer_data)
 
-        if not boardLikes.type:
+        if not like_type:
             alarm_crud.create_alarm(
                 db_cursor, 
                 {
                     'sender':user_id, 'receiver': board_writer_result[0]['user_id'], 
-                    'context': { 'board_id': boardLikes.board_id }, 
+                    'context': { 'board_id': board_id }, 
                     'category': 2
                 }
             )
@@ -208,14 +217,14 @@ class CrudBoard(Crudbase[Boards,int]):
                 i["is_liked"]=False
         return comments_result
 
-    def create_comment(self, db_cursor:DBCursor,commentInfo:CreateComment,user_id:str):
+    def create_comment(self, db_cursor:DBCursor,board_id: int,commentInfo:CreateComment,user_id:str):
         """
         새로운 댓글을 생성
 
         params
+        - board_id : board id
         - commentInfo
             - context : 댓글 내용
-            - board_id : board id
         - user_id : user id
         ---------------------------
         returns
@@ -225,22 +234,22 @@ class CrudBoard(Crudbase[Boards,int]):
         data=(commentInfo.context)
         last_idx = db_cursor.insert_last_id(sql, data)
         comment_sql = "INSERT INTO `coco`.`comments_ids` (`comment_id`, `user_id`, `board_id`) VALUES (%s, %s,%s);"
-        data=(last_idx,user_id,commentInfo.board_id)
+        data=(last_idx,user_id,board_id)
         db_cursor.execute_sql(comment_sql,data)
 
         sql="UPDATE `coco`.`boards` SET `comments` = `comments`+1 WHERE (`id` = %s);"
-        data=(commentInfo.board_id)
+        data=(board_id)
         db_cursor.execute_sql(sql,data)
 
         board_writer_sql = "select user_id from `coco`.`boards_ids` where board_id = %s"
-        board_writer_data = (commentInfo.board_id)
+        board_writer_data = (board_id)
         board_writer_result = db_cursor.select_sql(board_writer_sql, board_writer_data)
         
         alarm_crud.create_alarm(
             db_cursor, 
             {
                 'sender':user_id, 'receiver': board_writer_result[0]['user_id'], 
-                'context': { 'board_id': commentInfo.board_id }, 
+                'context': { 'board_id': board_id }, 
                 'category': 1
             }
         )
@@ -266,42 +275,41 @@ class CrudBoard(Crudbase[Boards,int]):
         db_cursor.execute_sql(sql,data)
         return 1
     
-    def update_comment_likes(self,db_cursor:DBCursor, commentLikes:CommentLikes,user_id:str):
+    def update_comment_likes(self,db_cursor:DBCursor, board_id: int,comment_id: int,like_type:bool,user_id:str):
         """
         댓글의 좋아요 업데이트
 
         params
-        - commentLikes
-            - board_id : board id
-            - comment_id : comment id
-            - type: True = 감소 , False = 증가
+        - board_id : board id
+        - comment_id : comment id
+        - like_type: True = 감소 , False = 증가
         - user_id : user id
         -----------------------------
         return
         - 성공시 1
         """
-        if commentLikes.type:
+        if like_type:
             update_sql = "UPDATE `coco`.`comments` SET `likes` = likes-1 WHERE (`id` = %s);"
             type_sql = "DELETE FROM `coco`.`comments_likes` WHERE (`user_id` = %s) and (`comment_id` = %s);"
         else:
             update_sql = "UPDATE `coco`.`comments` SET `likes` = likes+1 WHERE (`id` = %s);"
             type_sql = "INSERT INTO `coco`.`comments_likes` (`user_id`, `comment_id`) VALUES (%s, %s);" 
-        update_data=(commentLikes.comment_id)
+        update_data=(comment_id)
         db_cursor.execute_sql(update_sql,update_data)
-        data=(user_id,commentLikes.comment_id)
+        data=(user_id,comment_id)
         db_cursor.execute_sql(type_sql,data)
 
         #좋아요 눌리면
-        if not commentLikes.type:
+        if not like_type:
             # 댓글 좋아요 알람
             com_writer_sql = "select user_id from `coco`.`comments_ids` where comment_id = %s"
-            com_writer_data = (commentLikes.comment_id)
+            com_writer_data = (comment_id)
             com_writer_result = db_cursor.select_sql(com_writer_sql, com_writer_data)
             alarm_crud.create_alarm(
                 db_cursor, 
                 {
                     'sender':user_id, 'receiver': com_writer_result[0]['user_id'], 
-                    'context': { 'board_id': commentLikes.board_id }, 
+                    'context': { 'board_id': board_id }, 
                     'category': 3
                 }
             )

@@ -7,9 +7,45 @@ from app.schemas.task import *
 from app.api.deps import get_cursor,DBCursor
 import os
 
-router = APIRouter(prefix="/task")
+router = APIRouter(prefix="/tasks")
 
-@router.post('/', tags=['task'],response_model=BaseResponse)
+@router.post('/category', tags=['task'],response_model=BaseResponse)
+def create_category(category:str, token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor),):
+    """
+    문제 카테고리 생성
+
+    - category : 카테고리
+    - token : 사용자 인증
+    """
+    security.check_admin(token)
+    task_crud.create(db_cursor,{"category":category},table="task_category")
+    return {"code":1}
+
+@router.get('/category', tags=['task'],response_model=list[str])
+def read_category(db_cursor:DBCursor=Depends(get_cursor)):
+    """
+    문제 카테고리 조회
+    """   
+    result=task_crud.read(db_cursor,["category"],table="task_category")
+    
+    if result:
+        result=list(i["category"] for i in result)
+    else:
+        result=[]
+    return result
+
+@router.delete('/category', tags=['task'],response_model=BaseResponse)
+def delete_category(category:str, token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
+    """
+    해당 카테고리를 가지는 문제가 존재하지 않는다면 삭제
+
+    - category : 카테고리
+    - token : 사용자 인증
+    """
+    security.check_admin(token)
+    return {"code":task_crud.delete_category(db_cursor,category)}
+
+@router.post('', tags=['task'],response_model=BaseResponse)
 def create_task(description:str=Form(...),task: TaskBase = Depends(), token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     """ 
     새로운 문제를 생성
@@ -35,7 +71,7 @@ def create_task(description:str=Form(...),task: TaskBase = Depends(), token: dic
         "code":  task_crud.create_task(db_cursor,description,task)
     }
 
-@router.get('/', tags=['task'], response_model=TaskListOut)
+@router.get('', tags=['task'], response_model=TaskListOut)
 def read_task_with_pagination(query:TaskListIn=Depends(),db_cursor:DBCursor=Depends(get_cursor)):
     """
     문제 리스트에서 쿼리에 맞는 문제들의 정보만 리턴
@@ -82,7 +118,7 @@ def read_task_with_pagination(query:TaskListIn=Depends(),db_cursor:DBCursor=Depe
             "tasks":task_list
         }
 
-@router.get('/{task_id}/', tags=['task'],response_model=TaskDetail)
+@router.get('/{task_id}', tags=['task'],response_model=TaskDetail)
 def task_detail(task_id: int,db_cursor:DBCursor=Depends(get_cursor)):
     """
     원하는 문제의 상세한 정보 조회
@@ -95,7 +131,7 @@ def task_detail(task_id: int,db_cursor:DBCursor=Depends(get_cursor)):
     else:
         raise HTTPException(status_code=404, detail="Item not found")
 
-@router.put('/', tags=['task'],response_model=BaseResponse)
+@router.put('/{task_id}', tags=['task'],response_model=BaseResponse)
 def update_task(task_id:int,description:str=Form(...),task: TaskBase = Depends(), token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     """ 
     문제 수정
@@ -122,7 +158,7 @@ def update_task(task_id:int,description:str=Form(...),task: TaskBase = Depends()
         "code":  task_crud.update_task(db_cursor,task_id,description,task)
     }
     
-@router.delete('/', tags=['task'],response_model=BaseResponse)
+@router.delete('/{task_id}', tags=['task'],response_model=BaseResponse)
 def delete_task(task_id:int, token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     """
     문제 삭제
@@ -134,43 +170,7 @@ def delete_task(task_id:int, token: dict = Depends(security.check_token),db_curs
     security.check_admin(token)
     return {"code":task_crud.delete_task(db_cursor,task_id)}
 
-@router.post('/category', tags=['task'],response_model=BaseResponse)
-def create_category(category:str, token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor),):
-    """
-    문제 카테고리 생성
-
-    - category : 카테고리
-    - token : 사용자 인증
-    """
-    security.check_admin(token)
-    task_crud.create(db_cursor,{"category":category},table="task_category")
-    return {"code":1}
-
-@router.get('/category', tags=['task'],response_model=list[str])
-def read_category(db_cursor:DBCursor=Depends(get_cursor)):
-    """
-    문제 카테고리 조회
-    """   
-    result=task_crud.read(db_cursor,["category"],table="task_category")
-    
-    if result:
-        result=list(i["category"] for i in result)
-    else:
-        result=[]
-    return result
-
-@router.delete('/category', tags=['task'],response_model=BaseResponse)
-def delete_category(category:str, token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
-    """
-    해당 카테고리를 가지는 문제가 존재하지 않는다면 삭제
-
-    - category : 카테고리
-    - token : 사용자 인증
-    """
-    security.check_admin(token)
-    return {"code":task_crud.delete_category(db_cursor,category)}
-
-@router.get('/testcase/{task_id}', tags=['task'],responses={
+@router.get('/{task_id}/testcase', tags=['task'],responses={
         200: {
             "content": {"application/x-zip-compressed": 
                         {"schema":
@@ -178,6 +178,7 @@ def delete_category(category:str, token: dict = Depends(security.check_token),db
             "description": "Return zip file.",
         }
     },)
+
 def get_testcase(task_id:int,token: dict = Depends(security.check_token)):
     """
     문제에 대한 테스트 케이스 조회

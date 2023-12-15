@@ -21,8 +21,8 @@ def create_user(user: SignUp,db_cursor:DBCursor=Depends(get_cursor)):
     """
     return {"code": user_crud.create_user(db_cursor,user)}
 
-@router.get("/", tags=["auth"])
-def create_user(token: dict = Depends(security.check_token)):
+@router.get("", tags=["auth"])
+def authenticate(token: dict = Depends(security.check_token)):
     """
     JWT 토큰 검증
     
