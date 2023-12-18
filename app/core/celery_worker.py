@@ -58,14 +58,17 @@ def txt_to_dic(file_path):
                 result[name]=value.rstrip()
     return result
 
-def ready_C(db_cursor,box_id,sub_id):
+def compile_code(db_cursor,lang_info:dict, box_id:int, sub_id:int):
     """
-    C언어 채점 준비 -> 소스코드 컴파일
+    소스코드 컴파일
 
-    - code : c언어 코드
+    - lang_info : 제출 언어 정보
     - box_id : isolate box id
     - sub_id : 제출 id
     """
+    if lang_info['compile_cmd'] is None:
+        return True
+    
     #error data 저장공간
     error_path=os.getenv("SANDBOX_PATH")+str(box_id)+'/error/compile.txt'
     #meta data 저장공간
@@ -73,7 +76,7 @@ def ready_C(db_cursor,box_id,sub_id):
     #output data 저장공간
     output_path=os.getenv("SANDBOX_PATH")+str(box_id)+'/out/compile.txt'
     
-    subprocess.run('isolate --meta '+meta_path+' -E PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" -p5 -d /etc:noexec -b '+str(box_id)+' --run /usr/bin/gcc src.c > '+output_path+' 2> '+error_path,shell=True)
+    subprocess.run('isolate --meta '+meta_path+' -E PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" -p50 -d /etc:noexec -b '+str(box_id)+' --run '+lang_info['compile_cmd']+' > '+output_path+' 2> '+error_path,shell=True)
 
     #실행결과 분석
     exec_result=txt_to_dic(meta_path)
@@ -111,7 +114,7 @@ def get_isolate(timelimit:int)->int|None:
             while timeover<timelimit:#폴링으로 box가 사용가능한지 계속 확인
                 if conn.set(str(box_id),1,nx=True):
                     #isolate box 초기화
-                    subprocess.run(['isolate', '-b',str(box_id),'--init'],capture_output=True,text=True)
+                    subprocess.run(['isolate','--cg', '-b',str(box_id),'--init'],capture_output=True,text=True)
                     time.sleep(0.2)#격리 공간 생기는 거 기다리기
                     yield box_id
                     break
@@ -127,7 +130,7 @@ def get_isolate(timelimit:int)->int|None:
         finally:
             if box_id:
                 #사용가능한 box id를 획득했다면 사용종료 후 isolate box 삭제
-                subprocess.run(['isolate', '-b',str(box_id),'--cleanup'],capture_output=True)
+                subprocess.run(['isolate', '--cg','-b',str(box_id),'--cleanup'],capture_output=True)
             #isolate box id 사용가능으로 설정하기 위해 box id를 삭제
             conn.delete(str(box_id))
 
@@ -136,7 +139,7 @@ def run_pylint(py_file_path, sub_id):
     os.system(f'pylint {py_file_path} --disable=W,C --output-format=json:{json_path}')   
 
 @celery_task.task(ignore_result=True)
-def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
+def process_sub(taskid,sourcecode,sub_id,lang,user_id):
     """
     유저가 제출한 코드를 컴파일, 실행하고 해당 문제의 테스트 케이스를 넣고 출력값을 비교하여 알맞은 코드인지 확인
     db에 저장된 submission 값을 수정하며 채점 정보 저장
@@ -144,10 +147,8 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
     
     - taskid : 문제 id
     - sourcecode : 제출 code
-    - callbackurl : 콜백 url
-    - token : 콜백 url에 필요한 토큰
     - sub_id : 제출 id
-    - lang : 파이썬 0 | c언어 1
+    - lang : 파이썬 0 | c 1 | c++ 2 | java 3
     - user_id : 제출한 유저의 id
     """
     with get_isolate(600) as box_id,get_cursor() as db_cursor:
@@ -156,6 +157,9 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
                 
         #문제의 제한사항 조회
         result=crud_base.read(db_cursor,db='coco',table='task',id=taskid)[0]
+
+        #제출 코드의 언어 정보 조회
+        lang_info=crud_base.read(db_cursor,db='coco',table='lang',id=lang)[0]
         
         #제출 현재 상태를 2("채점중")으로 변경
         crud_base.update(db_cursor,{"status":2},db='coco',table='submissions',id=sub_id)
@@ -167,17 +171,13 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
         compile_res=False
         scoring_res=ScoringResult(exit_code=0,message="정답!",number_of_runs=len(TC_list),status=3)
 
-        
-        if lang==1:#C언어 컴파일
-            code_file_path+="src.c"
-            with open(code_file_path,'w') as code_file:
-                code_file.write(sourcecode)
-            compile_res=ready_C(db_cursor,box_id,sub_id)
-        else:#파이썬이라면 실행파일만 생성
-            code_file_path+="src.py"
-            with open(code_file_path,'w') as code_file:
-                code_file.write(sourcecode)
-            compile_res=True
+        #소스 코드 파일 생성
+        code_file_path+=lang_info['file']
+        with open(code_file_path,'w') as code_file:
+            code_file.write(sourcecode)
+
+        #소스 코드 컴파일
+        compile_res=compile_code(db_cursor,lang_info,box_id,sub_id)
 
         if compile_res:#컴파일이 성공했다면 채점 시작
             try:
@@ -196,11 +196,7 @@ def process_sub(taskid,sourcecode,callbackurl,token,sub_id,lang,user_id):
 
                     #isolate 환경에서 실행 C언어는 a.out 실행파일로 채점
                     #warning docker 환경에서는 /usr/local/bin/python3
-                    if lang==1:
-                        subprocess.run('isolate -M '+meta_path+' -t '+str(result["time_limit"])+' -d /etc:noexec -m '+str(result["mem_limit"]*1500)+' -b '+str(box_id)+' --run ./a.out < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
-                    else:
-                        subprocess.run('isolate -M '+meta_path+' -t '+str(result["time_limit"])+' -d /etc:noexec -m '+str(result["mem_limit"]*1500)+' -b '+str(box_id)+' --run /usr/local/bin/python3 src.py < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
-                    
+                    subprocess.run(f'isolate --cg -M '+meta_path+' --cg-timing -t '+str(result["time_limit"])+' -d /etc:noexec --cg-mem='+str(result["mem_limit"]*1500)+' -b '+str(box_id)+' -p50 --run '+lang_info['run_cmd']+' < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
                     #실행결과 분석
                     exec_result=txt_to_dic(meta_path)
                     if exec_result.get("exitcode")==None:#샌드박스에 의해서 종료됨 -> 문제의 제한사항에 걸려서 종료됨

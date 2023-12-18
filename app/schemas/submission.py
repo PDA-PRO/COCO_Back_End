@@ -30,7 +30,7 @@ class subDetail(BaseModel):
     message:str| None=None
     number_of_runs:int| None=None
     status:int
-    lang:conint(le=1,ge=0)
+    lang:int
     rate:float
     diff:int
     used_memory:int|None=None
@@ -45,13 +45,13 @@ class StatusBase(BaseModel):
     user_id:str
     task_id:int
     title:str
-    lang : conint(le=1,ge=0)
+    lang : int
     status : int
     time : datetime
     is_solved:bool=False
 
 class StatusListIn(PaginationIn):
-    task_id:conint(ge=1)| None=None
+    task_id:int | None=None
     lang:conint(le=1,ge=0)| None=None
     onlyme:bool| None=None
     answer:bool| None=None

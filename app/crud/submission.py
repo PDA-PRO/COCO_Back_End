@@ -14,7 +14,7 @@ class CrudSubmission(Crudbase):
             - taskid
             - sourcecode
             - callbackurl
-            - lang : c언어 1 | 파이썬 0
+            - lang : 파이썬 0 | c 1 | c++ 2 | java 3
         - user_id
         """
         sql="INSERT into coco.submissions (code,time,token,callback_url,status,lang ) values(%s, now(), %s, %s, %s,%s);"

@@ -8,7 +8,7 @@ import json
 import os
 router = APIRouter()
 
-@router.post("/submission", tags=["submission"],response_model=BaseResponse)
+@router.post("/submissions", tags=["submission"],response_model=BaseResponse)
 def scoring(submit:Submit,token: dict = Depends(security.check_token),db_cursor=Depends(get_cursor)):
     """
     제출된 코드 채점
@@ -17,16 +17,16 @@ def scoring(submit:Submit,token: dict = Depends(security.check_token),db_cursor=
         - taskid
         - sourcecode
         - callbackurl
-        - lang : c언어 1 | 파이썬 0
+        - lang : 파이썬 0 | c 1 | c++ 2 | java 3
     - token :jwt
     """
     sub_id=submission_crud.create_sub(db_cursor,submit,token['id'])
     #클라이언트와 celery worker 간에 전송되는 데이터는 직렬화되어야 하기 때문에 db_cursor 객체를 넘기지 못한다.
-    process_sub.apply_async([submit.taskid,submit.sourcecode,submit.callbackurl,"hi",sub_id,submit.lang,token['id']])
+    process_sub.apply_async([submit.taskid,submit.sourcecode,sub_id,submit.lang,token['id']])
 
     return {"code": 1}
 
-@router.get("/result/{sub_id}", tags=["submission"],response_model=SubResult|None)
+@router.get("/submissions/{sub_id}", tags=["submission"],response_model=SubResult|None)
 def load_result(sub_id: int,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
     """
     제출된 코드 채점 결과 조회
@@ -58,7 +58,7 @@ def load_result(sub_id: int,token: dict = Depends(security.check_token),db_curso
 
 
 
-@router.get("/status", tags=["submission"],response_model=StatusListOut)
+@router.get("/submissions", tags=["submission"],response_model=StatusListOut)
 def read_status(info:StatusListIn=Depends(),db_cursor:DBCursor=Depends(get_cursor)):
     """
     제출 조회
