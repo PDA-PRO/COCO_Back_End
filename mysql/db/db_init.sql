@@ -179,9 +179,10 @@ CREATE TABLE IF NOT EXISTS `descriptions` (
 CREATE TABLE IF NOT EXISTS `lang` (
   `id` tinyint NOT NULL,
   `name` varchar(10) NOT NULL,
-  `compile_path` varchar(60) DEFAULT NULL,
-  `interpreter_path` varchar(60) DEFAULT NULL,
-  `version` varchar(10) NOT NULL,
+  `compile_cmd` varchar(80) DEFAULT NULL,
+  `run_cmd` varchar(80) DEFAULT NULL,
+  `file` varchar(10) NOT NULL,
+  `highlighter` varchar(10) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -687,4 +688,4 @@ USE `coco`;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-12-02 12:14:54
+-- Dump completed on 2023-12-19 14:29:00

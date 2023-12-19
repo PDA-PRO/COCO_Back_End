@@ -9,7 +9,7 @@ RUN pip install --no-cache-dir --trusted-host pypi.python.org -r /home/app/celer
 RUN apt-get update && apt-get install libcap-dev -y && apt-get install git -y && apt-get install make -y && apt-get install gcc -y
 RUN git clone https://github.com/ioi/isolate.git && cd isolate && make install
 #g++, java 언어 채점 지원
-RUN apt-get install g++ -y && apt-get install openjdk-17-jdk
+RUN apt-get install g++ -y && apt-get install openjdk-17-jdk -y
 
 #필요한 파일만 복사
 COPY ./app/api/deps.py /home/app/api/deps.py

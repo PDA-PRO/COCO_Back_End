@@ -179,6 +179,27 @@ def ready():
                                 cache_file.write(j+"\n")
                 except:
                     pass
+    try:
+        print("채점 지원 언어 확인")
+        languages=[
+            [0, 'python', None, '/usr/bin/python3 src.py', 'src.py', 'python'],
+            [1, 'c', '/usr/bin/gcc src.c', './a.out', 'src.c', 'c'],
+            [2, 'c++', '/usr/bin/g++ src.cpp', './a.out', 'src.cpp', 'cpp'],
+            [3, 'java', '/usr/bin/javac Main.java', '/usr/bin/java Main', 'Main.java', 'java']
+        ]
+        with contextmanager(get_cursor)() as cur:
+            if cur.select_sql("select * from coco.lang"):
+                pass
+            else:
+                for i in languages:
+                    print("채점 지원 언어 추가")
+                    sql = "INSERT INTO `coco`.`lang` VALUES (%s,%s,%s,%s,%s,%s)"
+                    data=i
+                    cur.execute_sql(sql,data)
+    except:
+        pass
+
+
 
 
 if __name__=="__main__":
