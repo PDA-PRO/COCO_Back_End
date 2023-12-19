@@ -43,7 +43,7 @@ def load_result(sub_id: int,token: dict = Depends(security.check_token),db_curso
     """
     sub_info=submission_crud.read(db_cursor,["task_id","user_id"],table="sub_ids",sub_id=sub_id)
     if sub_info:
-        if sub_info[0]['user_id']==token['id'] or sub_info[0]['task_id'] in submission_crud.get_solved(db_cursor,token['id']):
+        if token['role'] or sub_info[0]['user_id']==token['id'] or sub_info[0]['task_id'] in submission_crud.get_solved(db_cursor,token['id']):
             rows=submission_crud.read_sub(db_cursor,sub_id)
             lang_list=submission_crud.read(db_cursor,["id","name"],"coco","lang")
             lang_dict={}
