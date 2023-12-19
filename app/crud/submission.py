@@ -72,7 +72,7 @@ class CrudSubmission(Crudbase):
         if info.onlyme:
             condition.append(" user_id = %s ")
             data.append(info.user_id)
-        if info.lang:
+        if info.lang is not None:
             condition.append(" lang = %s ")
             data.append(info.lang)
         if info.answer:

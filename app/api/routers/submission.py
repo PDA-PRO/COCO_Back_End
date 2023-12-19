@@ -45,7 +45,12 @@ def load_result(sub_id: int,token: dict = Depends(security.check_token),db_curso
     if sub_info:
         if sub_info[0]['user_id']==token['id'] or sub_info[0]['task_id'] in submission_crud.get_solved(db_cursor,token['id']):
             rows=submission_crud.read_sub(db_cursor,sub_id)
+            lang_list=submission_crud.read(db_cursor,["id","name"],"coco","lang")
+            lang_dict={}
+            for i in lang_list:
+                lang_dict[i['id']]=i["name"]
             if len(rows):
+                rows[0]['lang']=lang_dict[rows[0]['lang']]
                 return {'subDetail':rows[0], 'lint': read_lint(sub_id)}
             else:
                 return None
@@ -72,7 +77,14 @@ def read_status(info:StatusListIn=Depends(),db_cursor:DBCursor=Depends(get_curso
         - user_id
         - answer: status가 3("정답") 인지 여부
     """
-    return submission_crud.read_status(db_cursor,info)
+    status_list=submission_crud.read_status(db_cursor,info)
+    lang_list=submission_crud.read(db_cursor,["id","name"],"coco","lang")
+    lang_dict={}
+    for i in lang_list:
+        lang_dict[i['id']]=i["name"]
+    for i in status_list['statuslist']:
+        i['lang']=lang_dict[i['lang']]
+    return status_list
     
 def read_lint(sub_id:int)->list:
     """
@@ -103,3 +115,8 @@ def read_lint(sub_id:int)->list:
                 "message_id": data['message-id'],
             })
     return err_msg
+
+@router.get("/languages", tags=["submission"])
+def read_lang(db_cursor:DBCursor=Depends(get_cursor)):
+    lang_list=submission_crud.read(db_cursor,["id","name","highlighter"],"coco","lang")
+    return lang_list
