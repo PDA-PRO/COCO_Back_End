@@ -206,7 +206,6 @@ def process_sub(taskid,sourcecode,sub_id,lang,user_id):
                         scoring_res.number_of_runs=TC_num
                         scoring_res.status=4
                         task_result=0
-                        break
                     else:
                         if exec_result["exitcode"]=="0":#제출 코드 실행 결과가 정상적
                             with open(output_path,'r') as output_file,open(answer_path,'r') as answer_file:
@@ -230,7 +229,6 @@ def process_sub(taskid,sourcecode,sub_id,lang,user_id):
                                     scoring_res.message="TC 실패"
                                     scoring_res.number_of_runs=TC_num
                                     scoring_res.status=4
-                                    break
                             
                         else:#제출코드 실행 결과가 정상적이지 않다. -> 런타임 에러 등 
                             error_file=open(error_path,'r')
@@ -242,7 +240,6 @@ def process_sub(taskid,sourcecode,sub_id,lang,user_id):
                             scoring_res.number_of_runs=TC_num
                             scoring_res.status=4
                             task_result=0
-                            break
 
                 if task_result==1:#모든 TC를 통과했다면 정답처리
                     print('맞음')
