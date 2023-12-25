@@ -13,12 +13,11 @@ class CrudSubmission(Crudbase):
         - submit
             - taskid
             - sourcecode
-            - callbackurl
             - lang : 파이썬 0 | c 1 | c++ 2 | java 3
         - user_id
         """
-        sql="INSERT into coco.submissions (code,time,token,callback_url,status,lang ) values(%s, now(), %s, %s, %s,%s);"
-        data=(submit.sourcecode,uuid.uuid1().hex,submit.callbackurl,1,submit.lang)
+        sql="INSERT into coco.submissions (code,time,status,lang ) values(%s, now(), %s,%s);"
+        data=(submit.sourcecode,1,submit.lang)
         id=db_cursor.insert_last_id(sql,data)
         
         sql="insert into coco.sub_ids values (%s,%s,%s);"

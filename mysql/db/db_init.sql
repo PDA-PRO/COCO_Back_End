@@ -318,20 +318,32 @@ CREATE TABLE IF NOT EXISTS `submissions` (
   `id` int NOT NULL AUTO_INCREMENT,
   `status_id` int DEFAULT NULL,
   `code` text,
-  `stdout` text,
   `time` datetime DEFAULT NULL,
-  `stderr` text,
-  `token` varchar(45) DEFAULT NULL,
-  `callback_url` varchar(45) DEFAULT NULL,
-  `exit_code` int DEFAULT NULL,
   `message` varchar(45) DEFAULT NULL,
-  `number_of_runs` tinyint DEFAULT NULL,
+  `num_of_tc` tinyint DEFAULT NULL,
   `status` tinyint DEFAULT NULL,
   `lang` int DEFAULT NULL,
   `used_memory` int DEFAULT NULL,
   `used_time` float DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `sub_detail`
+--
+
+
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE IF NOT EXISTS `sub_detail` (
+  `sub_id` int NOT NULL,
+  `tc_num` int NOT NULL,
+  `status` tinyint NOT NULL,
+  `stdout` text DEFAULT NULL,
+  `stderr` text DEFAULT NULL,
+  PRIMARY KEY (`sub_id`,`tc_num`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -688,4 +700,4 @@ USE `coco`;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-12-19 14:29:00
+-- Dump completed on 2023-12-25 19:21:00

@@ -16,7 +16,6 @@ def scoring(submit:Submit,token: dict = Depends(security.check_token),db_cursor=
     - submit
         - taskid
         - sourcecode
-        - callbackurl
         - lang : 파이썬 0 | c 1 | c++ 2 | java 3
     - token :jwt
     """
@@ -39,6 +38,7 @@ def load_result(sub_id: int,token: dict = Depends(security.check_token),db_curso
     --------------------------------------------------------
     returns
     - subDetail : 채점 결과
+    - tcDetail : 오답 결과일 경우 TC비교 결과 출력
     - lint : lint 도구로 분석한 결과 리스트
     """
     sub_info=submission_crud.read(db_cursor,["task_id","user_id"],table="sub_ids",sub_id=sub_id)
@@ -49,9 +49,12 @@ def load_result(sub_id: int,token: dict = Depends(security.check_token),db_curso
             lang_dict={}
             for i in lang_list:
                 lang_dict[i['id']]=i["name"]
+
+            tc_info=submission_crud.read(db_cursor,db="coco",table="sub_detail",sub_id=sub_id)
+
             if len(rows):
                 rows[0]['lang']=lang_dict[rows[0]['lang']]
-                return {'subDetail':rows[0], 'lint': read_lint(sub_id)}
+                return {'subDetail':rows[0],"tcDetail":tc_info, 'lint': read_lint(sub_id)}
             else:
                 return None
     
@@ -72,7 +75,7 @@ def read_status(info:StatusListIn=Depends(),db_cursor:DBCursor=Depends(get_curso
         - size: 한 페이지의 크기
         - page: 현재 페이지 번호
         - task_id: 문제 id 
-        - lang: 제출 코드 언어 0 -> 파이썬 1-> c언어
+        - lang : 파이썬 0 | c 1 | c++ 2 | java 3
         - onlyme : 내 제출만 보기 여부
         - user_id
         - answer: status가 3("정답") 인지 여부

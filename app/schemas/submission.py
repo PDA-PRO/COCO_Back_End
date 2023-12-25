@@ -11,24 +11,17 @@ class Lint(BaseModel):
     symbol:str
     message:str
     message_id :str
+
 class Submit(BaseModel):
     taskid: int
     sourcecode:str
-    callbackurl:str
     lang:int
 
 class subDetail(BaseModel):
     id:int
-    status_id:int| None=None
     code:str
-    stdout:str| None=None
     time:datetime
-    stderr:str| None=None
-    token:str
-    callback_url:str
-    exit_code:int| None=None
     message:str| None=None
-    number_of_runs:int| None=None
     status:int
     lang:str
     rate:float
@@ -36,8 +29,16 @@ class subDetail(BaseModel):
     used_memory:int|None=None
     used_time:float|None=None
 
+class TCDetail(BaseModel):
+    sub_id:int
+    tc_num:int
+    status:int
+    stdout:str| None=None
+    stderr:str| None=None
+
 class SubResult(BaseModel):
     subDetail: subDetail
+    tcDetail:list[TCDetail]|None=None
     lint: list[Lint]| None=None
 
 class StatusBase(BaseModel):

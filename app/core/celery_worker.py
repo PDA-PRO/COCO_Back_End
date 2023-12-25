@@ -16,20 +16,14 @@ class ScoringResult():
     """
         채점 결과
         - status_id : isolate 런타임 결과 1 - 런타임 오류, 2 - 시간 초과, 3 - 메모리 초과
-        - stdout : 표준 출력값
-        - stderr : 표준 에러값
-        - exit_code : 채점시 런타임 종료 코드 0 - 정상종료, 1 - 런타임 오류
         - message : 채점 결과
-        - number_of_runs : 테스트케이스 통과 개수
         - status : 채점 상태 1 - 대기, 2 - 채점중, 3 - 정답, 4 - 오답
+        - used_memory
+        - used_time
     """
-    def __init__(self,status_id:int=None,stdout:str=None,stderr:str=None,exit_code:int=None,message:str=None,number_of_runs:int=0,status:int=4,used_memory:int=None,used_time:float=None) -> None:
+    def __init__(self,status_id:int=None,message:str=None,status:int=4,used_memory:int=None,used_time:float=None) -> None:
         self.status_id=status_id
-        self.stdout=stdout
-        self.stderr=stderr
-        self.exit_code=exit_code
         self.message=message
-        self.number_of_runs=number_of_runs
         self.status=status
         self.used_memory=used_memory
         self.used_time=used_time
@@ -38,6 +32,25 @@ class ScoringResult():
         print(self.__dict__)
         return self.__dict__
 
+class TCResult():
+    """
+        TC 비교 결과
+        - sub_id
+        - tc_num : TC 번호
+        - status : isolate 런타임 결과 1 - 런타임 오류, 2 - 시간 초과, 3 - 메모리 초과, 4 - TC 틀림
+        - stdout : TC 틀림 일때 출력값
+        - stderr : TC 틀림 제외 오류값
+    """
+    def __init__(self,sub_id:int,tc_num:int,status:int=None,stdout:str=None,stderr:str=None) -> None:
+        self.sub_id=sub_id
+        self.tc_num=tc_num
+        self.status=status
+        self.stdout=stdout
+        self.stderr=stderr
+
+    def to_dict(self):
+        print(self.__dict__)
+        return self.__dict__
 
 def txt_to_dic(file_path):
     """
@@ -169,7 +182,7 @@ def process_sub(taskid,sourcecode,sub_id,lang,user_id):
         code_file_path='/var/local/lib/isolate/'+str(box_id)+'/box/'
         TC_list=os.listdir(task_path)
         compile_res=False
-        scoring_res=ScoringResult(exit_code=0,message="정답!",number_of_runs=len(TC_list),status=3)
+        scoring_res=ScoringResult(message="정답!",status=3)
 
         #소스 코드 파일 생성
         code_file_path+=lang_info['file']
@@ -180,9 +193,12 @@ def process_sub(taskid,sourcecode,sub_id,lang,user_id):
         compile_res=compile_code(db_cursor,lang_info,box_id,sub_id)
 
         if compile_res:#컴파일이 성공했다면 채점 시작
+            
             try:
                 task_result=1#1이 정답 0이 오답
+                TC_res_list:list[TCResult]=[]
                 for TC_num in range(len(TC_list)):
+                    TC_res=TCResult(sub_id,TC_num+1)
                     #error data 저장공간
                     error_path=os.getenv("SANDBOX_PATH")+str(box_id)+'/error/'+str(TC_num)+'.txt'
                     #meta data 저장공간
@@ -194,18 +210,17 @@ def process_sub(taskid,sourcecode,sub_id,lang,user_id):
                     #test case output data 저장공간
                     answer_path=os.getenv("TASK_PATH")+str(taskid)+'/output/'+TC_list[TC_num]
 
-                    #isolate 환경에서 실행 C언어는 a.out 실행파일로 채점
                     #warning docker 환경에서는 /usr/local/bin/python3
                     subprocess.run(f'isolate --cg -M '+meta_path+' --cg-timing -t '+str(result["time_limit"])+' -d /etc:noexec --cg-mem='+str(result["mem_limit"]*1500)+' -b '+str(box_id)+' -p50 --run '+lang_info['run_cmd']+' < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
+                    
                     #실행결과 분석
                     exec_result=txt_to_dic(meta_path)
                     if exec_result.get("exitcode")==None:#샌드박스에 의해서 종료됨 -> 문제의 제한사항에 걸려서 종료됨
                         scoring_res.status_id=exec_result["status"]
-                        scoring_res.exit_code=2
                         scoring_res.message="제한사항에 걸림"
-                        scoring_res.number_of_runs=TC_num
                         scoring_res.status=4
                         task_result=0
+                        TC_res.status=exec_result["status"]
                     else:
                         if exec_result["exitcode"]=="0":#제출 코드 실행 결과가 정상적
                             with open(output_path,'r') as output_file,open(answer_path,'r') as answer_file:
@@ -221,25 +236,24 @@ def process_sub(taskid,sourcecode,sub_id,lang,user_id):
                                     if line_num<len(answer):
                                         answer_line=answer[line_num].rstrip()                                    
                                     if output_line!=answer_line:
-                                        scoring_res.stdout="".join(output)
                                         task_result=0
                                         break
                                 if task_result==0: #TC를 틀린 경우
-                                    scoring_res.exit_code=int(exec_result["exitcode"])
                                     scoring_res.message="TC 실패"
-                                    scoring_res.number_of_runs=TC_num
                                     scoring_res.status=4
+                                    TC_res.status=4
+                                    TC_res.stdout="".join(output)
                             
                         else:#제출코드 실행 결과가 정상적이지 않다. -> 런타임 에러 등 
                             error_file=open(error_path,'r')
                             error=error_file.readlines()
                             scoring_res.status_id=exec_result["status"]
-                            scoring_res.stderr="".join(error)
-                            scoring_res.exit_code=int(exec_result["exitcode"])
                             scoring_res.message="런타임 에러"
-                            scoring_res.number_of_runs=TC_num
                             scoring_res.status=4
                             task_result=0
+                            TC_res.status=1
+                            TC_res.stderr="".join(error)
+                    TC_res_list.append(TC_res)
 
                 if task_result==1:#모든 TC를 통과했다면 정답처리
                     print('맞음')
@@ -258,6 +272,9 @@ def process_sub(taskid,sourcecode,sub_id,lang,user_id):
                 else:
                     print('틀림')
                     crud_base.update(db_cursor,scoring_res.to_dict(),'coco','submissions',id=sub_id)
+                    for TC_res_one in TC_res_list:
+                        if TC_res_one.status:
+                            crud_base.create(db_cursor,TC_res_one.to_dict(),'coco','sub_detail')
                     if lang==0:
                         run_pylint(code_file_path,sub_id)
             except:
