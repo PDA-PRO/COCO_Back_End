@@ -2,7 +2,7 @@ version: "3"
 name: "coco_backend_dev"
 services:
   mysql:
-    image: styughjvbn/coco_db
+    image: styughjvbn/coco_db_dev
     container_name: coco_db_dev
     platform: linux/x86_64
     build: ./mysql/
