@@ -15,16 +15,18 @@ get_cursor=contextmanager(get_cursor)
 class ScoringResult():
     """
         채점 결과
-        - status_id : isolate 런타임 결과 1 - 런타임 오류, 2 - 시간 초과, 3 - 메모리 초과
+        - status_id : isolate 런타임 결과 1 - 런타임 오류, 2 - 시간 초과, 3 - 메모리 초과, 4 - TC 틀림, 5 - 컴파일 오류
         - message : 채점 결과
         - status : 채점 상태 1 - 대기, 2 - 채점중, 3 - 정답, 4 - 오답
+        - num_of_tc : 비교한 TC 개수
         - used_memory
         - used_time
     """
-    def __init__(self,status_id:int=None,message:str=None,status:int=4,used_memory:int=None,used_time:float=None) -> None:
+    def __init__(self,status_id:int=None,message:str=None,status:int=4,num_of_tc:int=None,used_memory:int=None,used_time:float=None) -> None:
         self.status_id=status_id
         self.message=message
         self.status=status
+        self.num_of_tc=num_of_tc
         self.used_memory=used_memory
         self.used_time=used_time
 
@@ -37,7 +39,7 @@ class TCResult():
         TC 비교 결과
         - sub_id
         - tc_num : TC 번호
-        - status : isolate 런타임 결과 1 - 런타임 오류, 2 - 시간 초과, 3 - 메모리 초과, 4 - TC 틀림
+        - status : isolate 런타임 결과 1 - 런타임 오류, 2 - 시간 초과, 3 - 메모리 초과, 4 - TC 틀림, 5 - 컴파일 오류
         - stdout : TC 틀림 일때 출력값
         - stderr : TC 틀림 제외 오류값
     """
@@ -99,9 +101,10 @@ def compile_code(db_cursor,lang_info:dict, box_id:int, sub_id:int):
     else:#컴파일 에러
         error_file=open(error_path,'r')
         error=error_file.readlines()
-        print(error)
-        scoring_res=ScoringResult(exec_result["status"],None,"".join(error),int(exec_result["exitcode"]),"컴파일 에러")
+        scoring_res=ScoringResult(5,"컴파일 오류",num_of_tc=0)
         crud_base.update(db_cursor,scoring_res.to_dict(),db='coco',table='submissions',id=sub_id)
+        tc_res=TCResult(sub_id,0,5,stderr="".join(error))
+        crud_base.create(db_cursor,tc_res.to_dict(),'coco','sub_detail')
         return False
 
 @contextmanager
@@ -182,7 +185,7 @@ def process_sub(taskid,sourcecode,sub_id,lang,user_id):
         code_file_path='/var/local/lib/isolate/'+str(box_id)+'/box/'
         TC_list=os.listdir(task_path)
         compile_res=False
-        scoring_res=ScoringResult(message="정답!",status=3)
+        scoring_res=ScoringResult(message="정답!",status=3,num_of_tc=len(TC_list))
 
         #소스 코드 파일 생성
         code_file_path+=lang_info['file']

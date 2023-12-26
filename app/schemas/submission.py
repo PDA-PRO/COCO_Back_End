@@ -21,6 +21,7 @@ class subDetail(BaseModel):
     id:int
     code:str
     time:datetime
+    num_of_tc:int|None=None
     message:str| None=None
     status:int
     lang:str
