@@ -2,43 +2,43 @@ version: "3"
 name: "coco_backend"
 services:
   mysql:
-    image: styughjvbn/coco_db
-    container_name: coco_db
-    platform: linux/x86_64
-    build: ./mysql/
-    volumes:
+    image: styughjvbn/coco_db #이미지 이름
+    container_name: coco_db #컨테이너 이름
+    platform: linux/x86_64 #이미지 플랫폼
+    build: ./mysql/ #build에 필요한 docker 파일 경로
+    volumes: #docker 내부 볼륨인 mysql 볼륨과 컨테이너의 /var/lib/mysql 연결
       - mysql:/var/lib/mysql
     ports: #host 3307과 컨테이너의 3306포트 연결
       - "3307:3306"
-    env_file: # 설정에 필요한 환경변수
+    env_file: # 설정에 필요한 환경변수 경로
       - ./mysql/local.env
     tty: true
-    restart: always
-    networks:
-      - coco_network
+    restart: always #항상 재시작하는지 여부
+    networks: #컨테이너와 연결될 dokcer 네트워크
+      - coco_network #
 
   fastapi:
     image: styughjvbn/coco_backend
-    depends_on:
+    depends_on: #mysql 컨테이너가 만들어지고 난 후에 이 컨테이너가 만들어지도록 의존성 추가
       - mysql
     container_name: coco_backend
     platform: linux/x86_64
     build: ./
     restart: always
     tty: true
-    volumes: # static 볼륨과 연결
-      - static:/static
-      - type: bind
+    volumes:
+      - static:/static # docker 내부 볼륨인 static 볼륨과 컨테이너의 /static 경로 연결
+      - type: bind # host 경로 ./plugin 와 컨테이너의 /home/app/plugin 경로 연결
         source: ./plugin
         target: /home/app/plugin
         volume:
           nocopy: false
     ports: #host 1000과 컨테이너의 8000포트 연결
       - 1000:8000
-    env_file:
+    env_file: #필요한 환경변수 파일 경로
       - ./envs/common.env
       - ./envs/backend.env
-    networks:
+    networks: #컨테이너와 연결될 dokcer 네트워크
       - coco_network
       - coco_proxy
 
@@ -61,24 +61,24 @@ services:
     build:
       context: ./
       dockerfile: celeryworker.dockerfile
-    volumes: # static 볼륨과 연결
-      - static:/static
+    volumes:
+      - static:/static # docker 내부 볼륨인 static 볼륨과 컨테이너의 /static 경로 연결
     env_file:
       - ./envs/common.env
       - ./envs/celeryworker.env
-    privileged: true # isolate의 sandbox마다 컴퓨터 자원 제한을 하기 위해 필요한 설정값
+    privileged: true # isolate의 sandbox마다 컴퓨터 자원 제한을 하기 위해 필요한 설정값 *필수*
     networks:
       - coco_network
 
-volumes: # task의 test case와 같이 유지되는 파일들을 저장하는 볼륨
-  static:
-  mysql:
-  mq:
+volumes: # docker 자체 볼룸 리스트 - 컨테이너와는 별개로써 저장되며 컨테이너와 이미지를 삭제하여도 따로 존재하여 안전하다
+  static: # task의 test case와 같이 유지되는 파일들을 저장하는 볼륨
+  mysql: # db 데이터 저장 볼륨
+  mq: # 채점 큐 데이터 저장 볼륨
 
-networks:
-  coco_network:
+networks: # 컨테이너들이 공유할 docker 네트워크 리스트
+  coco_network: # 메인 네트워크
     name: coco_network
     attachable: true
-  coco_proxy:
+  coco_proxy: # 리버스 프록시를 위한 네트워크
     name: coco_proxy
     attachable: true
