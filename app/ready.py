@@ -57,30 +57,32 @@ def ready(is_prod):
     except Exception as e:
         print(traceback.format_exc())
         raise e
+
+    #필수 디렉토리 검사
+    try:
+        print("백엔드 static 폴더 검증")
+        if not os.path.exists(os.getenv("TASK_PATH")):
+            os.mkdir(os.getenv("TASK_PATH"))
+        if not os.path.exists(os.getenv("NOTICE_PATH")):
+            os.mkdir(os.getenv("NOTICE_PATH"))
+        if not os.path.exists(os.path.join(os.getenv("NOTICE_PATH"),"notice.txt")):
+            with open(os.path.join(os.getenv("NOTICE_PATH"),"notice.txt"),"w", encoding="UTF-8") as file:
+                file.write("")
+        if not os.path.exists(os.getenv("BOARD_PATH")):
+            os.mkdir(os.getenv("BOARD_PATH"))
+        if not os.path.exists(os.getenv("PROFILE_PATH")):
+            os.mkdir(os.getenv("PROFILE_PATH"))
+        if not os.path.exists(os.getenv("ROADMAP_PATH")):
+            os.mkdir(os.getenv("ROADMAP_PATH"))
+        if not os.path.exists(os.getenv("LINT_PATH")):
+            os.mkdir(os.getenv("LINT_PATH"))
+    except Exception as e:
+        print(traceback.format_exc())
+        raise e
+    
     
     # 운영 환경에서만 실행
     if is_prod:
-        #필수 디렉토리 검사
-        try:
-            print("백엔드 static 폴더 검증")
-            if not os.path.exists(os.getenv("TASK_PATH")):
-                os.mkdir(os.getenv("TASK_PATH"))
-            if not os.path.exists(os.getenv("NOTICE_PATH")):
-                os.mkdir(os.getenv("NOTICE_PATH"))
-            if not os.path.exists(os.path.join(os.getenv("NOTICE_PATH"),"notice.txt")):
-                with open(os.path.join(os.getenv("NOTICE_PATH"),"notice.txt"),"w", encoding="UTF-8") as file:
-                    file.write("")
-            if not os.path.exists(os.getenv("BOARD_PATH")):
-                os.mkdir(os.getenv("BOARD_PATH"))
-            if not os.path.exists(os.getenv("PROFILE_PATH")):
-                os.mkdir(os.getenv("PROFILE_PATH"))
-            if not os.path.exists(os.getenv("ROADMAP_PATH")):
-                os.mkdir(os.getenv("ROADMAP_PATH"))
-            if not os.path.exists(os.getenv("LINT_PATH")):
-                os.mkdir(os.getenv("LINT_PATH"))
-        except Exception as e:
-            print(traceback.format_exc())
-            raise e
             
         # 기본 문제 셋 추가
         try:
