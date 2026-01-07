@@ -91,7 +91,6 @@ class CrudUser(Crudbase[User,str]):
             return {"total":total,"size":info.size,"userlist":result}
         else:
             result=db_cursor.select_sql(sql, data)
-            print(result)
             for i in range(len(result)):
                 level = self.get_level(result[i]['exp'])
                 result[i]['level'] = level['level']

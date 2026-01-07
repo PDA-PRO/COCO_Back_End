@@ -83,7 +83,7 @@ class CrudSubmission(Crudbase):
         #where 조건이 존재한다면 sql에 추가
         if len(condition):
             sql+=" WHERE "+"AND".join(condition)
-        sql+=" ORDER BY time desc"
+        sql+=" ORDER BY id"
 
         total,result=db_cursor.select_sql_with_pagination(sql,tuple(data),info.size,info.page)
         

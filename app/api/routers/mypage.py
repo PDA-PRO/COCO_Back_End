@@ -23,7 +23,7 @@ def mypage_one(user_id: str,token: dict = Depends(security.check_token),db_curso
     is_me=False
     if token['id']==user_id:
         is_me=True
-    if is_me == 1:
+    if is_me or user_info[0]['role']==1:
         board = board_crud.read_myboard(db_cursor,user_id)
         solved = sub_result['solved_list']
         unsolved = sub_result['unsolved_list']
@@ -46,7 +46,7 @@ def mypage_one(user_id: str,token: dict = Depends(security.check_token),db_curso
             'board': board,
             'task': after_task
         }
-    elif is_me == 2:
+    else:
         return {
             "user_info": user_info[0],
             "sub_result": sub_result,

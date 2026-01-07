@@ -250,7 +250,6 @@ class AbstractPlugin(metaclass=ABCMeta):
         sql=f'''
         INSERT INTO `plugin`.`{table_name}` ({", ".join(attrs)}) VALUES ({", ".join(["%s" for i in range(len(tableModel_obj.__dict__))])});
             '''
-        print(sql)
         data=list(tableModel_obj.__dict__.values())
         db_cursor.execute_sql(sql,data)
 

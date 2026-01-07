@@ -130,11 +130,11 @@ def ready(is_prod):
                                 pass
                             diff=1
                             if i[1]['score']=="100":
-                                diff=2
+                                diff=1
                             elif i[1]['score']=="200":
-                                diff=3
+                                diff=2
                             elif i[1]['score']=="300":
-                                diff=4
+                                diff=3
                             task={
                                 'title': i[1]['title']+"  wpc:"+i[0]
                                 ,'inputDescription': i[1]['input_desc']

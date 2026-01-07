@@ -462,7 +462,6 @@ class CrudRoom(Crudbase[Room,int]):
 
         sql = "UPDATE `room`.`%s_qa` SET `check` = %s WHERE (`a_id` = '%s')"
         data = (room_id, info.select, info.a_id)
-        print('select', data)
         db_cursor.execute_sql(sql, data)
 
         # 답변 채택 시 알람

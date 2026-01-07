@@ -8,7 +8,7 @@ import json
 import os
 router = APIRouter()
 
-@router.post("/submissions", tags=["submission"],response_model=BaseResponse)
+@router.post("/submissions", tags=["submission"])
 def scoring(submit:Submit,token: dict = Depends(security.check_token),db_cursor=Depends(get_cursor)):
     """
     제출된 코드 채점
@@ -22,8 +22,9 @@ def scoring(submit:Submit,token: dict = Depends(security.check_token),db_cursor=
     sub_id=submission_crud.create_sub(db_cursor,submit,token['id'])
     #클라이언트와 celery worker 간에 전송되는 데이터는 직렬화되어야 하기 때문에 db_cursor 객체를 넘기지 못한다.
     process_sub.apply_async([submit.taskid,submit.sourcecode,sub_id,submit.lang,token['id']])
-
-    return {"code": 1}
+    db_cursor.cursor.connection.commit()
+    
+    return {"code": 1, "sub_id":sub_id}
 
 @router.get("/submissions/{sub_id}", tags=["submission"],response_model=SubResult|None)
 def load_result(sub_id: int,token: dict = Depends(security.check_token),db_cursor:DBCursor=Depends(get_cursor)):
@@ -42,6 +43,7 @@ def load_result(sub_id: int,token: dict = Depends(security.check_token),db_curso
     - lint : lint 도구로 분석한 결과 리스트
     """
     sub_info=submission_crud.read(db_cursor,["task_id","user_id"],table="sub_ids",sub_id=sub_id)
+
     if sub_info:
         if token['role'] or sub_info[0]['user_id']==token['id'] or sub_info[0]['task_id'] in submission_crud.get_solved(db_cursor,token['id']):
             rows=submission_crud.read_sub(db_cursor,sub_id)

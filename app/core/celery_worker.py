@@ -31,7 +31,6 @@ class ScoringResult():
         self.used_time=used_time
 
     def to_dict(self):
-        print(self.__dict__)
         return self.__dict__
 
 class TCResult():
@@ -51,7 +50,6 @@ class TCResult():
         self.stderr=stderr
 
     def to_dict(self):
-        print(self.__dict__)
         return self.__dict__
 
 def txt_to_dic(file_path):
@@ -61,11 +59,11 @@ def txt_to_dic(file_path):
     - file_path : txt 파일 경로
     """
     
-    convert={"RE":1,"TO":2,"SG":3}
+    convert={"RE":1,"TO":2,"SG":3,"XX":4}
     result={}
     with open(file_path) as file:
         for i in file.readlines():
-            name,value=i.split(":")
+            name,value=i.split(":", 1)
             if name=="status":
                 value=convert[value.rstrip()]
                 result[name]=value
@@ -91,20 +89,20 @@ def compile_code(db_cursor,lang_info:dict, box_id:int, sub_id:int):
     #output data 저장공간
     output_path=os.getenv("SANDBOX_PATH")+str(box_id)+'/out/compile.txt'
     
-    subprocess.run('isolate --meta '+meta_path+' -E PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" -p50 -d /etc:noexec -b '+str(box_id)+' --run '+lang_info['compile_cmd']+' > '+output_path+' 2> '+error_path,shell=True)
+    subprocess.run('isolate --cg --meta '+meta_path+' -E PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" -p50 -d /etc:noexec -b '+str(box_id)+' --run '+lang_info['compile_cmd']+' > '+output_path+' 2> '+error_path,shell=True)
 
     #실행결과 분석
     exec_result=txt_to_dic(meta_path)
-    if exec_result["exitcode"]=="0":#제출 코드 실행 결과가 정상적
+    if exec_result.get("exitcode") == "0":  # 제출 코드 실행 결과가 정상적
         return True
         
     else:#컴파일 에러
-        error_file=open(error_path,'r')
-        error=error_file.readlines()
-        scoring_res=ScoringResult(5,"컴파일 오류",num_of_tc=0)
-        crud_base.update(db_cursor,scoring_res.to_dict(),db='coco',table='submissions',id=sub_id)
-        tc_res=TCResult(sub_id,0,5,stderr="".join(error))
-        crud_base.create(db_cursor,tc_res.to_dict(),'coco','sub_detail')
+        with open(error_path,'r') as error_file:
+            error=error_file.readlines()
+            scoring_res=ScoringResult(5,"컴파일 오류",num_of_tc=0)
+            crud_base.update(db_cursor,scoring_res.to_dict(),db='coco',table='submissions',id=sub_id)
+            tc_res=TCResult(sub_id,0,5,stderr="".join(error))
+            crud_base.create(db_cursor,tc_res.to_dict(),'coco','sub_detail')
         return False
 
 @contextmanager
@@ -182,7 +180,7 @@ def process_sub(taskid,sourcecode,sub_id,lang,user_id):
 
         #TC data 저장공간
         task_path=os.getenv("TASK_PATH")+str(taskid)+'/input/'
-        code_file_path='/var/local/lib/isolate/'+str(box_id)+'/box/'
+        code_file_path='/var/lib/isolate/'+str(box_id)+'/box/'
         TC_list=os.listdir(task_path)
         compile_res=False
         scoring_res=ScoringResult(message="정답!",status=3,num_of_tc=len(TC_list))
@@ -198,23 +196,22 @@ def process_sub(taskid,sourcecode,sub_id,lang,user_id):
         if compile_res:#컴파일이 성공했다면 채점 시작
             
             try:
+                #error data 저장공간
+                error_path=os.getenv("SANDBOX_PATH")+str(box_id)+'/error/'+str(sub_id)+'.txt'
+                #meta data 저장공간
+                meta_path=os.getenv("SANDBOX_PATH")+str(box_id)+'/meta/'+str(sub_id)+'.txt'
+                #제출 코드 실행 output data 저장공간
+                output_path=os.getenv("SANDBOX_PATH")+str(box_id)+'/out/'+str(sub_id)+'.txt'
                 task_result=1#1이 정답 0이 오답
                 TC_res_list:list[TCResult]=[]
                 for TC_num in range(len(TC_list)):
                     TC_res=TCResult(sub_id,TC_num+1)
-                    #error data 저장공간
-                    error_path=os.getenv("SANDBOX_PATH")+str(box_id)+'/error/'+str(TC_num)+'.txt'
-                    #meta data 저장공간
-                    meta_path=os.getenv("SANDBOX_PATH")+str(box_id)+'/meta/'+str(TC_num)+'.txt'
-                    #제출 코드 실행 output data 저장공간
-                    output_path=os.getenv("SANDBOX_PATH")+str(box_id)+'/out/'+str(TC_num)+'.txt'
                     #test case input data 저장공간
                     input_path=os.getenv("TASK_PATH")+str(taskid)+'/input/'+TC_list[TC_num]
                     #test case output data 저장공간
                     answer_path=os.getenv("TASK_PATH")+str(taskid)+'/output/'+TC_list[TC_num]
-
                     #warning docker 환경에서는 /usr/local/bin/python3
-                    subprocess.run(f'isolate --cg -M '+meta_path+' --cg-timing -t '+str(result["time_limit"])+' -d /etc:noexec --cg-mem='+str(result["mem_limit"]*1500)+' -b '+str(box_id)+' -p50 --run '+lang_info['run_cmd']+' < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
+                    subprocess.run(f'isolate --cg -M '+meta_path+' -t '+str(result["time_limit"])+' -d /etc:noexec --cg-mem='+str(result["mem_limit"]*1500)+' -b '+str(box_id)+' -p50 --run '+lang_info['run_cmd']+' < '+input_path+' > '+output_path+' 2> '+error_path,shell=True)
                     
                     #실행결과 분석
                     exec_result=txt_to_dic(meta_path)
@@ -248,14 +245,14 @@ def process_sub(taskid,sourcecode,sub_id,lang,user_id):
                                     TC_res.stdout="".join(output)
                             
                         else:#제출코드 실행 결과가 정상적이지 않다. -> 런타임 에러 등 
-                            error_file=open(error_path,'r')
-                            error=error_file.readlines()
-                            scoring_res.status_id=exec_result["status"]
-                            scoring_res.message="런타임 에러"
-                            scoring_res.status=4
-                            task_result=0
-                            TC_res.status=1
-                            TC_res.stderr="".join(error)
+                            with open(error_path, 'r') as error_file:
+                                error=error_file.readlines()
+                                scoring_res.status_id=exec_result["status"]
+                                scoring_res.message="런타임 에러"
+                                scoring_res.status=4
+                                task_result=0
+                                TC_res.status=1
+                                TC_res.stderr="".join(error)
                     TC_res_list.append(TC_res)
 
                 if task_result==1:#모든 TC를 통과했다면 정답처리
@@ -278,11 +275,11 @@ def process_sub(taskid,sourcecode,sub_id,lang,user_id):
                     for TC_res_one in TC_res_list:
                         if TC_res_one.status:
                             crud_base.create(db_cursor,TC_res_one.to_dict(),'coco','sub_detail')
-                    if lang==0:
+                    if lang==0 and scoring_res.message!="TC 실패":
                         run_pylint(code_file_path,sub_id)
             except:
                 print(traceback.format_exc())
-                print("채점 중 오류 발생")
+                print(f"{sub_id} 채점 중 오류 발생")
         
         #폴더 초기화
         for i in glob.glob(os.getenv("SANDBOX_PATH")+str(box_id)+'/error/*'):

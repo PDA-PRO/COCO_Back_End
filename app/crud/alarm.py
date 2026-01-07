@@ -3,7 +3,6 @@ import json
 
 class CrudAlarm(Crudbase):
     def create_alarm(self, db_cursor, info):
-        print(info)
         sql, data = '', ''
         # 1: 내 게시글에 댓글, 2: 내 게시글 좋아요, 3: 내 댓글 좋아요
         if info['category'] == 1 or info['category'] == 2 or info['category'] == 3:
@@ -77,7 +76,6 @@ class CrudAlarm(Crudbase):
         sql = 'SELECT id FROM coco.alarm where receiver = %s and is_read = 0;'
         data = (user_id)
         result = db_cursor.select_sql(sql, data)
-        print(result)
         return result
     
     def check_alarm(self, db_cursor, user_id):

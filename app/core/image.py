@@ -48,7 +48,6 @@ class Image():
         - type : 1-공지글 2-게시판 3-문제글 4-프로필 5-로드맵
         - id : type이 게시판, 문제글, 프로필, 로드맵일 경우 관련된 id
         """
-        print("dd")
         filepath=""
         if type==1:#공지글 이미지
             filepath=os.getenv("NOTICE_PATH")

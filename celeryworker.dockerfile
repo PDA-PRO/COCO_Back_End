@@ -1,4 +1,4 @@
-FROM python:3.10.13-slim
+FROM python:3.10.18-slim-bookworm
 
 WORKDIR /home
 
@@ -6,8 +6,10 @@ COPY celeryworker_requirments.txt /home/app/celeryworker_requirments.txt
 RUN pip install --no-cache-dir --trusted-host pypi.python.org -r /home/app/celeryworker_requirments.txt
 
 #isolate 및 필요한 패키지 설치
-RUN apt-get update && apt-get install libcap-dev -y && apt-get install git -y && apt-get install make -y && apt-get install gcc -y
-RUN git clone https://github.com/ioi/isolate.git && cd isolate && make install
+RUN apt-get update && apt-get install curl -y
+RUN curl -fsSL https://www.ucw.cz/isolate/debian/signing-key.asc | tee /etc/apt/keyrings/isolate.asc > /dev/null
+RUN echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/isolate.asc] http://www.ucw.cz/isolate/debian/ bookworm-isolate main" | tee /etc/apt/sources.list.d/isolate.list
+RUN apt-get update && apt-get install isolate -y
 #g++, java 언어 채점 지원
 RUN apt-get install g++ -y && apt-get install openjdk-17-jdk -y
 
